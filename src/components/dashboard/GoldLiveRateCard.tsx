@@ -17,6 +17,8 @@ export interface GoldStatus {
   ageMinutes: number;
   pureGramSellTL: number;
   prices: GoldPriceRecord[];
+  /** Ürün başına TL marj; kartta ödenecek fiyat bunu içerir. */
+  margins?: Record<string, number>;
 }
 
 export interface GoldDebtSummary {
@@ -182,21 +184,36 @@ export function GoldLiveRateCard({
 
       {prices.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {featured.map((p) => (
+          {featured.map((p) => {
+            // Kartta ödenecek fiyat gösterilir: piyasa + marj.
+            const margin = status?.margins?.[p.goldType] ?? 0;
+            return (
             <div
               key={p.goldType}
               className="p-3 rounded-2xl bg-zinc-900/70 border border-white/5 space-y-0.5"
             >
-              <span className="block text-[10px] text-zinc-400">{p.name}</span>
+              <span className="block text-[10px] text-zinc-400">
+                {p.name}
+                {margin > 0 && (
+                  <span className="ml-1 rounded bg-amber-500/20 px-1 text-[8.5px] font-bold text-amber-300">
+                    +{formatNumber(margin, 0)}
+                  </span>
+                )}
+              </span>
               <p className="text-sm font-bold text-white font-mono tabular-nums">
-                {formatCurrency(p.sellPrice)}
+                {formatCurrency(p.sellPrice + margin)}
               </p>
               <span className="block text-[9px] text-zinc-500">
-                {p.isPiece ? "adet satış" : "gram satış"}
+                {margin > 0
+                  ? `${formatNumber(p.sellPrice, 2)} + ${formatNumber(margin, 0)} marj`
+                  : p.isPiece
+                    ? "adet satış"
+                    : "gram satış"}
                 {p.karat ? ` · ${p.karat} ayar` : ""}
               </span>
             </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">

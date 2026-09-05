@@ -77,6 +77,7 @@ export default async function DashboardPage() {
           ounce: gold.ounce,
           currencies: gold.currencies,
           prices: gold.prices,
+          margins: settings.goldMargins,
           source: gold.source,
           sourceKind: gold.sourceKind,
           fetchedAt: gold.fetchedAt,

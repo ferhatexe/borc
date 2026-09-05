@@ -160,6 +160,7 @@ export function DashboardClient({
                 ageMinutes: market.ageMinutes,
                 pureGramSellTL: market.pureGramSellTL,
                 prices: market.prices,
+                margins: market.margins,
               }
             : null
         }

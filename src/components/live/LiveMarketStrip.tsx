@@ -33,12 +33,15 @@ function Chip({
   sub,
   change,
   accent,
+  hasMargin,
 }: {
   label: string;
   value: string;
   sub?: string;
   change?: number | null;
   accent?: "gold" | "usd" | "neutral";
+  /** Marj dahil edilmiş fiyatları görsel olarak ayırır. */
+  hasMargin?: boolean;
 }) {
   const ring =
     accent === "gold"
@@ -55,7 +58,13 @@ function Chip({
         <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-400">
           {label}
         </span>
-        <Change value={change ?? null} />
+        {hasMargin ? (
+          <span className="rounded bg-amber-500/20 px-1 text-[8.5px] font-bold text-amber-300">
+            MARJLI
+          </span>
+        ) : (
+          <Change value={change ?? null} />
+        )}
       </div>
       <span className="mt-0.5 font-mono text-sm font-bold tabular-nums text-zinc-50">{value}</span>
       {sub && <span className="text-[9px] text-zinc-500">{sub}</span>}
@@ -84,6 +93,13 @@ export function LiveMarketStrip({
   const ceyrek = market?.prices.find((p) => p.goldType === "CEYREK");
   const bilezik22 = market?.prices.find((p) => p.goldType === "BILEZIK_22");
   const halep21 = market?.prices.find((p) => p.goldType === "ZINCIR_21_HALEP");
+
+  /**
+   * Chip'ler ödenecek gerçek fiyatı gösterir: piyasa fiyatı + kullanıcının marjı.
+   * Ham piyasa fiyatı alt satırda kalır, çünkü borç hesabına giren rakam
+   * marj dahil olandır ve ikisini karıştırmak "200 nerede?" sorusuna yol açıyor.
+   */
+  const marginOf = (goldType: string) => market?.margins?.[goldType] ?? 0;
 
   return (
     <section
@@ -171,13 +187,30 @@ export function LiveMarketStrip({
             />
           )}
 
-          {ceyrek && <Chip label="Çeyrek" value={formatCurrency(ceyrek.sellPrice)} sub="adet" accent="gold" />}
-          {bilezik22 && (
-            <Chip label="22 Ayar" value={formatCurrency(bilezik22.sellPrice)} sub="gram" accent="gold" />
-          )}
-          {halep21 && (
-            <Chip label="21 Ayar" value={formatCurrency(halep21.sellPrice)} sub="gram, marjsız" accent="gold" />
-          )}
+          {[
+            { rec: ceyrek, label: "Çeyrek", unit: "adet" },
+            { rec: bilezik22, label: "22 Ayar", unit: "gram" },
+            { rec: halep21, label: "21 Ayar", unit: "gram" },
+          ].map(({ rec, label, unit }) => {
+            if (!rec) return null;
+            const margin = marginOf(rec.goldType);
+            const withMargin = rec.sellPrice + margin;
+
+            return (
+              <Chip
+                key={rec.goldType}
+                label={label}
+                value={formatCurrency(withMargin)}
+                sub={
+                  margin > 0
+                    ? `${formatNumber(rec.sellPrice, 2)} + ${formatNumber(margin, 0)} marj`
+                    : `${unit} satış`
+                }
+                accent="gold"
+                hasMargin={margin > 0}
+              />
+            );
+          })}
 
           {others.map((c) => (
             <Chip
@@ -200,12 +233,21 @@ export function LiveMarketStrip({
         </div>
       )}
 
-      {market?.ounce?.basis === "DERIVED" && (
-        <p className="mt-1.5 px-0.5 text-[9px] leading-tight text-zinc-600">
-          ONS değeri, gram has altın ve USD/TRY kurundan hesaplanır
-          (gram × 31,1035 ÷ USD). Sağlayıcı doğrudan ONS kotasyonu yayınlamıyor.
-        </p>
-      )}
+      <div className="mt-1.5 space-y-0.5 px-0.5 text-[9px] leading-tight text-zinc-600">
+        {market?.ounce?.basis === "DERIVED" && (
+          <p>
+            ONS değeri, gram has altın ve USD/TRY kurundan hesaplanır
+            (gram × 31,1035 ÷ USD). Sağlayıcı doğrudan ONS kotasyonu yayınlamıyor.
+          </p>
+        )}
+        {market && Object.values(market.margins ?? {}).some((m) => m > 0) && (
+          <p>
+            <span className="font-semibold text-amber-500/80">MARJLI</span> etiketli
+            fiyatlara Ayarlar&apos;daki marjınız eklenmiştir; borç hesabına giren
+            rakam budur.
+          </p>
+        )}
+      </div>
     </section>
   );
 }

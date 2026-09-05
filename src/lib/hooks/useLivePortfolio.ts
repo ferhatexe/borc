@@ -27,6 +27,8 @@ export interface LiveMarket {
   ounce: OunceQuote | null;
   currencies: CurrencyRate[];
   prices: GoldPriceRecord[];
+  /** Ürün başına TL marj (Ayarlar > Altın Marjları). */
+  margins: Record<string, number>;
   source: string;
   sourceKind: string;
   fetchedAt: string;

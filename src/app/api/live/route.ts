@@ -74,6 +74,8 @@ export async function GET() {
               ounce: gold.ounce,
               currencies: gold.currencies,
               prices: gold.prices,
+              // Kullanicinin marjlari: serit, odenecek gercek fiyati gosterebilsin.
+              margins: settings.goldMargins,
               source: gold.source,
               sourceKind: gold.sourceKind,
               fetchedAt: gold.fetchedAt,
