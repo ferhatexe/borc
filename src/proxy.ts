@@ -28,8 +28,11 @@ function isPublic(pathname: string): boolean {
  * Verifies the session signature, not just the presence of a cookie.
  * Uses Web Crypto (see lib/auth/jwt.ts) because the Edge runtime cannot load
  * the `jsonwebtoken` package.
+ *
+ * Next.js 16 renamed the `middleware` convention to `proxy`; the behaviour is
+ * unchanged. Kept in src/proxy.ts, next to the app directory.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isPublic(pathname)) return NextResponse.next();
