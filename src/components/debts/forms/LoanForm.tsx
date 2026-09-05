@@ -29,6 +29,8 @@ export interface LoanFormData {
   bsmvRate: number;
   firstPaymentDate: string;
   paymentDayOfMonth: number;
+  /** Krediyi ortasından ekleyenler için: kaç taksit zaten ödendi. */
+  paidInstallments: number;
   loanAccountNo?: string;
   title: string;
   notes?: string;
@@ -86,6 +88,9 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
   );
   const [paymentDayOfMonth, setPaymentDayOfMonth] = useState<number>(
     initialData?.paymentDayOfMonth || nextMonth.getDate()
+  );
+  const [paidInstallments, setPaidInstallments] = useState<number>(
+    initialData?.paidInstallments ?? 0
   );
   const [loanAccountNo, setLoanAccountNo] = useState<string>(initialData?.loanAccountNo || "");
   const [title, setTitle] = useState<string>(
@@ -197,6 +202,8 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
     const isValid =
       principal > 0 &&
       installmentCount > 0 &&
+      paidInstallments >= 0 &&
+      paidInstallments < installmentCount &&
       (calcMode === "RATE_TO_INSTALLMENT" ? interestRateMonthly >= 0 : targetInstallmentAmount > 0) &&
       title.trim().length > 0;
 
@@ -222,6 +229,7 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
         bsmvRate,
         firstPaymentDate,
         paymentDayOfMonth: Number(paymentDayOfMonth),
+        paidInstallments: Number(paidInstallments),
         loanAccountNo,
         title,
         notes,
@@ -238,6 +246,7 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
     includeBSMV,
     firstPaymentDate,
     paymentDayOfMonth,
+    paidInstallments,
     loanAccountNo,
     title,
     notes,
@@ -479,6 +488,25 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
 
         <div>
           <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            Şu Ana Kadar Ödenen Taksit Sayısı
+          </label>
+          <input
+            type="number"
+            min="0"
+            max={Math.max(0, installmentCount - 1)}
+            value={paidInstallments}
+            onChange={(e) => setPaidInstallments(Math.max(0, Number(e.target.value)))}
+            className="w-full h-11 px-3.5 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500 font-mono text-base"
+          />
+          <p className="text-[10px] text-zinc-500 mt-1">
+            Krediyi <strong>bankadaki hâliyle</strong> girin: toplam anapara ve
+            toplam taksit sayısı. Ödediklerinizi buraya yazın; kalan anapara ve
+            erken kapama tutarı buna göre hesaplanır.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-zinc-300 mb-1.5">
             Kredi Hesap / Sözleşme No (Opsiyonel)
           </label>
           <input
@@ -490,6 +518,31 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
           />
         </div>
       </div>
+
+      {/*
+        Toplam geri odeme anaparanin altindaysa veri tutarsizdir: kullanici
+        muhtemelen toplam anapara ile KALAN taksitleri karistirmistir. Bu
+        sessizce %0 faize dusuyordu.
+      */}
+      {principal > 0 &&
+        installmentCount > 0 &&
+        calculation &&
+        calculation.installmentAmount * installmentCount < principal && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-200">
+            <Sparkle size={15} weight="fill" className="mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold">Girilen değerler tutarsız</p>
+              <p className="mt-0.5 text-amber-200/80">
+                {installmentCount} taksit x {formatCurrency(calculation.installmentAmount)} ={" "}
+                {formatCurrency(calculation.installmentAmount * installmentCount)}, bu da{" "}
+                {formatCurrency(principal)} anaparanın altında. Muhtemelen toplam
+                anaparayla <strong>kalan</strong> taksitleri karıştırdınız. Krediyi
+                bankadaki hâliyle girip ödediğiniz taksit sayısını yukarıdaki alana
+                yazın.
+              </p>
+            </div>
+          </div>
+        )}
 
       {/* Live Financial Summary Banner */}
       {calculation && (

@@ -11,12 +11,16 @@ import {
   ChartBar,
   Gear,
   PlusCircle,
+  WarningOctagon,
 } from "@phosphor-icons/react";
 import { haptics } from "@/lib/haptics";
+import { useLiveData } from "@/components/live/LiveDataProvider";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: House },
   { href: "/debts", label: "Borçlar", icon: CreditCard },
+  // Gecikmis odemeler masaustunde yalnizca dashboard uzerinden ulasilabiliyordu.
+  { href: "/overdue", label: "Geciken", icon: WarningOctagon, badge: "overdue" as const },
   { href: "/income", label: "Gelirler", icon: TrendUp },
   { href: "/expenses", label: "Giderler", icon: TrendDown },
   { href: "/calendar", label: "Takvim", icon: CalendarBlank },
@@ -26,9 +30,15 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const live = useLiveData();
+  const overdueCount = live?.data?.totals.overdueCount ?? 0;
 
   return (
-    <aside className="hidden md:flex w-64 flex-col border-r border-white/10 bg-[#0A0A0B]/60 p-4 backdrop-blur-xl">
+    /*
+     * Navbar 4rem yuksekliginde ve sticky; kenar cubugu onun altina yapisir ve
+     * kendi icinde kayar. Boylece uzun sayfalarda menu ekrandan kaybolmaz.
+     */
+    <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-64 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-[#0A0A0B]/60 p-4 backdrop-blur-xl md:flex">
       <div className="mb-4">
         <Link
           href="/debts/new"
@@ -63,7 +73,15 @@ export function Sidebar() {
                 weight={isActive ? "duotone" : "regular"}
                 className={isActive ? "text-emerald-400" : "text-zinc-400"}
               />
-              <span>{item.label}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.badge === "overdue" && overdueCount > 0 && (
+                <span
+                  aria-label={`${overdueCount} gecikmiş ödeme`}
+                  className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white"
+                >
+                  {overdueCount}
+                </span>
+              )}
             </Link>
           );
         })}

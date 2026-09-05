@@ -74,17 +74,26 @@ async function buildSchedules(userId: string, input: CreateDebtInput) {
     installmentAmountOverride: input.installmentAmount || null,
   });
 
-  return rows.map((row) => ({
-    installmentNo: row.installmentNo,
-    dueDate: row.dueDate,
-    totalAmount: new Prisma.Decimal(row.totalPayment.toString()),
-    principalPart: new Prisma.Decimal(row.principalPayment.toString()),
-    interestPart: new Prisma.Decimal(
-      row.interestPayment.plus(row.kkdfPayment).plus(row.bsmvPayment).toString()
-    ),
-    remainingPrincipal: new Prisma.Decimal(row.remainingPrincipal.toString()),
-    status: "BEKLIYOR" as const,
-  }));
+  // Kredi ortasından ekleniyorsa ilk N taksit ödenmiş kabul edilir; böylece
+  // kalan anapara, erken kapama ve gecikme hesapları gerçeği yansıtır.
+  const alreadyPaid = Math.max(0, Math.min(input.paidInstallments ?? 0, rows.length));
+
+  return rows.map((row, index) => {
+    const isPaid = index < alreadyPaid;
+    return {
+      installmentNo: row.installmentNo,
+      dueDate: row.dueDate,
+      totalAmount: new Prisma.Decimal(row.totalPayment.toString()),
+      principalPart: new Prisma.Decimal(row.principalPayment.toString()),
+      interestPart: new Prisma.Decimal(
+        row.interestPayment.plus(row.kkdfPayment).plus(row.bsmvPayment).toString()
+      ),
+      remainingPrincipal: new Prisma.Decimal(row.remainingPrincipal.toString()),
+      status: (isPaid ? "ODENDI" : "BEKLIYOR") as "ODENDI" | "BEKLIYOR",
+      paidAt: isPaid ? row.dueDate : null,
+      paidAmount: isPaid ? new Prisma.Decimal(row.totalPayment.toString()) : null,
+    };
+  });
 }
 
 export async function createDebt(userId: string, input: CreateDebtInput): Promise<DebtWithRelations> {
@@ -115,6 +124,7 @@ export async function createDebt(userId: string, input: CreateDebtInput): Promis
       installmentAmount: dec(input.installmentAmount),
       firstPaymentDate: input.firstPaymentDate ?? null,
       paymentDayOfMonth: input.paymentDayOfMonth ?? null,
+      paidInstallments: input.paidInstallments ?? 0,
       includeKKDF: input.includeKKDF ?? true,
       kkdfRate: dec(input.kkdfRate),
       includeBSMV: input.includeBSMV ?? true,

@@ -104,6 +104,12 @@ const baseDebtSchema = z.object({
   principal: optionalMoney("Anapara"),
   interestRateMonthly: ratePercent("Aylık faiz oranı").optional().nullable(),
   installmentCount: z.coerce.number().int().min(1).max(480).optional().nullable(),
+  /**
+   * Krediyi ortasından ekleyenler için: baştan kaç taksit zaten ödendi.
+   * Kullanıcı krediyi bankadaki hâliyle (toplam anapara + toplam taksit)
+   * girer, uygulama ilk N taksiti ödenmiş işaretler.
+   */
+  paidInstallments: z.coerce.number().int().min(0).max(480).optional().nullable(),
   installmentAmount: optionalMoney("Taksit tutarı"),
   firstPaymentDate: optionalIsoDate("İlk taksit tarihi"),
   paymentDayOfMonth: dayOfMonth("Ödeme günü").optional().nullable(),
@@ -177,7 +183,7 @@ export const createDebtSchema = baseDebtSchema.superRefine((data, ctx) => {
   };
 
   switch (data.type) {
-    case "TAKSITLI_KREDI":
+    case "TAKSITLI_KREDI": {
       require("principal", "Kredi anaparası zorunludur");
       require("installmentCount", "Taksit sayısı zorunludur");
       require("interestRateMonthly", "Aylık faiz oranı zorunludur");
@@ -185,7 +191,19 @@ export const createDebtSchema = baseDebtSchema.superRefine((data, ctx) => {
       if (data.principal !== undefined && data.principal !== null && data.principal <= 0) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["principal"], message: "Anapara 0'dan büyük olmalıdır" });
       }
+      if (
+        data.paidInstallments != null &&
+        data.installmentCount != null &&
+        data.paidInstallments >= data.installmentCount
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["paidInstallments"],
+          message: "Ödenen taksit sayısı, toplam taksit sayısından az olmalıdır",
+        });
+      }
       break;
+    }
 
     case "KREDI_KARTI":
       require("creditLimit", "Kart limiti zorunludur");

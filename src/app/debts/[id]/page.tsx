@@ -178,7 +178,9 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
     }
 
     const schedules = debt.installmentSchedules;
-    const paidCount = debt.paidInstallments || 0;
+    // Plandan turetilir; paidInstallments sayaci ile plan arasinda fark olursa
+    // dogru olan plandir.
+    const paidCount = schedules.filter((s: any) => s.status === "ODENDI").length;
     const pendingSchedules = schedules.filter((s: any) => s.status !== "ODENDI");
 
     if (pendingSchedules.length === 0) return null;
@@ -201,13 +203,15 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
     }));
 
     return calculateEarlyPayoff({
-      remainingPrincipal,
+      // Kalan anapara sunucunun degerlemesinden gelir; ekrandaki "Kalan
+      // Anapara" karti ile ayni rakam olmasi icin sart.
+      remainingPrincipal: valuation?.principalTL ?? remainingPrincipal,
       amortizationSchedule: formattedSchedule,
       paidInstallmentCount: paidCount,
       // Slider yüzde gösterir, motor oranı kesir olarak bekler.
       penaltyRate: penaltyPercent / 100,
     });
-  }, [debt, penaltyPercent]);
+  }, [debt, penaltyPercent, valuation]);
 
   /**
    * KMH accrual comes from the server, which anchors it to the account's
@@ -367,10 +371,10 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
           </p>
           <p className="text-lg font-bold text-white font-mono">
             {isLoan
-              ? formatCurrency(
-                  debt.installmentSchedules?.find((s: any) => s.status !== "ODENDI")
-                    ?.remainingPrincipal || 0
-                )
+              ? // Sunucunun hesapladigi bakiye: bekleyen ilk taksitin kalan
+                // anaparasi + o taksitin anapara payi. Sadece remainingPrincipal
+                // kullanmak bir taksitlik anaparayi eksik gosteriyordu.
+                formatCurrency(valuation?.principalTL ?? 0)
               : debt.type === "ALTIN_BORCU"
               ? (goldValuation ? formatCurrency(goldValuation.totalTL) : `${debt.quantity ? `${debt.quantity} Adet` : `${debt.grams} gr`}`)
               : debt.type === "EK_HESAP_KMH"
