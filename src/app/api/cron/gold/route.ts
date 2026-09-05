@@ -7,17 +7,23 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * Manual/scheduled refresh trigger.
+ * Scheduled/manual gold price refresh.
  *
- * The cron script now writes prices through the database directly, so this
- * endpoint exists for manual triggers and external schedulers. It is excluded
- * from the middleware session check and therefore enforces its own auth: either
- * a matching CRON_SECRET header or a normal signed-in session.
+ * Excluded from the proxy session check, so it enforces its own auth. Three
+ * callers are accepted:
+ *   1. Vercel Cron, which sends `Authorization: Bearer $CRON_SECRET`
+ *   2. Any external scheduler sending `x-cron-secret`
+ *   3. A signed-in user pressing "Fiyatları Yenile"
  */
 async function authorize(req: NextRequest): Promise<boolean> {
   const configured = process.env.CRON_SECRET;
-  const provided = req.headers.get("x-cron-secret");
-  if (configured && provided && provided === configured) return true;
+
+  if (configured) {
+    // Vercel Cron sets this header automatically when CRON_SECRET is defined.
+    if (req.headers.get("authorization") === `Bearer ${configured}`) return true;
+    if (req.headers.get("x-cron-secret") === configured) return true;
+  }
+
   return (await getCurrentSession()) !== null;
 }
 

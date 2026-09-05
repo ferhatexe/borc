@@ -227,48 +227,70 @@ Motorda oran birimi **açıkça sabitlenmiştir**, büyüklüğe bakarak tahmin 
 
 ---
 
-## Render.com dağıtımı
+## Dağıtım: Vercel + Neon (ücretsiz)
 
-1. Bu depoyu GitHub'a gönderin (Render bir git deposu ister).
+Bu kombinasyon kalıcı olarak ücretsizdir. Render'ın ücretsiz PostgreSQL'i
+**30 gün sonra siliniyor** ve cron servisi ücretli olduğu için tercih edilmedi;
+`render.yaml` yine de repoda duruyor.
 
-   ```bash
-   git init
-   git add .
-   git commit -m "İlk sürüm"
-   git remote add origin <repo-url>
-   git push -u origin main
-   ```
+### 1. Veritabanı — Neon
 
-2. Render panelinde **New → Blueprint** deyip depoyu seçin. `render.yaml` şunları kurar:
-   - `borcolcme-app` (web)
-   - `borcolcme-gold-sync` (cron, günde 3 kez)
-   - `borcolcme-db` (PostgreSQL)
+1. [neon.com](https://neon.com) → ücretsiz hesap → yeni proje.
+2. Bölge olarak **AWS eu-central-1 (Frankfurt)** seçin (Vercel de `fra1`'de çalışacak).
+3. Connection string ekranında **iki** adresi de kopyalayın:
+   - **Pooled** (içinde `-pooler` geçer) → `DATABASE_URL`
+   - **Direct** (pooler geçmez) → `DIRECT_URL`
 
-3. Blueprint uygulanırken şu değişkenler **elle** sorulur:
-   - `SEED_USER_EMAIL`
-   - `SEED_USER_PASSWORD` (en az 10 karakter)
-   - `NEXT_PUBLIC_APP_URL` (örn. `https://borcolcme-app.onrender.com`)
+Prisma migrate pgbouncer üzerinden çalışamadığı için ikisi de gerekir.
 
-   `JWT_SECRET`, `CRON_SECRET` ve `DATABASE_URL` otomatik üretilir/bağlanır.
+### 2. Uygulama — Vercel
 
-4. Build komutu migration'ları uygular ve seed'i çalıştırır:
+1. [vercel.com](https://vercel.com) → GitHub ile giriş → **Add New → Project** → bu repo.
+2. Framework otomatik **Next.js** algılanır; build ayarlarına dokunmayın
+   (`vercel.json` build komutunu ve cron'u zaten tanımlıyor).
+3. **Environment Variables** bölümüne şunları girin:
 
-   ```
-   npm ci --include=dev && npx prisma generate && npx prisma migrate deploy && npx prisma db seed && npm run build
-   ```
+| Değişken | Değer |
+|---|---|
+| `DATABASE_URL` | Neon **pooled** adresi |
+| `DIRECT_URL` | Neon **direct** adresi |
+| `JWT_SECRET` | 32+ karakter rastgele dizi |
+| `CRON_SECRET` | 16+ karakter rastgele dizi |
+| `SEED_USER_EMAIL` | Giriş e-postanız |
+| `SEED_USER_PASSWORD` | **En az 10 karakter** |
+| `NEXT_PUBLIC_APP_URL` | Deploy sonrası verilen adres |
 
-5. Sağlık kontrolü: `/api/health` — veritabanı bağlantısını da test eder,
-   Postgres'e ulaşılamıyorsa `503` döner.
+Rastgele değer üretmek için:
 
-### Dikkat edilecekler
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
 
-- **`NODE_ENV` bilerek tanımlanmamıştır.** `NODE_ENV=production` ayarlandığında `npm ci`
-  devDependencies'i atlar; `typescript`, `tailwindcss` ve prisma CLI kurulmadığı için
-  build başarısız olur. Render çalışma anında zaten `production` kullanır.
-- **Free tier** 15 dakika hareketsizlikte servisi uyutur; ilk açılış 30–60 saniye sürebilir.
-  Free PostgreSQL 90 gün sonra sona erer.
-- Cron servisi veritabanına doğrudan yazar, web servisine HTTP isteği atmaz;
-  bu yüzden `NEXT_PUBLIC_APP_URL`'e ihtiyaç duymaz.
+4. **Deploy**. Build sırası: `prisma generate` → `migrate deploy` → `db seed` → `next build`.
+   Yani tablolar ve ilk kullanıcı ilk deploy'da otomatik oluşur.
+
+> ⚠️ `SEED_USER_PASSWORD` boş veya 10 karakterden kısaysa seed **bilerek** hata verir
+> ve deploy başarısız olur. Bu, koda gömülü zayıf bir varsayılan bırakmamak içindir.
+
+### 3. Deploy sonrası
+
+- `NEXT_PUBLIC_APP_URL`'i gerçek adresle güncelleyip yeniden deploy edin.
+- `/api/health` adresini açın: `status: "ok"` ve `database: "ok"` görmelisiniz.
+- Telefonda tarayıcı menüsünden **"Ana ekrana ekle"** ile PWA olarak kurun.
+
+### Cron hakkında
+
+Vercel'in ücretsiz planında cron **günde bir kez** çalışır
+(`vercel.json` → 06:00 UTC ≈ 09:00 TRT, ±1 saat sapmayla).
+
+Bu bir kısıt değil: uygulama altın fiyatını zaten her istekte canlı çekiyor
+(15 dk önbellekle). Cron yalnızca sağlayıcılar çöktüğünde kullanılacak
+yedek snapshot'ı tazeliyor, günde bir kez fazlasıyla yeterli.
+
+### Şifreyi değiştirmek
+
+`SEED_USER_PASSWORD`'ü Vercel panelinden güncelleyip yeniden deploy edin;
+seed her çalıştığında şifreyi ortam değişkeniyle senkronlar.
 
 ---
 

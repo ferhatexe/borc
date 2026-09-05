@@ -4,7 +4,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Uygulama havuzlu (pooled) baglantiyi kullanir: sunucusuz ortamda her istek
+  // yeni bir baglanti actigi icin havuz olmadan Neon baglanti limiti tukenir.
+  url       = env("DATABASE_URL")
+  // Migration ve introspection havuzdan (pgbouncer) gecemez, dogrudan baglanti ister.
+  directUrl = env("DIRECT_URL")
 }
 
 enum InstitutionType {
