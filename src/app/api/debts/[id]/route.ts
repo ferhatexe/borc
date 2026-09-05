@@ -54,6 +54,7 @@ export async function GET(_req: NextRequest, props: Ctx) {
       }));
       earlyPayoff = calculateEarlyPayoff({
         remainingPrincipal: valuation.principalTL,
+        accruedInterest: valuation.accruedInterestTL,
         amortizationSchedule: rows,
         paidInstallmentCount: valuation.paidInstallments ?? 0,
         penaltyRate: settings.taxRates.earlyPayoffPenaltyRate,

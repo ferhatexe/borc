@@ -3,6 +3,11 @@ import { AmortizationRow, RateInput } from "./types";
 
 export interface EarlyPayoffParams {
   remainingPrincipal: RateInput;
+  /**
+   * Son taksitten bugüne işlemiş, henüz tahsil edilmemiş faiz. Banka kapamada
+   * bunu da ister; her gün büyür.
+   */
+  accruedInterest?: RateInput;
   amortizationSchedule: AmortizationRow[];
   paidInstallmentCount: number;
   /**
@@ -14,6 +19,8 @@ export interface EarlyPayoffParams {
 
 export interface EarlyPayoffResult {
   currentRemainingPrincipal: Decimal;
+  /** Bugüne kadar işlemiş faiz (KKDF/BSMV dahil). */
+  accruedInterest: Decimal;
   penaltyFee: Decimal;
   totalPayoffAmount: Decimal;
   remainingScheduledInterest: Decimal;
@@ -31,6 +38,7 @@ export interface EarlyPayoffResult {
  */
 export function calculateEarlyPayoff(params: EarlyPayoffParams): EarlyPayoffResult {
   const remainingPrincipal = new Decimal(params.remainingPrincipal.toString());
+  const accruedInterest = new Decimal((params.accruedInterest ?? 0).toString());
   const penaltyRate = new Decimal((params.penaltyRate ?? 0.02).toString());
 
   if (penaltyRate.isNegative()) throw new Error("Erken kapama komisyon oranı negatif olamaz.");
@@ -48,12 +56,19 @@ export function calculateEarlyPayoff(params: EarlyPayoffParams): EarlyPayoffResu
   );
 
   const penaltyFee = remainingPrincipal.times(penaltyRate);
-  const totalInterestSaved = remainingScheduledInterest.minus(penaltyFee);
+  // İşlemiş faiz zaten planın faizinin bir parçası; kapatınca kalanı kazanç.
+  const totalInterestSaved = remainingScheduledInterest
+    .minus(accruedInterest)
+    .minus(penaltyFee);
 
   return {
     currentRemainingPrincipal: remainingPrincipal.toDecimalPlaces(2),
+    accruedInterest: accruedInterest.toDecimalPlaces(2),
     penaltyFee: penaltyFee.toDecimalPlaces(2),
-    totalPayoffAmount: remainingPrincipal.plus(penaltyFee).toDecimalPlaces(2),
+    totalPayoffAmount: remainingPrincipal
+      .plus(accruedInterest)
+      .plus(penaltyFee)
+      .toDecimalPlaces(2),
     remainingScheduledInterest: remainingScheduledInterest.toDecimalPlaces(2),
     totalInterestSaved: totalInterestSaved.greaterThan(0)
       ? totalInterestSaved.toDecimalPlaces(2)

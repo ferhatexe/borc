@@ -26,8 +26,16 @@ export interface DebtValuation {
   principalTL: number;
   /** Interest that has accrued but has not been charged yet (KMH, cards). */
   accruedInterestTL: number;
-  /** TL accruing every day at the current balance; 0 for fixed instalment debts. */
+  /** TL accruing every day at the current balance. */
   dailyAccrualTL: number;
+  /**
+   * Faizin hangi tarihten beri işlediği. Taksitli kredide son geçen taksit
+   * vadesi (veya bankadan girilen bakiyenin tarihi), KMH'de son faiz kesim
+   * tarihi. Kapama tutarının neden büyüdüğünü ekranda açıklamak için.
+   */
+  accrualSince: string | null;
+  /** accrualSince'ten bugüne geçen gün sayısı. */
+  accrualDays: number;
   /** Borç TL değilse kullanılan kur; TL ise 1. */
   fxRateToTRY: number;
 
@@ -209,6 +217,9 @@ export function valuateDebt(
   let nextDueDate: Date | null = null;
   let isOverdue = false;
 
+  let accrualSince: Date | null = null;
+  let accrualDays = 0;
+
   let goldDetail: DebtValuation["goldDetail"] = null;
   let overdraftDetail: DebtValuation["overdraftDetail"] = null;
   let cardDetail: DebtValuation["cardDetail"] = null;
@@ -235,7 +246,68 @@ export function valuateDebt(
        * Plan yine taksit tarihleri ve tutarları için kullanılmaya devam eder.
        */
       const override = numOrNull(debt.currentPrincipalOverride);
-      if (override !== null && override >= 0) principalTL = override;
+      const hasOverride = override !== null && override >= 0;
+      if (hasOverride) principalTL = override;
+
+      /*
+       * Taksit arasında da faiz işler.
+       *
+       * Kalan anapara bir sonraki taksite kadar sabit kalır ama bugün kapatmak
+       * isterseniz banka son taksitten bugüne işlemiş faizi de ister. Yani
+       * kapama tutarı her gün artar, taksit ödenince anapara düşüp faiz sıfırdan
+       * başlar. Toplam borç bu yüzden plandaki sabit rakamı değil bugünkü kapama
+       * tutarını yansıtır.
+       *
+       * Faiz saymaya nereden başlıyoruz:
+       *   1. Bankadaki güncel bakiye girildiyse onun girildiği tarihten
+       *      (o rakam zaten o güne kadarki faizi içerir, iki kez saymayalım),
+       *   2. yoksa en son ÖDENEN taksitin tarihinden - vadesi geldiği hâlde
+       *      ödenmemiş taksitte faiz işlemeye devam eder,
+       *   3. hiç taksit ödenmediyse kredinin başlangıcından.
+       *
+       * Oran olarak akdi faiz kullanılır; taksitin içindeki dosya masrafı ve
+       * sigorta faiz değildir, kapamada tahsil edilmez.
+       */
+      const loanRatePercent = num(debt.interestRateMonthly);
+      if (principalTL > 0 && loanRatePercent > 0) {
+        const lastPaidAt = schedules
+          .filter((row) => row.status === "ODENDI")
+          .map((row) => new Date(row.paidAt ?? row.dueDate))
+          .filter((date) => date <= now)
+          .sort((a, b) => b.getTime() - a.getTime())[0];
+
+        accrualSince =
+          hasOverride && debt.principalOverrideAt
+            ? new Date(debt.principalOverrideAt)
+            : (lastPaidAt ?? new Date(debt.startDate));
+
+        accrualDays = daysSinceLastCharge(accrualSince, now);
+
+        const accrual = calculateOverdraftInterest({
+          usedAmount: principalTL,
+          monthlyInterestRatePercent: loanRatePercent,
+          days: accrualDays,
+          includeKKDF: debt.includeKKDF ?? true,
+          kkdfRate: numOrNull(debt.kkdfRate) ?? settings.taxRates.kkdfRate,
+          includeBSMV: debt.includeBSMV ?? true,
+          bsmvRate: numOrNull(debt.bsmvRate) ?? settings.taxRates.bsmvRate,
+        });
+
+        accruedInterestTL = accrual.totalAccruedInterest.toNumber();
+        dailyAccrualTL = accrual.dailyAccrual.toNumber();
+
+        /*
+         * Tavan: bir dönemde işleyen faiz, o dönemin sonundaki taksitin faiz
+         * payını geçemez. Banka o taksitte zaten bu kadarını tahsil ediyor;
+         * fazlası çift sayım olurdu. Tavan aynı zamanda kredi başlangıcı ile
+         * ilk taksit arasında uzun boşluk olan kayıtları da korur.
+         */
+        const periodInterestCap = pending[0] ? num(pending[0].interestPart) : 0;
+        if (periodInterestCap > 0 && accruedInterestTL >= periodInterestCap) {
+          accruedInterestTL = periodInterestCap;
+          dailyAccrualTL = 0; // taksit gününe kadar daha fazla faiz işlemez
+        }
+      }
 
       for (const row of pending) {
         const due = new Date(row.dueDate);
@@ -265,6 +337,8 @@ export function valuateDebt(
       principalTL = used;
       accruedInterestTL = accrual.totalAccruedInterest.toNumber();
       dailyAccrualTL = accrual.dailyAccrual.toNumber();
+      accrualSince = new Date(debt.lastInterestChargeDate ?? debt.startDate);
+      accrualDays = days;
       // A revolving balance is payable in full at any time.
       dueThisMonthTL = used > 0 ? accruedInterestTL : 0;
 
@@ -451,6 +525,8 @@ export function valuateDebt(
     currency: debt.currency,
 
     fxRateToTRY: fx,
+    accrualSince: accrualSince ? accrualSince.toISOString() : null,
+    accrualDays,
     outstandingTL: round2(principalTL + accruedInterestTL),
     principalTL: round2(principalTL),
     accruedInterestTL: round2(accruedInterestTL),

@@ -137,7 +137,13 @@ describe("Taksitli kredi değerlemesi", () => {
 
   it("kalan anaparayı ilk ödenmemiş taksitten türetir", () => {
     const v = valuateDebt(loan, gold, DEFAULT_SETTINGS, NOW);
-    expect(v.outstandingTL).toBeCloseTo(86063 + 7088, 2);
+    // remainingPrincipal taksit SONRASI bakiye; bugunku anapara ona o taksitin
+    // anapara payi eklenerek bulunur.
+    expect(v.principalTL).toBeCloseTo(86063 + 7088, 2);
+    // 15 Agustos'ta odenen taksitten bugune isleyen faiz de kapamaya girer;
+    // bir taksitin faiz payi (10.348 - 7.088) tavandir.
+    expect(v.accruedInterestTL).toBeCloseTo(3260, 2);
+    expect(v.outstandingTL).toBeCloseTo(86063 + 7088 + 3260, 2);
     expect(v.paidInstallments).toBe(1);
     expect(v.remainingInstallments).toBe(2);
     expect(v.totalInstallments).toBe(3);
@@ -410,7 +416,69 @@ describe("Portföy özeti", () => {
     expect(qnbGroup.debts.map((d) => d.monthlyInterestRatePercent)).toEqual([3.5, 4.2, 2.1]);
     expect(qnbGroup.debts.map((d) => d.paymentDayOfMonth)).toEqual([5, 20, 28]);
     expect(qnbGroup.monthlyObligationTL).toBe(15000);
-    expect(qnbGroup.totalOutstandingTL).toBe(23000 + 12000 + 55000);
+
+    // Anaparalar 90.000; ustune son taksitten bugune isleyen faiz biner, ama
+    // hicbir kredide bir taksitin faiz payindan fazlasi islemez.
+    const principals = 23000 + 12000 + 55000;
+    expect(qnbGroup.totalOutstandingTL).toBeGreaterThan(principals);
+    expect(qnbGroup.totalOutstandingTL).toBeLessThanOrEqual(
+      principals + 2000 + 1000 + 2000
+    );
+  });
+
+  it("taksitli kredi kapama tutari her gun buyur, taksit odenince sifirlanir", () => {
+    // 100.000 TL kalan anapara, aylik %3 akdi faiz, vadesi 1 Eylul'de gecmis
+    // bir taksit ve 1 Ekim'de bekleyen bir taksit.
+    const loan = debt({
+      id: "k1",
+      type: "TAKSITLI_KREDI",
+      title: "Kapama testi",
+      interestRateMonthly: 3 as never,
+      installmentAmount: 12000 as never,
+      startDate: new Date(2026, 5, 1),
+      installmentSchedules: [
+        schedule(1, new Date(2026, 8, 1), "ODENDI", 100000, 8000, 12000),
+        schedule(2, new Date(2026, 9, 1), "BEKLIYOR", 92000, 8000, 12000),
+      ] as never,
+    });
+
+    // 1 Eylul'deki taksitten 15 gun sonra: 100.000 x %3 x 1,30 x 15/30.
+    const v = valuateDebt(loan, gold, DEFAULT_SETTINGS, NOW);
+    expect(v.principalTL).toBe(100000);
+    // 1 Eylul -> 15 Eylul = 14 gun.
+    expect(v.accruedInterestTL).toBeCloseTo(1820, 2);
+    expect(v.outstandingTL).toBeCloseTo(101820, 2);
+    expect(v.dailyAccrualTL).toBeCloseTo(130, 2);
+    expect(v.accrualSince).toBe(new Date(2026, 8, 1).toISOString());
+
+    // Ertesi gun bir gunluk faiz daha binmis olmali.
+    const yarin = valuateDebt(loan, gold, DEFAULT_SETTINGS, new Date(2026, 8, 16));
+    expect(yarin.outstandingTL - v.outstandingTL).toBeCloseTo(130, 2);
+
+    // Vade gunu geldiginde bir aylik faiz birikmis olur (30 x 130 = 3.900).
+    // Taksit odenmedigi surece faiz islemeye devam eder ama bir taksitin faiz
+    // payini (4.000) gecemez; tavana dayanınca gunluk artis da durur.
+    const vadeGunu = valuateDebt(loan, gold, DEFAULT_SETTINGS, new Date(2026, 9, 1));
+    expect(vadeGunu.accruedInterestTL).toBeCloseTo(3900, 2);
+    expect(vadeGunu.dailyAccrualTL).toBeCloseTo(130, 2);
+
+    const gecikmis = valuateDebt(loan, gold, DEFAULT_SETTINGS, new Date(2026, 9, 10));
+    expect(gecikmis.accruedInterestTL).toBe(4000);
+    expect(gecikmis.dailyAccrualTL).toBe(0);
+
+    // Ekim taksiti de odenince anapara duser ve faiz sifirdan baslar.
+    const sonraki = debt({
+      ...loan,
+      installmentSchedules: [
+        schedule(1, new Date(2026, 8, 1), "ODENDI", 100000, 8000, 12000),
+        schedule(2, new Date(2026, 9, 1), "ODENDI", 92000, 8000, 12000),
+        schedule(3, new Date(2026, 10, 1), "BEKLIYOR", 84000, 8000, 12000),
+      ] as never,
+    });
+    const odemeGunu = valuateDebt(sonraki, gold, DEFAULT_SETTINGS, new Date(2026, 9, 1));
+    expect(odemeGunu.principalTL).toBe(92000);
+    expect(odemeGunu.accruedInterestTL).toBe(0);
+    expect(odemeGunu.outstandingTL).toBe(92000);
   });
 
   it("REGRESYON: kurumu olmayan borçlar kırılımdan düşmez", () => {

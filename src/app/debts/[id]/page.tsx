@@ -206,6 +206,8 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
       // Kalan anapara sunucunun degerlemesinden gelir; ekrandaki "Kalan
       // Anapara" karti ile ayni rakam olmasi icin sart.
       remainingPrincipal: valuation?.principalTL ?? remainingPrincipal,
+      // Son taksitten bugüne isleyen faiz; kapama tutari her gun bu kadar artar.
+      accruedInterest: valuation?.accruedInterestTL ?? 0,
       amortizationSchedule: formattedSchedule,
       paidInstallmentCount: paidCount,
       // Slider yüzde gösterir, motor oranı kesir olarak bekler.
@@ -219,13 +221,22 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
    * %5 rate.
    */
   const kmhAccrual = useMemo(() => {
-    if (!valuation || valuation.type !== "EK_HESAP_KMH") return null;
+    if (!valuation) return null;
+    // KMH'de de taksitli kredide de faiz taksit/kesim arasinda isler; ikisinde
+    // de bugun kapatma tutari her gun buyur.
+    const supported = valuation.type === "EK_HESAP_KMH" || valuation.type === "TAKSITLI_KREDI";
+    if (!supported || valuation.accruedInterestTL <= 0) return null;
+
     return {
+      isLoan: valuation.type === "TAKSITLI_KREDI",
       accruedTL: valuation.accruedInterestTL,
       dailyTL: valuation.dailyAccrualTL,
       monthlyTL: valuation.dailyAccrualTL * 30,
-      days: valuation.overdraftDetail?.accrualDays ?? 0,
-      lastChargeDate: valuation.overdraftDetail?.lastInterestChargeDate ?? null,
+      days: valuation.accrualDays,
+      lastChargeDate:
+        valuation.type === "EK_HESAP_KMH"
+          ? (valuation.overdraftDetail?.lastInterestChargeDate ?? null)
+          : valuation.accrualSince,
       payoffTL: valuation.outstandingTL,
     };
   }, [valuation]);
@@ -503,7 +514,8 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
                 {formatCurrency(earlyPayoff.totalPayoffAmount)}
               </p>
               <p className="text-[10px] text-zinc-500">
-                Kalan Anapara + {formatCurrency(earlyPayoff.penaltyFee)} Komisyon
+                Kalan anapara + {formatCurrency(earlyPayoff.accruedInterest)} işlemiş
+                faiz + {formatCurrency(earlyPayoff.penaltyFee)} komisyon
               </p>
             </div>
 
@@ -535,6 +547,13 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
               İşleyen Faiz
             </h3>
           </div>
+          {kmhAccrual.isLoan && (
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Toplam borcunuzda bu kredi <strong className="text-amber-300">bugün
+              kapatsanız ödeyeceğiniz tutarla</strong> sayılır; taksit ödenene kadar
+              her gün faiz işlediği için rakam her gün artar.
+            </p>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div>
               <p className="text-zinc-400">Şu ana kadar işleyen</p>
@@ -552,6 +571,11 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
               <p className="text-sm font-semibold text-amber-300 font-mono tabular-nums">
                 {formatCurrency(kmhAccrual.dailyTL)} / gün
               </p>
+              {kmhAccrual.isLoan && kmhAccrual.dailyTL === 0 && (
+                <p className="text-[10px] text-zinc-500">
+                  Bir taksitlik faiz tavanına ulaşıldı
+                </p>
+              )}
             </div>
             <div>
               <p className="text-zinc-400">30 günlük maliyet</p>
@@ -560,7 +584,9 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
               </p>
             </div>
             <div>
-              <p className="text-zinc-400">Bugün kapatılırsa</p>
+              <p className="text-zinc-400">
+                {kmhAccrual.isLoan ? "Bugünkü kapama tutarı" : "Bugün kapatılırsa"}
+              </p>
               <p className="text-sm font-semibold text-white font-mono tabular-nums">
                 {formatCurrency(kmhAccrual.payoffTL)}
               </p>
