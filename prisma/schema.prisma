@@ -1,0 +1,352 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InstitutionType {
+  BANKA
+  KATILIM
+  FINANSMAN
+  KISI
+  KURUM
+  DIGER
+}
+
+enum DebtType {
+  TAKSITLI_KREDI
+  KREDI_KARTI
+  EK_HESAP_KMH
+  ALTIN_BORCU
+  KISI_BORCU
+  SENET_CEK
+  DUZENLI_ODEME
+  DIGER
+}
+
+enum LoanSubType {
+  IHTIYAC
+  TASIT
+  KONUT
+  EGITIM
+  KOBI
+}
+
+enum DebtStatus {
+  AKTIF
+  KAPANDI
+  GECIKMIS
+  ERTELENDI
+}
+
+enum Currency {
+  TRY
+  USD
+  EUR
+  XAU
+}
+
+enum AccrualBasis {
+  GUNLUK
+}
+
+enum GoldType {
+  GRAM_ALTIN
+  CEYREK
+  YARIM
+  TAM
+  ATA
+  GREMSE
+  BILEZIK_22
+  ZINCIR_21_HALEP
+  BILEZIK_14
+  BILEZIK_18
+  KULCE
+  DIGER
+}
+
+enum GoldPriceSource {
+  CANLI
+  MANUEL
+}
+
+enum DocumentType {
+  SENET
+  CEK
+}
+
+enum PaymentFrequency {
+  AYLIK
+  UC_AYLIK
+  ALTI_AYLIK
+  YILLIK
+}
+
+enum InstallmentStatus {
+  BEKLIYOR
+  ODENDI
+  GECIKMIS
+}
+
+enum PaymentMethod {
+  NAKIT
+  HAVALE
+  KART
+  BANKA_KARTI
+  KREDI_KARTI
+  OTOMATIK_ODEME
+  DIGER
+}
+
+enum CategoryType {
+  GELIR
+  GIDER
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String?
+  currency     String     @default("TRY")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  debts        Debt[]
+  incomes      Income[]
+  expenses     Expense[]
+  categories   Category[]
+  settings     Setting[]
+}
+
+model Institution {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  type      InstitutionType @default(BANKA)
+  logoUrl   String?
+  color     String?
+  debts     Debt[]
+  createdAt DateTime        @default(now())
+}
+
+model Debt {
+  id                      String              @id @default(cuid())
+  userId                  String
+  user                    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionId           String?
+  institution             Institution?        @relation(fields: [institutionId], references: [id])
+  type                    DebtType
+  title                   String
+  description             String?
+  status                  DebtStatus          @default(AKTIF)
+  currency                Currency            @default(TRY)
+  startDate               DateTime
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  notes                   String?
+  tags                    String[]            @default([])
+  color                   String?
+  isArchived              Boolean             @default(false)
+
+  // 1) TAKSITLI_KREDI
+  loanSubType             LoanSubType?
+  principal               Decimal?            @db.Decimal(18, 4)
+  interestRateMonthly     Decimal?            @db.Decimal(8, 4)
+  installmentCount        Int?
+  installmentAmount       Decimal?            @db.Decimal(18, 4)
+  firstPaymentDate        DateTime?
+  paymentDayOfMonth       Int?
+  paidInstallments        Int?                @default(0)
+  includeKKDF             Boolean?            @default(true)
+  kkdfRate                Decimal?            @default(0.15) @db.Decimal(5, 4)
+  includeBSMV             Boolean?            @default(true)
+  bsmvRate                Decimal?            @default(0.15) @db.Decimal(5, 4)
+  earlyPayoffEnabled      Boolean?            @default(false)
+  loanAccountNo           String?
+
+  // 2) KREDI_KARTI
+  cardName                String?
+  last4                   String?
+  creditLimit             Decimal?            @db.Decimal(18, 4)
+  currentStatementBalance Decimal?            @db.Decimal(18, 4)
+  minimumPayment          Decimal?            @db.Decimal(18, 4)
+  statementDay            Int?
+  dueDay                  Int?
+  contractualInterestMonthly Decimal?         @db.Decimal(8, 4)
+  overdueInterestMonthly  Decimal?            @db.Decimal(8, 4)
+  installmentsOnCard      Json?
+
+  // 3) EK_HESAP_KMH
+  limit                   Decimal?            @db.Decimal(18, 4)
+  usedAmount              Decimal?            @db.Decimal(18, 4)
+  lastInterestChargeDate  DateTime?
+  accrualBasis            AccrualBasis?       @default(GUNLUK)
+
+  // 4) ALTIN_BORCU
+  goldType                GoldType?
+  quantity                Decimal?            @db.Decimal(12, 4)
+  grams                   Decimal?            @db.Decimal(12, 4)
+  karat                   Int?
+  priceSource             GoldPriceSource?    @default(CANLI)
+  manualUnitPrice         Decimal?            @db.Decimal(18, 4)
+  premiumTL               Decimal?            @default(0) @db.Decimal(12, 4)
+  creditorName            String?
+  dueDate                 DateTime?
+  isInterestFree          Boolean?            @default(true)
+
+  // 5) KISI_BORCU
+  creditorPhone           String?
+  amount                  Decimal?            @db.Decimal(18, 4)
+  hasInterest             Boolean?            @default(false)
+  installmentPlan         Json?
+
+  // 6) SENET_CEK
+  documentType            DocumentType?
+  documentNo              String?
+  drawee                  String?
+
+  // 7) DUZENLI_ODEME
+  frequency               PaymentFrequency?
+  nextDueDate             DateTime?
+  autoCreateExpense       Boolean?            @default(false)
+
+  // İlişkiler
+  installmentSchedules    InstallmentSchedule[]
+  payments                Payment[]
+  relatedExpenses         Expense[]
+
+  @@index([userId, status])
+  @@index([institutionId])
+}
+
+model InstallmentSchedule {
+  id                 String            @id @default(cuid())
+  debtId             String
+  debt               Debt              @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  installmentNo      Int
+  dueDate            DateTime
+  totalAmount        Decimal           @db.Decimal(18, 4)
+  principalPart      Decimal           @db.Decimal(18, 4)
+  interestPart       Decimal           @db.Decimal(18, 4)
+  remainingPrincipal Decimal           @db.Decimal(18, 4)
+  status             InstallmentStatus @default(BEKLIYOR)
+  paidAt             DateTime?
+  paidAmount         Decimal?          @db.Decimal(18, 4)
+
+  payments           Payment[]
+
+  @@unique([debtId, installmentNo])
+  @@index([debtId, status])
+}
+
+model Payment {
+  id            String               @id @default(cuid())
+  debtId        String
+  debt          Debt                 @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  installmentId String?
+  installment   InstallmentSchedule? @relation(fields: [installmentId], references: [id], onDelete: SetNull)
+  amount        Decimal              @db.Decimal(18, 4)
+  paidAt        DateTime             @default(now())
+  method        PaymentMethod        @default(HAVALE)
+  principalPart Decimal?             @db.Decimal(18, 4)
+  interestPart  Decimal?             @db.Decimal(18, 4)
+  note          String?
+
+  @@index([debtId])
+  @@index([installmentId])
+}
+
+model Income {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category  @relation(fields: [categoryId], references: [id])
+  amount         Decimal   @db.Decimal(18, 4)
+  currency       Currency  @default(TRY)
+  date           DateTime
+  source         String
+  isRecurring    Boolean   @default(false)
+  recurrenceRule String?
+  note           String?
+  attachmentUrl  String?
+  isArchived     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, isArchived])
+}
+
+model Expense {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId    String
+  category      Category      @relation(fields: [categoryId], references: [id])
+  subcategoryId String?
+  subcategory   Category?     @relation("ExpenseSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  amount        Decimal       @db.Decimal(18, 4)
+  currency      Currency      @default(TRY)
+  date          DateTime
+  merchant      String?
+  paymentMethod PaymentMethod @default(KART)
+  relatedDebtId String?
+  relatedDebt   Debt?         @relation(fields: [relatedDebtId], references: [id], onDelete: SetNull)
+  note          String?
+  isArchived    Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, isArchived])
+  @@index([relatedDebtId])
+}
+
+model Category {
+  id        String       @id @default(cuid())
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  type      CategoryType
+  parentId  String?
+  parent    Category?    @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Category[]   @relation("CategoryHierarchy")
+  icon      String?
+  color     String?
+  isSystem  Boolean      @default(false)
+
+  incomes      Income[]
+  expenses     Expense[]
+  subExpenses  Expense[]    @relation("ExpenseSubcategory")
+
+  @@index([userId, type])
+}
+
+model GoldPriceSnapshot {
+  id        String   @id @default(cuid())
+  goldType  GoldType
+  karat     Int
+  buyPrice  Decimal  @db.Decimal(18, 4)
+  sellPrice Decimal  @db.Decimal(18, 4)
+  source    String
+  fetchedAt DateTime @default(now())
+
+  @@index([goldType, fetchedAt])
+  @@index([fetchedAt])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
+}
