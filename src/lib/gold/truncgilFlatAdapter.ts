@@ -31,8 +31,11 @@ export class TruncgilFlatGoldAdapter implements GoldPriceProvider {
 
       const data = (await res.json()) as Record<string, unknown>;
       // Flat payload: strip the metadata keys and treat the rest as quotes.
-      const { Update_Date: _u, Meta_Data: _m, ...rates } = data;
-      return mapTruncgilRates(rates as never);
+      const { Update_Date: updateDate, Meta_Data: _m, ...rates } = data;
+      return mapTruncgilRates(
+        rates as never,
+        typeof updateDate === "string" ? updateDate : null
+      );
     } finally {
       clearTimeout(timeout);
     }

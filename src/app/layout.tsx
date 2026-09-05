@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { PwaRegister } from "@/components/shared/PwaRegister";
+import { LiveDataProvider } from "@/components/live/LiveDataProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -19,6 +20,15 @@ export const metadata: Metadata = {
   description:
     "Kişisel borç, kredi kartı, taksitli kredi, KMH ve altın borçlarınızı canlı kurlarla takip edin.",
   manifest: "/manifest.json",
+  applicationName: "BorçÖlçme",
+  formatDetection: { telephone: false },
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/icons/icon-180x180.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -54,24 +64,32 @@ export default async function RootLayout({
           Ana İçeriğe Atla
         </a>
 
-        <div className="flex min-h-[100dvh] flex-col">
-          <PwaRegister />
-          <Navbar userEmail={session?.email} />
+        <LiveDataProvider isAuthenticated={Boolean(session)}>
+          <div className="flex min-h-[100dvh] flex-col">
+            <PwaRegister />
+            {session && <Navbar userEmail={session.email} />}
 
-          <div className="flex flex-1">
-            <Sidebar />
-            <main
-              id="main-content"
-              tabIndex={-1}
-              role="main"
-              className="flex-1 pb-20 md:pb-8 p-4 md:p-8 max-w-7xl mx-auto w-full overflow-x-hidden focus:outline-none"
-            >
-              {children}
-            </main>
+            <div className="flex flex-1">
+              {session && <Sidebar />}
+              <main
+                id="main-content"
+                tabIndex={-1}
+                role="main"
+                /* Alt gezinme çubuğu + iOS home indicator için mobilde ekstra boşluk */
+                className={
+                  session
+                    ? /* Alt gezinme + iOS home indicator icin mobilde ekstra bosluk */
+                      "mx-auto w-full max-w-7xl flex-1 overflow-x-hidden px-3 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] pt-4 focus:outline-none sm:px-4 md:px-8 md:pb-10 md:pt-8"
+                    : "flex w-full flex-1 flex-col focus:outline-none"
+                }
+              >
+                {children}
+              </main>
+            </div>
+
+            {session && <MobileNav />}
           </div>
-
-          <MobileNav />
-        </div>
+        </LiveDataProvider>
 
         <Toaster
           theme="dark"

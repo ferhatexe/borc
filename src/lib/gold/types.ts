@@ -35,11 +35,31 @@ export interface GoldPriceRecord {
   effectiveGrams?: number;
 }
 
+/** One troy ounce in grams - used to derive the ONS price. */
+export const GRAMS_PER_TROY_OUNCE = 31.1034768;
+
+/** Currencies shown on the dashboard rate strip. */
+export const TRACKED_CURRENCIES = ["USD", "EUR", "GBP", "CHF", "SAR", "AED"] as const;
+
+export interface CurrencyRate {
+  code: string;
+  name: string;
+  buyPrice: number;
+  sellPrice: number;
+  /** Daily change in percent, when the provider publishes one. */
+  changePercent: number | null;
+}
+
 export interface GoldProviderResult {
   /** Gram "has altın" (pure) prices - the basis of every gram based calculation. */
   pureGramBuyTL: number;
   pureGramSellTL: number;
+  /** Daily change of the pure gram price, in percent. */
+  pureGramChangePercent: number | null;
   prices: GoldPriceRecord[];
+  currencies: CurrencyRate[];
+  /** Provider's own timestamp, when it publishes one. */
+  providerUpdatedAt: string | null;
 }
 
 export interface GoldPriceProvider {
@@ -51,10 +71,27 @@ export interface GoldPriceProvider {
 
 export type GoldSourceKind = "LIVE" | "SNAPSHOT" | "MANUAL";
 
+/** Gold per troy ounce in USD. */
+export interface OunceQuote {
+  usd: number;
+  tryValue: number;
+  /**
+   * "DERIVED" means it was computed as (gram has altın TL / USD-TRY) x 31.1035
+   * rather than quoted directly. The UI labels it so the number is never
+   * mistaken for a primary market quote.
+   */
+  basis: "DERIVED" | "QUOTED";
+}
+
 export interface GoldSyncResult {
   prices: GoldPriceRecord[];
   pureGramBuyTL: number;
   pureGramSellTL: number;
+  pureGramChangePercent: number | null;
+  currencies: CurrencyRate[];
+  /** null when there is no USD rate to derive it from. */
+  ounce: OunceQuote | null;
+  providerUpdatedAt: string | null;
   source: string;
   sourceKind: GoldSourceKind;
   fetchedAt: string;

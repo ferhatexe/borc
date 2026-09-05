@@ -339,6 +339,20 @@ model GoldPriceSnapshot {
   @@index([fetchedAt])
 }
 
+model CurrencySnapshot {
+  id        String   @id @default(cuid())
+  code      String
+  name      String
+  buyPrice  Decimal  @db.Decimal(18, 6)
+  sellPrice Decimal  @db.Decimal(18, 6)
+  changePct Decimal? @db.Decimal(8, 4)
+  source    String
+  fetchedAt DateTime @default(now())
+
+  @@index([code, fetchedAt])
+  @@index([fetchedAt])
+}
+
 model Setting {
   id        String   @id @default(cuid())
   userId    String

@@ -96,6 +96,82 @@ Gram bazlı  : TL = (Gram × Milyem × Has Altın Gram Satış) / 1000 + (Gram �
 
 ---
 
+## Canlı takip
+
+Uygulama açıkken rakamlar iki ayrı saatle güncel tutulur:
+
+- **60 saniyede bir** `/api/live` yoklanır: altın yeniden fiyatlanır, kurlar tazelenir,
+  portföy toplamları ve gecikmiş kalemler yeniden hesaplanır. Böylece altın kuru
+  değiştiğinde **toplam borcunuz kendiliğinden değişir**.
+- **Saniyede bir** KMH / kredi kartı işleyen faizi yerel olarak ilerletilir
+  (sunucudan gelen günlük tahakkuk değerine göre), böylece sayaç gözle görülür şekilde artar.
+
+Sekme arka plana alındığında yoklama durur, geri dönüldüğünde anında bir tazeleme yapılır —
+telefonda gereksiz pil ve veri tüketilmez. Tüm uygulamada **tek bir yoklama** çalışır
+(`LiveDataProvider`); üst şerit, özet kartları, alt menü rozeti ve gecikme ekranı aynı veriyi paylaşır.
+
+### Piyasa şeridi
+
+Panelin üstündeki şerit şunları gösterir: gram has altın (günlük % değişimle),
+**ONS altın**, USD/TRY, EUR/TRY, çeyrek, 22 ayar, 21 ayar ve GBP/SAR gibi ek kurlar.
+Mobilde tek parmakla yatay kaydırılır, masaüstünde satıra yayılır.
+
+> **ONS notu:** Sağlayıcının `ONS` alanı 0 geliyor, bu yüzden değer
+> `gram has altın TL ÷ USD/TRY × 31,1035` ile **hesaplanır** ve arayüzde
+> "hesaplanan" etiketiyle gösterilir — doğrudan piyasa kotasyonu gibi sunulmaz.
+
+Kurlar da `CurrencySnapshot` tablosuna yazılır; canlı servise ulaşılamadığında
+son kayıtlı kurlar uyarı bandıyla birlikte kullanılır.
+
+---
+
+## Gecikmiş ödemeler
+
+Vadesi geçmiş ve hâlâ ödenmemiş her kalem `/overdue` ekranında, en eskisi başta olacak
+şekilde listelenir. Gecikme süresine göre renklenir (7 günden az sarı, 7+ turuncu, 30+ kırmızı)
+ve her satırda tek dokunuşla **"Ödendi"** işaretlenebilir — bu işlem hem ödeme kaydını
+hem eşleşen gider kaydını oluşturur.
+
+Aynı liste panelin en üstünde de (ilk 4 kalem) görünür ve mobil alt menüdeki
+"Geciken" sekmesinde canlı sayı rozeti taşır. 30 günlük ufuk gecikmiş kalemleri
+kapsamaz: 60 gün önce vadesi dolmuş bir taksit de listede kalır.
+
+---
+
+## Görsel kimlik
+
+Tüm görseller bu proje için üretilmiştir; hiçbir bankanın logosu kullanılmaz.
+
+- **Uygulama ikonu** (`public/icons/icon.svg`): borcun erimesini ölçen bir gösterge yayı,
+  altın sikkesi ve azalan borç çubuklarından oluşan özgün bir işaret. Favicon, PWA
+  ikonları (192/512), maskable varyant ve Apple touch ikonu bu SVG'den üretilir
+  (`sharp` ile; yeniden üretmek için ikonu düzenleyip PNG'leri yeniden oluşturun).
+- **Kurum rozetleri** (`src/components/shared/InstitutionLogo.tsx`): gerçek banka logoları
+  marka hakkıyla korunduğu ve uygulamayla dağıtılamayacağı için, her kurum
+  **kendi tasarımımız** olan bir monogram rozeti alır. Rozet üç girdiden deterministik
+  olarak üretilir: kurumun rengi (Ayarlar'dan düzenlenebilir), adının hash'inden seçilen
+  geometrik motif (kemer, sütun, kasa, yörünge, dalga, elmas, ızgara, yükseliş) ve baş harfleri.
+  Tamamı satır içi SVG'dir: ağ isteği yok, her boyutta net, koyu temaya uyumlu.
+
+---
+
+## Mobil kullanım
+
+Uygulama tek elle telefonda kullanılacak şekilde düzenlenmiştir:
+
+- Alt gezinme çubuğu: Özet · Borçlar · **Ekle** · Geciken (rozetli) · Gelir/Gider.
+  Tüm hedefler en az 44px yüksekliğinde, çubuk iOS home indicator'ın üzerinde
+  (`env(safe-area-inset-bottom)`).
+- Tutarlar `clamp()` ile kart genişliğine göre ölçeklenir; yedi haneli bir bakiye
+  375px ekranda bile tek satırda kalır.
+- Piyasa şeridi yatay snap-scroll, kurum kırılımı dokunmatik accordion.
+- `prefers-reduced-motion` açıkken canlı sayaç saniyede bir günceller ve
+  yanıp sönen göstergeler durur.
+- PWA kısayolları: Borç Ekle, Gecikmiş Ödemeler, Gider Ekle.
+- Oturum açılmamışken navbar/alt menü gizlenir.
+
+---
+
 ## Ayarlanabilir oranlar
 
 Hiçbir faiz/vergi oranı koda gömülü değildir. Hepsi `Setting` tablosundan okunur ve
@@ -145,6 +221,7 @@ Motorda oran birimi **açıkça sabitlenmiştir**, büyüklüğe bakarak tahmin 
   - *Ekleyerek*: mevcut kayıtlar korunur, yedektekiler eklenir.
   - *Değiştirerek*: mevcut kayıtlar silinir (çift onay ister).
   Tamamı tek bir transaction içinde çalışır; hata olursa hiçbir şey değişmez.
+- **Canlı veri:** `GET /api/live` — toplamlar, piyasa ve gecikmiş kalemler tek pakette.
 - **CSV dışa aktarım:** `GET /api/reports/export?type=debts|transactions|summary`
   (Excel uyumu için UTF-8 BOM ve `;` ayracı).
 

@@ -37,6 +37,8 @@ interface GoldLiveRateCardProps {
   /** Prices resolved on the server, so the card renders correct on first paint. */
   status: GoldStatus | null;
   error: string | null;
+  /** Live re-priced total from the polling hook; falls back to the row sum. */
+  liveGoldDebtTL?: number;
 }
 
 const SOURCE_BADGE: Record<string, { label: string; className: string }> = {
@@ -51,7 +53,12 @@ const SOURCE_BADGE: Record<string, { label: string; className: string }> = {
  * Values are computed on the server (with the user's margin and millesimal
  * settings) and passed in, so nothing is recalculated with defaults here.
  */
-export function GoldLiveRateCard({ goldDebts = [], status, error }: GoldLiveRateCardProps) {
+export function GoldLiveRateCard({
+  goldDebts = [],
+  status,
+  error,
+  liveGoldDebtTL,
+}: GoldLiveRateCardProps) {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -77,7 +84,8 @@ export function GoldLiveRateCard({ goldDebts = [], status, error }: GoldLiveRate
     }
   };
 
-  const totalGoldDebtTL = goldDebts.reduce((sum, d) => sum + d.totalTL, 0);
+  const totalGoldDebtTL =
+    liveGoldDebtTL ?? goldDebts.reduce((sum, d) => sum + d.totalTL, 0);
   const prices = status?.prices ?? [];
   const badge = SOURCE_BADGE[status?.sourceKind ?? ""] ?? SOURCE_BADGE.SNAPSHOT;
 

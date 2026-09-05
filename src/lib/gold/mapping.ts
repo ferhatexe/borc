@@ -1,5 +1,5 @@
 import { DEFAULT_GOLD_MILLESIMAL, DEFAULT_GOLD_UNIT_GRAMS } from "@/lib/settings/defaults";
-import { GoldPriceRecord, GoldProviderResult } from "./types";
+import { CurrencyRate, GoldPriceRecord, GoldProviderResult } from "./types";
 
 export interface RawQuote {
   buy: number;
@@ -29,9 +29,27 @@ function derivePerGram(pure: RawQuote, karat: keyof typeof DEFAULT_GOLD_MILLESIM
   };
 }
 
+/** Turkish display names for the currencies shown on the rate strip. */
+export const CURRENCY_NAMES: Record<string, string> = {
+  USD: "Amerikan Doları",
+  EUR: "Euro",
+  GBP: "İngiliz Sterlini",
+  CHF: "İsviçre Frangı",
+  SAR: "Suudi Riyali",
+  AED: "BAE Dirhemi",
+  JPY: "Japon Yeni",
+  CAD: "Kanada Doları",
+  AUD: "Avustralya Doları",
+  RUB: "Rus Rublesi",
+};
+
 export interface GoldQuoteSet {
   pure: RawQuote;
   gram?: RawQuote | null;
+  /** Daily change of the pure gram price, in percent. */
+  pureChangePercent?: number | null;
+  currencies?: CurrencyRate[];
+  providerUpdatedAt?: string | null;
   ceyrek?: RawQuote | null;
   yarim?: RawQuote | null;
   tam?: RawQuote | null;
@@ -111,7 +129,10 @@ export function buildGoldRecords(q: GoldQuoteSet): GoldProviderResult {
   return {
     pureGramBuyTL: round2(pure.buy),
     pureGramSellTL: round2(pure.sell),
+    pureGramChangePercent: q.pureChangePercent ?? null,
     prices: records.filter((r): r is GoldPriceRecord => r !== null),
+    currencies: q.currencies ?? [],
+    providerUpdatedAt: q.providerUpdatedAt ?? null,
   };
 }
 

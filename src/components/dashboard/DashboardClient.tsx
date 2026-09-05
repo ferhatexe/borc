@@ -2,44 +2,35 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MoneyDisplay } from "@/components/shared/MoneyDisplay";
 import {
-  CreditCard,
-  CalendarCheck,
-  TrendUp,
-  Lightning,
   Bank,
   ArrowRight,
   PlusCircle,
   CaretDown,
-  WarningCircle,
-  Clock,
+  WarningOctagon,
 } from "@phosphor-icons/react";
 import { OverdraftLiveTicker, type OverdraftDebtSummary } from "./OverdraftLiveTicker";
-import { GoldLiveRateCard, type GoldStatus, type GoldDebtSummary } from "./GoldLiveRateCard";
+import { GoldLiveRateCard, type GoldDebtSummary } from "./GoldLiveRateCard";
 import { DebtTrajectoryChart } from "./DebtTrajectoryChart";
 import { ExpenseCategoryDonut } from "./ExpenseCategoryDonut";
 import { ScenarioSimulatorCard } from "./ScenarioSimulatorCard";
-import { formatCurrency, formatDate, formatPercent } from "@/lib/formatters";
-import type { InstitutionBreakdown, UpcomingPayment } from "@/lib/finance/debtValuation";
+import { LiveMarketStrip } from "@/components/live/LiveMarketStrip";
+import { LiveSummaryCards } from "@/components/live/LiveSummaryCards";
+import { OverdueList } from "@/components/live/OverdueList";
+import { UpcomingList } from "@/components/live/UpcomingList";
+import { InstitutionLogo } from "@/components/shared/InstitutionLogo";
+import { formatCurrency, formatPercent } from "@/lib/formatters";
+import { useLiveData } from "@/components/live/LiveDataProvider";
+import type { LivePayload } from "@/lib/hooks/useLivePortfolio";
+import type { InstitutionBreakdown } from "@/lib/finance/debtValuation";
 import type { AnalyticsSummary } from "@/lib/db/reports";
 import type { LoanProjectionInput } from "@/lib/finance/scenarioProjection";
 
 interface DashboardClientProps {
-  totalDebtTL: number;
-  totalAccruedInterestTL: number;
-  totalDailyAccrualTL: number;
-  debtsCount: number;
-  thisMonthPayableTL: number;
-  overdueTL: number;
-  thisMonthIncomeTL: number;
-  thisMonthExpenseTL: number;
+  initialLive: LivePayload;
   institutionBreakdown: InstitutionBreakdown[];
-  upcomingPayments: UpcomingPayment[];
   kmhDebts?: OverdraftDebtSummary[];
   goldDebts?: GoldDebtSummary[];
-  goldStatus: GoldStatus | null;
-  goldError: string | null;
   analyticsSummary?: AnalyticsSummary | null;
   loans?: Array<LoanProjectionInput & { remainingMonths: number }>;
   projectedDebtFreeDate: string | null;
@@ -57,342 +48,271 @@ const DEBT_TYPE_LABELS: Record<string, string> = {
 };
 
 export function DashboardClient({
-  totalDebtTL,
-  totalAccruedInterestTL,
-  totalDailyAccrualTL,
-  debtsCount,
-  thisMonthPayableTL,
-  overdueTL,
-  thisMonthIncomeTL,
-  thisMonthExpenseTL,
+  initialLive,
   institutionBreakdown,
-  upcomingPayments,
   kmhDebts = [],
   goldDebts = [],
-  goldStatus,
-  goldError,
   analyticsSummary,
   loans = [],
   projectedDebtFreeDate,
 }: DashboardClientProps) {
-  const netCashFlow = thisMonthIncomeTL - (thisMonthExpenseTL + thisMonthPayableTL);
+  // Server-rendered payload paints immediately; the shared provider keeps it
+  // live from there, so there is exactly one poll for the whole app.
+  const live = useLiveData();
+  const data = live?.data ?? null;
+  const isRefreshing = live?.isRefreshing ?? false;
+  const error = live?.error ?? null;
+  const lastUpdatedAt = live?.lastUpdatedAt ?? null;
+  const refresh = live?.refresh ?? (async () => {});
+  const tickedInterestTL = live?.tickedInterestTL ?? 0;
+  const liveTotalDebtTL =
+    (data?.totals.totalDebtTL ?? initialLive.totals.totalDebtTL) + tickedInterestTL;
+
   const [openInstitution, setOpenInstitution] = useState<string | null>(null);
 
+  const totals = data?.totals ?? initialLive.totals;
+  const market = data?.market ?? initialLive.market;
+  const goldError = data?.goldError ?? initialLive.goldError;
+  const overduePayments = data?.overduePayments ?? initialLive.overduePayments;
+  const upcomingPayments = (data?.upcomingPayments ?? initialLive.upcomingPayments).filter(
+    (p) => !p.isOverdue
+  );
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+    <div className="space-y-5 pb-4">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-white sm:text-2xl">
             Finansal Bakış
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Anlık borç durumu, yaklaşan vadeler ve nakit akışınız.
+          <p className="mt-0.5 text-[11px] text-zinc-400 sm:text-xs">
+            Canlı borç, kur ve altın takibi
           </p>
         </div>
 
         <Link
           href="/debts/new"
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-zinc-950 shadow-[0_0_20px_rgba(16,185,129,0.25)] transition-all hover:brightness-110 touch-feedback"
+          className="flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 text-xs font-bold text-zinc-950 shadow-[0_0_20px_rgba(16,185,129,0.25)] transition active:scale-95"
         >
-          <PlusCircle size={18} weight="bold" />
+          <PlusCircle size={17} weight="bold" />
           <span>Borç Ekle</span>
         </Link>
-      </div>
+      </header>
 
-      {/* Altın fiyatları eski veya alınamıyorsa açıkça uyar (şartname §7). */}
-      {(goldError || goldStatus?.warning) && (
-        <div
-          role="status"
-          className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-200"
-        >
-          <WarningCircle size={18} weight="fill" className="shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold">Altın fiyat uyarısı</p>
-            <p className="text-amber-200/80 mt-0.5">{goldError ?? goldStatus?.warning}</p>
-            <Link href="/settings" className="mt-1 inline-block underline hover:text-amber-100">
-              Ayarlardan manuel fiyat girebilirsiniz
+      {/* Canlı kur / altın / ONS şeridi */}
+      <LiveMarketStrip
+        market={market}
+        error={error ?? goldError}
+        isRefreshing={isRefreshing}
+        onRefresh={() => void refresh(true)}
+        lastUpdatedAt={lastUpdatedAt}
+      />
+
+      {/* Canlı özet kartları */}
+      <LiveSummaryCards
+        totals={totals}
+        liveTotalDebtTL={liveTotalDebtTL}
+        tickedInterestTL={tickedInterestTL}
+      />
+
+      {/* Ödemesi geçmiş kalemler - en üstte, çünkü acil olan bu */}
+      {overduePayments.length > 0 && (
+        <section aria-labelledby="overdue-heading">
+          <div className="mb-2.5 flex items-center justify-between gap-2 px-0.5">
+            <h2
+              id="overdue-heading"
+              className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-rose-300"
+            >
+              <WarningOctagon size={14} weight="fill" />
+              Ödemesi geçti — ödeme yapılmadı
+            </h2>
+            <Link
+              href="/overdue"
+              className="flex items-center gap-1 text-[11px] font-medium text-rose-300 hover:text-rose-200"
+            >
+              Tümü <ArrowRight size={12} />
             </Link>
           </div>
-        </div>
+          <OverdueList
+            payments={overduePayments}
+            limit={4}
+            onPaid={() => void refresh(true)}
+          />
+        </section>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">Toplam Borç</span>
-            <div className="rounded-lg bg-red-500/10 p-2 text-red-400 border border-red-500/20">
-              <CreditCard size={20} weight="duotone" />
-            </div>
-          </div>
-          <MoneyDisplay amount={totalDebtTL} type="debt" size="xl" />
-          <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-500">
-            <span>{debtsCount} aktif borç kaydı</span>
-            {totalAccruedInterestTL > 0 && (
-              <span className="text-amber-400/90" title="Henüz tahakkuk etmemiş işleyen faiz">
-                +{formatCurrency(totalAccruedInterestTL)} işleyen faiz
-              </span>
-            )}
-          </div>
-        </div>
+      {kmhDebts.length > 0 && (
+        <OverdraftLiveTicker
+          kmhDebts={kmhDebts}
+          totalDailyAccrualTL={totals.dailyAccrualTL}
+        />
+      )}
 
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">Bu Ay Ödenecek</span>
-            <div className="rounded-lg bg-amber-500/10 p-2 text-amber-400 border border-amber-500/20">
-              <CalendarCheck size={20} weight="duotone" />
-            </div>
-          </div>
-          <MoneyDisplay amount={thisMonthPayableTL} type="neutral" size="xl" />
-          <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-500">
-            <span>Vadesi bu ay, ödenmemiş</span>
-            {overdueTL > 0 && (
-              <span className="text-red-400 font-semibold">
-                {formatCurrency(overdueTL)} gecikmiş
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">Bu Ay Net Gelir</span>
-            <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 border border-emerald-500/20">
-              <TrendUp size={20} weight="duotone" />
-            </div>
-          </div>
-          <MoneyDisplay amount={thisMonthIncomeTL - thisMonthExpenseTL} type="income" size="xl" />
-          <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-500">
-            <span className="text-emerald-400">{formatCurrency(thisMonthIncomeTL)} gelir</span>
-            <span className="text-red-400">{formatCurrency(thisMonthExpenseTL)} gider</span>
-          </div>
-        </div>
-
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">Nakit Akışı</span>
-            <div className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 border border-cyan-500/20">
-              <Lightning size={20} weight="duotone" />
-            </div>
-          </div>
-          <MoneyDisplay amount={netCashFlow} type={netCashFlow >= 0 ? "income" : "debt"} size="xl" />
-          <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-500">
-            <span>Gelir − (Gider + Borç)</span>
-            <span className={netCashFlow >= 0 ? "text-emerald-400" : "text-red-400"}>
-              {netCashFlow >= 0 ? "Pozitif denge" : "Açık var"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {kmhDebts.length > 0 && (
-          <OverdraftLiveTicker kmhDebts={kmhDebts} totalDailyAccrualTL={totalDailyAccrualTL} />
-        )}
-        <GoldLiveRateCard goldDebts={goldDebts} status={goldStatus} error={goldError} />
-      </div>
+      <GoldLiveRateCard
+        goldDebts={goldDebts}
+        status={
+          market
+            ? {
+                source: market.source,
+                sourceKind: market.sourceKind,
+                fetchedAt: market.fetchedAt,
+                warning: market.warning,
+                ageMinutes: market.ageMinutes,
+                pureGramSellTL: market.pureGramSellTL,
+                prices: market.prices,
+              }
+            : null
+        }
+        error={goldError}
+        liveGoldDebtTL={totals.goldDebtTL}
+      />
 
       {analyticsSummary && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <DebtTrajectoryChart
               data={analyticsSummary.monthlyProjection12Months}
               projectedDebtFreeDate={projectedDebtFreeDate}
             />
           </div>
-          <div>
-            <ExpenseCategoryDonut
-              categories={analyticsSummary.expenseCategoryBreakdown}
-              totalExpenseTL={analyticsSummary.totalMonthlyExpenseTL}
-            />
-          </div>
+          <ExpenseCategoryDonut
+            categories={analyticsSummary.expenseCategoryBreakdown}
+            totalExpenseTL={analyticsSummary.totalMonthlyExpenseTL}
+          />
         </div>
       )}
 
       {loans.length > 0 && <ScenarioSimulatorCard loans={loans} />}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Kurum bazlı kırılım - açılınca o kurumdaki her borç ayrı satır (§6.1) */}
-        <div className="glass-card p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Bank size={20} className="text-emerald-400" />
-              <h3 className="text-base font-semibold text-white">Kurum Bazlı Dağılım</h3>
-            </div>
-            <span className="text-xs text-zinc-400">Detay için tıklayın</span>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Kurum bazlı kırılım - açılınca o kurumdaki her borç ayrı satır */}
+        <section className="glass-card p-4 sm:p-5 lg:col-span-2">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
+              <Bank size={18} className="text-emerald-400" />
+              Kurum Bazlı Dağılım
+            </h2>
+            <span className="text-[10px] text-zinc-500">detay için dokunun</span>
           </div>
 
           {institutionBreakdown.length > 0 ? (
-            <div className="space-y-3">
+            <ul className="space-y-2">
               {institutionBreakdown.map((inst) => {
                 const isOpen = openInstitution === inst.institutionId;
                 return (
-                  <div
+                  <li
                     key={inst.institutionId}
-                    className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden"
+                    className="overflow-hidden rounded-xl border border-white/6 bg-white/[0.02]"
                   >
                     <button
                       type="button"
                       aria-expanded={isOpen}
                       onClick={() => setOpenInstitution(isOpen ? null : inst.institutionId)}
-                      className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-white/[0.05]"
+                      className="flex w-full items-center justify-between gap-2.5 p-3 text-left transition-colors hover:bg-white/[0.04] active:bg-white/[0.06]"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 text-[10px] font-bold text-white"
-                          style={{ backgroundColor: `${inst.color}33` }}
-                        >
-                          {inst.institutionName.slice(0, 3).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate font-semibold text-zinc-200 text-sm">
-                            {inst.institutionName}
-                          </div>
-                          <div className="text-xs text-zinc-400">
-                            {inst.debtCount} kayıt · bu ay{" "}
-                            {formatCurrency(inst.monthlyObligationTL)}
-                          </div>
-                        </div>
+                      <InstitutionLogo
+                        name={inst.institutionName}
+                        color={inst.color}
+                        size={40}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-semibold text-zinc-100">
+                          {inst.institutionName}
+                        </span>
+                        <span className="text-[10px] text-zinc-400">
+                          {inst.debtCount} kayıt · bu ay {formatCurrency(inst.monthlyObligationTL)}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="font-mono text-sm font-semibold text-red-300 tabular-nums">
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <span className="font-mono text-[13px] font-bold tabular-nums text-rose-300">
                           {formatCurrency(inst.totalOutstandingTL)}
                         </span>
                         <CaretDown
-                          size={16}
+                          size={14}
                           className={`text-zinc-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
                         />
                       </div>
                     </button>
 
                     {isOpen && (
-                      <div className="border-t border-white/5 bg-black/20 divide-y divide-white/5">
+                      <ul className="divide-y divide-white/5 border-t border-white/5 bg-black/25">
                         {inst.debts.map((d) => (
-                          <Link
-                            key={d.id}
-                            href={`/debts/${d.id}`}
-                            className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs transition-colors hover:bg-white/[0.04]"
-                          >
-                            <div className="min-w-0">
-                              <div className="truncate font-medium text-zinc-200">
-                                {d.title}
-                                {d.isOverdue && (
-                                  <span className="ml-2 rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-red-300">
-                                    GECİKMİŞ
+                          <li key={d.id}>
+                            <Link
+                              href={`/debts/${d.id}`}
+                              className="flex items-center justify-between gap-2 p-3 transition-colors hover:bg-white/[0.04] active:bg-white/[0.06]"
+                            >
+                              <div className="min-w-0">
+                                <span className="block truncate text-xs font-medium text-zinc-200">
+                                  {d.title}
+                                  {d.isOverdue && (
+                                    <span className="ml-1.5 rounded bg-rose-500/20 px-1.5 py-0.5 text-[9px] font-bold text-rose-300">
+                                      GECİKMİŞ
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="mt-0.5 block text-[10px] text-zinc-500">
+                                  {DEBT_TYPE_LABELS[d.type] ?? d.type}
+                                  {d.monthlyInterestRatePercent != null &&
+                                    ` · aylık ${formatPercent(d.monthlyInterestRatePercent)}`}
+                                  {d.remainingInstallments != null &&
+                                    d.totalInstallments != null &&
+                                    ` · ${d.remainingInstallments}/${d.totalInstallments} taksit`}
+                                  {d.paymentDayOfMonth != null && ` · ayın ${d.paymentDayOfMonth}.`}
+                                </span>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <span className="block font-mono text-xs font-semibold tabular-nums text-zinc-100">
+                                  {formatCurrency(d.outstandingTL)}
+                                </span>
+                                {d.installmentAmountTL != null && (
+                                  <span className="text-[10px] text-zinc-500">
+                                    taksit {formatCurrency(d.installmentAmountTL)}
                                   </span>
                                 )}
                               </div>
-                              <div className="mt-0.5 text-[11px] text-zinc-500">
-                                {DEBT_TYPE_LABELS[d.type] ?? d.type}
-                                {d.monthlyInterestRatePercent != null &&
-                                  ` · aylık ${formatPercent(d.monthlyInterestRatePercent)}`}
-                                {d.remainingInstallments != null &&
-                                  d.totalInstallments != null &&
-                                  ` · ${d.remainingInstallments}/${d.totalInstallments} taksit kaldı`}
-                                {d.paymentDayOfMonth != null &&
-                                  ` · ayın ${d.paymentDayOfMonth}. günü`}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-mono font-semibold text-zinc-100 tabular-nums">
-                                {formatCurrency(d.outstandingTL)}
-                              </div>
-                              {d.installmentAmountTL != null && (
-                                <div className="text-[11px] text-zinc-500">
-                                  taksit {formatCurrency(d.installmentAmountTL)}
-                                </div>
-                              )}
-                            </div>
-                          </Link>
+                            </Link>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     )}
-                  </div>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           ) : (
-            <div className="rounded-xl border border-dashed border-white/10 p-8 text-center">
-              <Bank size={36} className="mx-auto text-zinc-600 mb-2" />
-              <div className="text-sm font-medium text-zinc-300">Henüz borç kaydı yok</div>
-              <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+            <div className="rounded-xl border border-dashed border-white/10 p-6 text-center">
+              <Bank size={32} className="mx-auto mb-2 text-zinc-600" />
+              <p className="text-sm font-medium text-zinc-300">Henüz borç kaydı yok</p>
+              <p className="mx-auto mt-1 max-w-sm text-[11px] text-zinc-500">
                 Bankalarınızdaki kredileri, kartları ve altın borçlarınızı ekleyerek başlayın.
               </p>
               <Link
                 href="/debts/new"
-                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 px-3.5 py-2 text-xs font-semibold text-white transition-colors"
+                className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-white/10 px-4 text-xs font-semibold text-white transition active:scale-95"
               >
                 <PlusCircle size={16} />
-                <span>İlk borcunu ekle</span>
+                İlk borcunu ekle
               </Link>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Gerçek yaklaşan ödeme zaman çizelgesi (§6.1) */}
-        <div className="glass-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-white">Yaklaşan Ödemeler</h3>
-            <span className="text-xs text-zinc-500">30 gün</span>
+        <section className="glass-card p-4 sm:p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white">Yaklaşan Ödemeler</h2>
+            <span className="text-[10px] text-zinc-500">30 gün</span>
           </div>
 
-          {upcomingPayments.length > 0 ? (
-            <ul className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-              {upcomingPayments.slice(0, 25).map((p) => (
-                <li key={`${p.debtId}-${p.installmentId ?? p.dueDate}`}>
-                  <Link
-                    href={`/debts/${p.debtId}`}
-                    className={`flex items-center justify-between gap-3 rounded-xl border p-3 text-xs transition-colors ${
-                      p.isOverdue
-                        ? "border-red-500/40 bg-red-500/10 hover:bg-red-500/15"
-                        : "border-white/5 bg-white/[0.02] hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate font-medium text-zinc-200">{p.title}</div>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
-                        <Clock size={12} />
-                        <span>{formatDate(p.dueDate)}</span>
-                        <span className={p.isOverdue ? "text-red-400 font-semibold" : ""}>
-                          {p.isOverdue
-                            ? `${Math.abs(p.daysUntilDue)} gün gecikti`
-                            : p.daysUntilDue === 0
-                              ? "bugün"
-                              : `${p.daysUntilDue} gün kaldı`}
-                        </span>
-                      </div>
-                    </div>
-                    <span
-                      className={`shrink-0 font-mono font-semibold tabular-nums ${
-                        p.isOverdue ? "text-red-300" : "text-zinc-100"
-                      }`}
-                    >
-                      {formatCurrency(p.amountTL)}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="rounded-xl border border-dashed border-white/10 p-6 text-center">
-              <CalendarCheck size={32} className="mx-auto text-zinc-600 mb-2" />
-              <div className="text-xs font-medium text-zinc-400">
-                Önümüzdeki 30 günde ödeme yok
-              </div>
-              <p className="text-[11px] text-zinc-500 mt-1">
-                Taksitli kredi veya düzenli ödeme eklediğinizde burada listelenir.
-              </p>
-            </div>
-          )}
+          <UpcomingList payments={upcomingPayments} limit={8} />
 
           <Link
             href="/calendar"
-            className="mt-4 flex items-center justify-center gap-1.5 rounded-lg bg-white/5 py-2 text-xs font-medium text-emerald-400 transition-colors hover:bg-white/10"
+            className="mt-3 flex h-10 items-center justify-center gap-1.5 rounded-xl bg-white/5 text-xs font-medium text-emerald-400 transition active:scale-[0.98]"
           >
-            <span>Takvimi aç</span>
-            <ArrowRight size={14} />
+            Takvimi aç <ArrowRight size={13} />
           </Link>
-        </div>
+        </section>
       </div>
     </div>
   );

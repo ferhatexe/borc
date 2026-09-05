@@ -1,13 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import Decimal from "decimal.js";
 import {
+  CurrencyRate,
   GoldPriceProvider,
   GoldPriceRecord,
   GoldPriceUnavailableError,
   GoldProviderResult,
   GoldSourceKind,
   GoldSyncResult,
+  GRAMS_PER_TROY_OUNCE,
   isPieceGoldType,
+  OunceQuote,
 } from "./types";
 import { TruncgilGoldAdapter } from "./truncgilAdapter";
 import { TruncgilFlatGoldAdapter } from "./truncgilFlatAdapter";
@@ -19,7 +22,7 @@ import {
   DEFAULT_GOLD_UNIT_GRAMS,
   GoldManualPrices,
 } from "@/lib/settings/defaults";
-import { buildGoldRecords } from "./mapping";
+import { buildGoldRecords, CURRENCY_NAMES } from "./mapping";
 
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 dakika (sartname 7)
 /** Beyond this age a snapshot is shown with a warning band. */
@@ -37,6 +40,27 @@ const providers: GoldPriceProvider[] = [new TruncgilGoldAdapter(), new TruncgilF
 
 export function resetGoldCache() {
   inMemoryCache = null;
+}
+
+/**
+ * Gold per troy ounce in USD.
+ *
+ * The provider publishes an `ONS` field but it comes through as 0, so the value
+ * is DERIVED from the two live numbers we do have:
+ *   ONS(USD) = (gram has altın TL / USD-TRY satış) x 31.1035
+ * This is the same relationship the TL gram price is set from, and the UI
+ * labels it as "hesaplanan" so it is never read as a primary market quote.
+ */
+function deriveOunce(pureGramSellTL: number, currencies: CurrencyRate[]): OunceQuote | null {
+  const usd = currencies.find((c) => c.code === "USD");
+  if (!usd || usd.sellPrice <= 0 || pureGramSellTL <= 0) return null;
+
+  const tryValue = pureGramSellTL * GRAMS_PER_TROY_OUNCE;
+  return {
+    usd: Math.round((tryValue / usd.sellPrice) * 100) / 100,
+    tryValue: Math.round(tryValue * 100) / 100,
+    basis: "DERIVED",
+  };
 }
 
 function minutesSince(date: Date): number {
@@ -62,6 +86,10 @@ function buildResult(snap: CachedSnapshot, isCached: boolean): GoldSyncResult {
     prices: snap.prices,
     pureGramBuyTL: snap.pureGramBuyTL,
     pureGramSellTL: snap.pureGramSellTL,
+    pureGramChangePercent: snap.pureGramChangePercent,
+    currencies: snap.currencies,
+    ounce: deriveOunce(snap.pureGramSellTL, snap.currencies),
+    providerUpdatedAt: snap.providerUpdatedAt,
     source: snap.source,
     sourceKind: snap.sourceKind,
     fetchedAt: snap.fetchedAt.toISOString(),
@@ -85,6 +113,20 @@ async function persistSnapshot(result: GoldProviderResult, source: string, fetch
       fetchedAt,
     })),
   });
+
+  if (result.currencies.length > 0) {
+    await prisma.currencySnapshot.createMany({
+      data: result.currencies.map((c) => ({
+        code: c.code,
+        name: c.name,
+        buyPrice: new Decimal(c.buyPrice),
+        sellPrice: new Decimal(c.sellPrice),
+        changePct: c.changePercent === null ? null : new Decimal(c.changePercent),
+        source,
+        fetchedAt,
+      })),
+    });
+  }
 }
 
 /** Rebuilds a catalogue from the newest row of each product in the database. */
@@ -114,10 +156,31 @@ async function loadLatestSnapshot(): Promise<CachedSnapshot | null> {
   const pureRow = newestByType.get("KULCE") || newestByType.get("GRAM_ALTIN");
   if (!pureRow) return null;
 
+  // Kurlar da aynı şekilde son kayıttan geri yüklenir.
+  const currencyRows = await prisma.currencySnapshot.findMany({
+    orderBy: { fetchedAt: "desc" },
+    take: 60,
+  });
+  const newestCurrency = new Map<string, (typeof currencyRows)[number]>();
+  for (const row of currencyRows) {
+    if (!newestCurrency.has(row.code)) newestCurrency.set(row.code, row);
+  }
+
+  const currencies: CurrencyRate[] = Array.from(newestCurrency.values()).map((row) => ({
+    code: row.code,
+    name: row.name || CURRENCY_NAMES[row.code] || row.code,
+    buyPrice: Number(row.buyPrice),
+    sellPrice: Number(row.sellPrice),
+    changePercent: row.changePct === null ? null : Number(row.changePct),
+  }));
+
   return {
     prices,
     pureGramBuyTL: Number(pureRow.buyPrice),
     pureGramSellTL: Number(pureRow.sellPrice),
+    pureGramChangePercent: null,
+    currencies,
+    providerUpdatedAt: null,
     source: `${rows[0].source} (kayitli)`,
     sourceKind: "SNAPSHOT",
     fetchedAt: rows[0].fetchedAt,
@@ -149,6 +212,8 @@ function buildFromManual(manual: GoldManualPrices): CachedSnapshot | null {
 
   return {
     ...built,
+    // Manuel modda kur bilgisi yoktur; ONS bu yüzden hesaplanamaz.
+    currencies: [],
     source: "Manuel giris (ayarlar)",
     sourceKind: "MANUAL",
     fetchedAt: manual.updatedAt ? new Date(manual.updatedAt) : new Date(),

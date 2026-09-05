@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { endOfMonth, startOfMonth } from "date-fns";
 import { getCurrentSession } from "@/lib/auth";
 import { getDebts } from "@/lib/db/debts";
 import { getIncomes, getExpenses } from "@/lib/db/transactions";
@@ -8,7 +9,7 @@ import { getAnalyticsSummary } from "@/lib/db/reports";
 import { buildPortfolioSummary } from "@/lib/finance/debtValuation";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import type { GoldSyncResult } from "@/lib/gold/types";
-import { startOfMonth, endOfMonth } from "date-fns";
+import type { LivePayload } from "@/lib/hooks/useLivePortfolio";
 
 export const dynamic = "force-dynamic";
 
@@ -46,8 +47,48 @@ export default async function DashboardPage() {
     console.error("Analitik özet hesaplanamadı:", error);
   }
 
-  const thisMonthIncomeTL = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
-  const thisMonthExpenseTL = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const incomeTL = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
+  const expenseTL = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+
+  // Same shape /api/live returns, so the first paint is already correct and the
+  // client hook just keeps it fresh from there.
+  const initialLive: LivePayload = {
+    serverTime: now.toISOString(),
+    totals: {
+      totalDebtTL: portfolio.totalDebtTL,
+      goldDebtTL: portfolio.goldDebtTL,
+      accruedInterestTL: portfolio.totalAccruedInterestTL,
+      dailyAccrualTL: portfolio.totalDailyAccrualTL,
+      dueThisMonthTL: portfolio.dueThisMonthTL,
+      overdueTL: portfolio.overdueTL,
+      overdueCount: portfolio.overdueCount,
+      worstOverdueDays: portfolio.worstOverdueDays,
+      debtCount: debts.length,
+      incomeTL,
+      expenseTL,
+      netTL: incomeTL - expenseTL,
+      cashFlowTL: incomeTL - expenseTL - portfolio.dueThisMonthTL,
+    },
+    market: gold
+      ? {
+          pureGramSellTL: gold.pureGramSellTL,
+          pureGramBuyTL: gold.pureGramBuyTL,
+          pureGramChangePercent: gold.pureGramChangePercent,
+          ounce: gold.ounce,
+          currencies: gold.currencies,
+          prices: gold.prices,
+          source: gold.source,
+          sourceKind: gold.sourceKind,
+          fetchedAt: gold.fetchedAt,
+          providerUpdatedAt: gold.providerUpdatedAt,
+          ageMinutes: gold.ageMinutes,
+          warning: gold.warning,
+        }
+      : null,
+    goldError,
+    overduePayments: portfolio.overduePayments,
+    upcomingPayments: portfolio.upcomingPayments.slice(0, 12),
+  };
 
   const kmhDebts = portfolio.valuations
     .filter((v) => v.type === "EK_HESAP_KMH" && (v.overdraftDetail?.usedAmount ?? 0) > 0)
@@ -93,32 +134,10 @@ export default async function DashboardPage() {
 
   return (
     <DashboardClient
-      totalDebtTL={portfolio.totalDebtTL}
-      totalAccruedInterestTL={portfolio.totalAccruedInterestTL}
-      totalDailyAccrualTL={portfolio.totalDailyAccrualTL}
-      debtsCount={debts.length}
-      thisMonthPayableTL={portfolio.dueThisMonthTL}
-      overdueTL={portfolio.overdueTL}
-      thisMonthIncomeTL={thisMonthIncomeTL}
-      thisMonthExpenseTL={thisMonthExpenseTL}
+      initialLive={initialLive}
       institutionBreakdown={portfolio.institutionBreakdown}
-      upcomingPayments={portfolio.upcomingPayments}
       kmhDebts={kmhDebts}
       goldDebts={goldDebts}
-      goldStatus={
-        gold
-          ? {
-              source: gold.source,
-              sourceKind: gold.sourceKind,
-              fetchedAt: gold.fetchedAt,
-              warning: gold.warning,
-              ageMinutes: gold.ageMinutes,
-              pureGramSellTL: gold.pureGramSellTL,
-              prices: gold.prices,
-            }
-          : null
-      }
-      goldError={goldError}
       analyticsSummary={analyticsSummary}
       loans={loans}
       projectedDebtFreeDate={analyticsSummary?.projectedDebtFreeDate ?? null}

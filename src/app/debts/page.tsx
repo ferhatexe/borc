@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { formatCurrency, formatDateTR } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 import { SwipeableCard } from "@/components/shared/SwipeableCard";
+import { InstitutionLogo } from "@/components/shared/InstitutionLogo";
 
 export default function DebtsPage() {
   const router = useRouter();
@@ -388,22 +389,27 @@ export default function DebtsPage() {
                 <Link
                   href={`/debts/${debt.id}`}
                   onClick={() => triggerHaptic("selection")}
-                  className="group relative flex flex-col justify-between p-5 rounded-2xl bg-zinc-900/70 hover:bg-zinc-900 border border-white/10 hover:border-emerald-500/40 transition-all duration-200 shadow-sm hover:shadow-[0_0_25px_rgba(16,185,129,0.1)] w-full block"
+                  className="group relative flex flex-col justify-between p-4 sm:p-5 rounded-2xl bg-zinc-900/70 hover:bg-zinc-900 border border-white/10 hover:border-emerald-500/40 transition-all duration-200 shadow-sm hover:shadow-[0_0_25px_rgba(16,185,129,0.1)] w-full block"
                 >
                   <div>
                     {/* Kart Üst Başlık */}
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm shrink-0 text-xs"
-                          style={{
-                            backgroundColor:
-                              debt.institution?.color || debt.color || "#10b981",
-                          }}
-                        >
-                          {debt.institution?.name
-                            ? debt.institution.name.substring(0, 2).toUpperCase()
-                            : debt.type.substring(0, 2)}
+                        <div className="relative shrink-0">
+                          <InstitutionLogo
+                            name={debt.institution?.name ?? debt.title}
+                            color={debt.institution?.color ?? debt.color ?? null}
+                            type={debt.institution?.type ?? "DIGER"}
+                            size={42}
+                          />
+                          {valuations[debt.id]?.isOverdue && (
+                            <span
+                              aria-label="Gecikmiş"
+                              className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-zinc-900 bg-rose-500 text-[8px] font-bold text-white"
+                            >
+                              !
+                            </span>
+                          )}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">

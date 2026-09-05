@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { Lightning, ArrowRight, Vault } from "@phosphor-icons/react";
-import { formatCurrency, formatDate } from "@/lib/formatters";
+import { formatCurrency, formatDate, formatLiveAmount, formatNumber } from "@/lib/formatters";
 
 export interface OverdraftDebtSummary {
   id: string;
@@ -128,11 +128,7 @@ export function OverdraftLiveTicker({ kmhDebts, totalDailyAccrualTL }: Overdraft
         <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-white/5 space-y-1">
           <span className="text-[11px] text-zinc-400">Şu ana kadar işleyen faiz</span>
           <p className="text-xl font-bold text-amber-400 font-mono tabular-nums">
-            {liveTotal.toLocaleString("tr-TR", {
-              minimumFractionDigits: 4,
-              maximumFractionDigits: 4,
-            })}{" "}
-            ₺
+            {formatLiveAmount(liveTotal)}
           </p>
           <span className="text-[10px] text-zinc-500">
             Son tahakkuktan bu yana · faiz + KKDF + BSMV
@@ -152,20 +148,20 @@ export function OverdraftLiveTicker({ kmhDebts, totalDailyAccrualTL }: Overdraft
         <span className="text-zinc-400">
           Bu sayfada kalınan sürede:{" "}
           <strong className="font-mono font-bold text-amber-400 tabular-nums">
-            +{sessionAccrued.toFixed(4)} ₺
+            +{formatNumber(sessionAccrued, 4)} ₺
           </strong>
         </span>
         <div className="flex items-center gap-4 text-[11px] text-zinc-400">
           <span>
             Saniyede{" "}
             <strong className="text-zinc-200 font-mono tabular-nums">
-              {totals.perSecond.toFixed(4)} ₺
+              {formatNumber(totals.perSecond, 4)} ₺
             </strong>
           </span>
           <span>
             Dakikada{" "}
             <strong className="text-zinc-200 font-mono tabular-nums">
-              {totals.perMinute.toFixed(2)} ₺
+              {formatNumber(totals.perMinute, 2)} ₺
             </strong>
           </span>
         </div>

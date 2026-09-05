@@ -75,6 +75,10 @@ export interface UpcomingPayment {
   installmentId: string | null;
   title: string;
   institutionName: string | null;
+  /** Brand tint so list badges match the dashboard breakdown. */
+  institutionColor: string | null;
+  institutionType: string | null;
+  debtType: string;
   amountTL: number;
   dueDate: string;
   daysUntilDue: number;
@@ -109,10 +113,17 @@ export interface PortfolioSummary {
   totalDebtTL: number;
   totalAccruedInterestTL: number;
   totalDailyAccrualTL: number;
+  /** Live TL value of every gold debt, so the UI can re-price it on a new rate. */
+  goldDebtTL: number;
   dueThisMonthTL: number;
   overdueTL: number;
   institutionBreakdown: InstitutionBreakdown[];
   upcomingPayments: UpcomingPayment[];
+  /** Everything already past its due date and still unpaid, oldest first. */
+  overduePayments: UpcomingPayment[];
+  overdueCount: number;
+  /** Days the oldest unpaid item is late by; 0 when nothing is overdue. */
+  worstOverdueDays: number;
 }
 
 const num = (value: unknown): number => {
@@ -431,7 +442,7 @@ export function buildPortfolioSummary(
   let totalAccrued = new Decimal(0);
   let totalDaily = new Decimal(0);
   let dueThisMonth = new Decimal(0);
-  let overdueTL = new Decimal(0);
+  let goldDebtTL = new Decimal(0);
 
   const instMap = new Map<string, InstitutionBreakdown>();
 
@@ -440,7 +451,7 @@ export function buildPortfolioSummary(
     totalAccrued = totalAccrued.plus(v.accruedInterestTL);
     totalDaily = totalDaily.plus(v.dailyAccrualTL);
     dueThisMonth = dueThisMonth.plus(v.dueThisMonthTL);
-    if (v.isOverdue) overdueTL = overdueTL.plus(v.dueThisMonthTL || v.outstandingTL);
+    if (v.type === "ALTIN_BORCU") goldDebtTL = goldDebtTL.plus(v.outstandingTL);
 
     // Debts without an institution are grouped instead of being dropped.
     const key = v.institutionId ?? "__none__";
@@ -474,17 +485,37 @@ export function buildPortfolioSummary(
     instMap.set(key, entry);
   }
 
+  const upcomingPayments = buildUpcomingPayments(debts, valuations, now);
+
+  // "Ödemesi geçti" listesi: vadesi dolmuş ve hâlâ ödenmemiş her kalem.
+  // En eski gecikme başta olacak şekilde sıralanır.
+  const overduePayments = upcomingPayments
+    .filter((p) => p.isOverdue)
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+  const overdueTL = overduePayments.reduce(
+    (sum, p) => sum.plus(p.amountTL),
+    new Decimal(0)
+  );
+  const worstOverdueDays = overduePayments.length
+    ? Math.abs(overduePayments[0].daysUntilDue)
+    : 0;
+
   return {
     valuations,
     totalDebtTL: totalDebtTL.toDecimalPlaces(2).toNumber(),
     totalAccruedInterestTL: totalAccrued.toDecimalPlaces(2).toNumber(),
     totalDailyAccrualTL: totalDaily.toNumber(),
+    goldDebtTL: goldDebtTL.toDecimalPlaces(2).toNumber(),
     dueThisMonthTL: dueThisMonth.toDecimalPlaces(2).toNumber(),
     overdueTL: overdueTL.toDecimalPlaces(2).toNumber(),
     institutionBreakdown: Array.from(instMap.values()).sort(
       (a, b) => b.totalOutstandingTL - a.totalOutstandingTL
     ),
-    upcomingPayments: buildUpcomingPayments(debts, valuations, now),
+    upcomingPayments,
+    overduePayments,
+    overdueCount: overduePayments.length,
+    worstOverdueDays,
   };
 }
 
@@ -507,12 +538,16 @@ export function buildUpcomingPayments(
     installmentId: string | null = null
   ) => {
     if (amountTL <= 0) return;
-    if (dueDate > horizon) return;
+    // Anything already late stays in the list no matter how old it is.
+    if (dueDate > horizon && dueDate >= now) return;
     out.push({
       debtId: debt.id,
       installmentId,
       title: debt.title,
       institutionName: debt.institution?.name ?? null,
+      institutionColor: debt.institution?.color ?? debt.color ?? null,
+      institutionType: debt.institution?.type ?? null,
+      debtType: debt.type,
       amountTL: round2(amountTL),
       dueDate: dueDate.toISOString(),
       daysUntilDue: Math.ceil((dueDate.getTime() - now.getTime()) / 86400000),

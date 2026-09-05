@@ -110,3 +110,15 @@ export function formatDateLong(date: Date | string | null | undefined): string {
 }
 
 export const formatDateTR = formatDate;
+
+/**
+ * Canlı sayaçlar için ondalık hassasiyeti tutara göre seçer.
+ *
+ * Saniyede kuruşun altında artan bir değerde 4 hane şart; 1.842 TL gibi bir
+ * tutarda ise "1.842,3100" gereksiz gürültü olur, 2 hane yeterlidir.
+ */
+export function formatLiveAmount(value: number | null | undefined): string {
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n)) return formatCurrency(0);
+  return Math.abs(n) >= 100 ? formatCurrency(n) : `${formatNumber(n, 4)} ₺`;
+}

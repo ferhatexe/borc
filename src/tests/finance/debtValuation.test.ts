@@ -15,6 +15,12 @@ const gold: GoldSyncResult = {
   ],
   pureGramSellTL: 6864,
   pureGramBuyTL: 6863,
+  pureGramChangePercent: -0.74,
+  currencies: [
+    { code: "USD", name: "Amerikan Doları", buyPrice: 48.38, sellPrice: 48.49, changePercent: 0.22 },
+  ],
+  ounce: { usd: 4402.8, tryValue: 213485.4, basis: "DERIVED" },
+  providerUpdatedAt: null,
   source: "test",
   sourceKind: "LIVE",
   fetchedAt: NOW.toISOString(),
