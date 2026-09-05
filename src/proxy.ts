@@ -11,6 +11,9 @@ const PUBLIC_PATHS = new Set([
   "/api/health",
   "/manifest.json",
   "/sw.js",
+  // Service worker bunu kurulum sirasinda onbellege alir. Yonlendirilirse
+  // cache.addAll reddeder ve SW kurulumu tamamen basarisiz olur.
+  "/offline.html",
   "/favicon.ico",
   "/robots.txt",
   // Enforces its own auth (CRON_SECRET header or a valid session).
