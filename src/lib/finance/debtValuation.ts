@@ -28,6 +28,8 @@ export interface DebtValuation {
   accruedInterestTL: number;
   /** TL accruing every day at the current balance; 0 for fixed instalment debts. */
   dailyAccrualTL: number;
+  /** Borç TL değilse kullanılan kur; TL ise 1. */
+  fxRateToTRY: number;
 
   monthlyInterestRatePercent: number | null;
   installmentAmountTL: number | null;
@@ -127,6 +129,23 @@ export interface PortfolioSummary {
   overdueCount: number;
   /** Days the oldest unpaid item is late by; 0 when nothing is overdue. */
   worstOverdueDays: number;
+}
+
+/**
+ * Bir borcun para biriminden TL'ye çevrim katsayısı.
+ *
+ * Döviz cinsi borçlar TL'ye çevrilmeden toplanıyordu: 1.000 $ borç toplamda
+ * 1.000 TL gibi sayılıyordu. Kur yoksa çevrim yapılmaz ve tutar olduğu gibi
+ * bırakılır - uydurma bir kur kullanmaktansa eksik göstermek yeğdir; arayüz
+ * zaten fiyat/kur uyarısını gösteriyor.
+ */
+function fxRateToTRY(currency: string, gold: GoldSyncResult | null): number {
+  if (!currency || currency === "TRY") return 1;
+  // XAU (altın) ayrı yoldan, gram/adet üzerinden değerlenir.
+  if (currency === "XAU") return 1;
+
+  const quote = gold?.currencies.find((c) => c.code === currency);
+  return quote && quote.sellPrice > 0 ? quote.sellPrice : 1;
 }
 
 const num = (value: unknown): number => {
@@ -409,6 +428,18 @@ export function valuateDebt(
     isOverdue = false;
   }
 
+  /*
+   * Döviz cinsi borçlar TL'ye çevrilir. Altın borcu bu adımın dışındadır:
+   * o zaten gram/adet ve canlı altın fiyatı üzerinden TL olarak hesaplandı.
+   */
+  const fx = debt.type === "ALTIN_BORCU" ? 1 : fxRateToTRY(debt.currency, gold);
+  if (fx !== 1) {
+    principalTL *= fx;
+    accruedInterestTL *= fx;
+    dailyAccrualTL *= fx;
+    dueThisMonthTL *= fx;
+  }
+
   return {
     id: debt.id,
     title: debt.title,
@@ -419,6 +450,7 @@ export function valuateDebt(
     institutionColor: debt.institution?.color ?? null,
     currency: debt.currency,
 
+    fxRateToTRY: fx,
     outstandingTL: round2(principalTL + accruedInterestTL),
     principalTL: round2(principalTL),
     accruedInterestTL: round2(accruedInterestTL),
