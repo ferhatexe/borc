@@ -22,7 +22,7 @@ interface PersonalDebtFormProps {
 export function PersonalDebtForm({ initialData, onChange }: PersonalDebtFormProps) {
   const [creditorName, setCreditorName] = useState(initialData?.creditorName || "");
   const [creditorPhone, setCreditorPhone] = useState(initialData?.creditorPhone || "");
-  const [amount, setAmount] = useState<number>(initialData?.amount || 25000);
+  const [amount, setAmount] = useState<number>(initialData?.amount ?? 0);
   const [currency, setCurrency] = useState<"TRY" | "USD" | "EUR">(initialData?.currency || "TRY");
   const [dueDate, setDueDate] = useState(initialData?.dueDate || "");
   const [hasInterest, setHasInterest] = useState(initialData?.hasInterest || false);

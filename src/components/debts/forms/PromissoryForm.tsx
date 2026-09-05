@@ -24,7 +24,7 @@ export function PromissoryForm({ initialData, onChange }: PromissoryFormProps) {
   );
   const [documentNo, setDocumentNo] = useState(initialData?.documentNo || "");
   const [drawee, setDrawee] = useState(initialData?.drawee || "");
-  const [amount, setAmount] = useState<number>(initialData?.amount || 50000);
+  const [amount, setAmount] = useState<number>(initialData?.amount ?? 0);
   const [dueDate, setDueDate] = useState(initialData?.dueDate || "");
   const [notes, setNotes] = useState(initialData?.notes || "");
 

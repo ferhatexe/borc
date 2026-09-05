@@ -29,20 +29,20 @@ export function CreditCardForm({ initialData, institutionName, onChange }: Credi
     initialData?.cardName || `${institutionName || "Banka"} Kredi Kartı`
   );
   const [last4, setLast4] = useState(initialData?.last4 || "");
-  const [creditLimit, setCreditLimit] = useState<number>(initialData?.creditLimit || 50000);
+  const [creditLimit, setCreditLimit] = useState<number>(initialData?.creditLimit ?? 0);
   const [currentStatementBalance, setCurrentStatementBalance] = useState<number>(
-    initialData?.currentStatementBalance || 15000
+    initialData?.currentStatementBalance ?? 0
   );
   const [minimumPayment, setMinimumPayment] = useState<number>(
-    initialData?.minimumPayment || 3000
+    initialData?.minimumPayment ?? 0
   );
   const [statementDay, setStatementDay] = useState<number>(initialData?.statementDay || 15);
   const [dueDay, setDueDay] = useState<number>(initialData?.dueDay || 25);
   const [contractualInterestMonthly, setContractualInterestMonthly] = useState<number>(
-    initialData?.contractualInterestMonthly || 4.25
+    initialData?.contractualInterestMonthly ?? 0
   );
   const [overdueInterestMonthly, setOverdueInterestMonthly] = useState<number>(
-    initialData?.overdueInterestMonthly || 4.55
+    initialData?.overdueInterestMonthly ?? 0
   );
   const [notes, setNotes] = useState(initialData?.notes || "");
 

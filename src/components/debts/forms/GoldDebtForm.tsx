@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { calculateGoldValueTL } from "@/lib/finance/gold";
-import { formatCurrency } from "@/lib/formatters";
-import { Coins, Sparkle, Tag, Info, User } from "@phosphor-icons/react";
+import { calculateGoldDebtLiveTL } from "@/lib/finance/goldValuation";
+import { defaultKaratForGoldType } from "@/lib/finance/gold";
+import { formatCurrency, formatDate, formatNumber } from "@/lib/formatters";
+import { useGoldPrices } from "@/lib/hooks/useGoldPrices";
+import { useAppSettings } from "@/lib/hooks/useAppSettings";
+import { isPieceGoldType } from "@/lib/gold/types";
+import { Coins, Sparkle, Tag, Info, User, WarningCircle } from "@phosphor-icons/react";
 
 export interface GoldDebtFormData {
   title: string;
@@ -25,17 +29,12 @@ interface GoldDebtFormProps {
   onChange: (data: GoldDebtFormData, isValid: boolean) => void;
 }
 
-// Varsayılan Piyasa Referans Fiyatları (Canlı API entegrasyonu öncesi sağlam piyasa bazları)
-const MARKET_PRICES: Record<string, { price: number; isPiece: boolean; defaultKarat?: number; defaultPremium?: number }> = {
-  GRAM_ALTIN: { price: 3350, isPiece: false, defaultKarat: 24, defaultPremium: 0 },
-  CEYREK: { price: 5490, isPiece: true, defaultKarat: 22, defaultPremium: 0 },
-  YARIM: { price: 10980, isPiece: true, defaultKarat: 22, defaultPremium: 0 },
-  TAM: { price: 21960, isPiece: true, defaultKarat: 22, defaultPremium: 0 },
-  ATA: { price: 22600, isPiece: true, defaultKarat: 22, defaultPremium: 0 },
-  BILEZIK_22: { price: 3350, isPiece: false, defaultKarat: 22, defaultPremium: 0 },
-  ZINCIR_21_HALEP: { price: 3350, isPiece: false, defaultKarat: 21, defaultPremium: 200 }, // Kural: +200 TL/gr
-  BILEZIK_14: { price: 3350, isPiece: false, defaultKarat: 14, defaultPremium: 0 },
-};
+/*
+ * Burada FİYAT TUTULMAZ. Daha önce koda gömülü bir tablo vardı (gram has altın
+ * için 3.350 TL gibi) ve önizleme, kaydedilen tutarın yarısını gösteriyordu.
+ * Fiyatlar /api/gold'dan, marjlar Ayarlar'dan gelir; bu tablo yalnızca
+ * ürünün adet mi gram mı olduğunu ve varsayılan ayarını taşır.
+ */
 
 const GOLD_TYPE_OPTIONS = [
   { id: "GRAM_ALTIN", name: "24 Ayar Gram Altın", desc: "Has gram altın", isPiece: false },
@@ -55,29 +54,41 @@ const GOLD_TYPE_OPTIONS = [
 ];
 
 export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
+  const gold = useGoldPrices();
+  const { settings } = useAppSettings();
+
   const [goldType, setGoldType] = useState(initialData?.goldType || "CEYREK");
   const [priceSource, setPriceSource] = useState<"CANLI" | "MANUEL">(
     initialData?.priceSource || "CANLI"
   );
 
-  const isPiece = MARKET_PRICES[goldType]?.isPiece ?? true;
+  const isPiece = isPieceGoldType(goldType);
 
-  const [quantity, setQuantity] = useState<number>(initialData?.quantity || 2);
-  const [grams, setGrams] = useState<number>(initialData?.grams || 25);
+  const [quantity, setQuantity] = useState<number>(initialData?.quantity ?? 0);
+  const [grams, setGrams] = useState<number>(initialData?.grams ?? 0);
   const [karat, setKarat] = useState<number>(
-    initialData?.karat || MARKET_PRICES[goldType]?.defaultKarat || 22
+    initialData?.karat || defaultKaratForGoldType(goldType)
   );
 
-  // Marj kuralı: 21 ayar Halep zinciri seçilirse varsayılan 200 TL/gr
-  const [premiumTL, setPremiumTL] = useState<number>(
-    initialData?.premiumTL !== undefined
-      ? initialData.premiumTL
-      : MARKET_PRICES[goldType]?.defaultPremium || 0
-  );
+  // Marj Ayarlar'dan gelir (21 ayar varsayılanı +200 TL/gr).
+  const [premiumTL, setPremiumTL] = useState<number>(initialData?.premiumTL ?? 0);
+  const [premiumTouched, setPremiumTouched] = useState(initialData?.premiumTL !== undefined);
 
   const [manualUnitPrice, setManualUnitPrice] = useState<number>(
-    initialData?.manualUnitPrice || MARKET_PRICES[goldType]?.price || 5490
+    initialData?.manualUnitPrice ?? 0
   );
+
+  /** Seçili ürünün canlı kaydı. */
+  const priceRecord = useMemo(
+    () => gold.prices.find((p) => p.goldType === goldType) ?? null,
+    [gold.prices, goldType]
+  );
+
+  // Kullanıcı elle değiştirmediyse marjı ayarlardaki değerle senkron tut.
+  useEffect(() => {
+    if (premiumTouched) return;
+    setPremiumTL(settings.goldMargins[goldType] ?? 0);
+  }, [goldType, settings.goldMargins, premiumTouched]);
 
   const [creditorName, setCreditorName] = useState(initialData?.creditorName || "");
   const [dueDate, setDueDate] = useState(initialData?.dueDate || "");
@@ -86,42 +97,63 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
   );
   const [notes, setNotes] = useState(initialData?.notes || "");
 
-  // Altın tipi değişince marj ve varsayılanları otomatik güncelle
+  // Altın tipi değişince ayar ve marj varsayılanlarını güncelle.
   const handleTypeChange = (newType: string) => {
     setGoldType(newType);
-    const meta = MARKET_PRICES[newType];
-    if (meta) {
-      setKarat(meta.defaultKarat || 22);
-      setPremiumTL(meta.defaultPremium || 0);
-      setManualUnitPrice(meta.price);
-    }
+    setKarat(defaultKaratForGoldType(newType));
+    setPremiumTouched(false);
+    setPremiumTL(settings.goldMargins[newType] ?? 0);
+
+    // Manuel fiyat için başlangıç değeri canlı kotasyondan alınır.
+    const live = gold.prices.find((p) => p.goldType === newType);
+    setManualUnitPrice(live?.sellPrice ?? 0);
   };
 
-  // Canlı TL Karşılığı Hesaplama
+  /*
+   * Önizleme, sunucunun kullandığı fonksiyonun aynısını çağırır
+   * (calculateGoldDebtLiveTL). Böylece "önizlemede şu, kaydedince bu" farkı
+   * oluşamaz. Canlı fiyat yoksa hesap yapılmaz; ekranda uyarı gösterilir.
+   */
   const valueCalculation = useMemo(() => {
+    const hasAmount = isPiece ? quantity > 0 : grams > 0;
+    if (!hasAmount) return null;
+    if (priceSource === "CANLI" && gold.prices.length === 0) return null;
+    if (priceSource === "MANUEL" && manualUnitPrice <= 0) return null;
+
     try {
-      const pureGoldGramSellTL = 3350; // Has altın gram referans
-      const unitPriceTL =
-        priceSource === "MANUEL" ? manualUnitPrice : MARKET_PRICES[goldType]?.price || 5490;
+      const res = calculateGoldDebtLiveTL(
+        {
+          goldType,
+          quantity: isPiece ? quantity : null,
+          grams: isPiece ? null : grams,
+          karat,
+          premiumTL,
+          priceSource,
+          manualUnitPrice: priceSource === "MANUEL" ? manualUnitPrice : null,
+        },
+        gold.prices,
+        gold.pureGramSellTL,
+        { millesimalMap: settings.goldMillesimal, margins: settings.goldMargins }
+      );
 
-      const res = calculateGoldValueTL({
-        goldType,
-        quantity: isPiece ? quantity : undefined,
-        grams: !isPiece ? grams : undefined,
-        karat,
-        unitPriceTL,
-        pureGoldGramSellTL,
-        premiumTL,
-      });
-
-      return {
-        totalTL: res.totalTL.toNumber(),
-        unitPriceWithPremiumTL: res.unitPriceWithPremiumTL.toNumber(),
-      };
+      return { totalTL: res.totalTL, unitPriceWithPremiumTL: res.unitPriceWithPremiumTL };
     } catch {
       return null;
     }
-  }, [goldType, isPiece, quantity, grams, karat, priceSource, manualUnitPrice, premiumTL]);
+  }, [
+    goldType,
+    isPiece,
+    quantity,
+    grams,
+    karat,
+    priceSource,
+    manualUnitPrice,
+    premiumTL,
+    gold.prices,
+    gold.pureGramSellTL,
+    settings.goldMillesimal,
+    settings.goldMargins,
+  ]);
 
   useEffect(() => {
     const selectedOption = GOLD_TYPE_OPTIONS.find((o) => o.id === goldType);
@@ -345,34 +377,69 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
         </div>
       </div>
 
+      {/* Canlı fiyat alinamadiysa tutar gosterme; sebebini soyle. */}
+      {priceSource === "CANLI" && !gold.loading && gold.prices.length === 0 && (
+        <div className="flex items-start gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-200">
+          <WarningCircle size={16} weight="fill" className="mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold">Canlı altın fiyatı alınamadı</p>
+            <p className="mt-0.5 text-amber-200/80">
+              {gold.error ?? "Fiyat servisine ulaşılamıyor."} TL karşılığı hesaplanamıyor.
+              Borcu yine de kaydedebilirsiniz; fiyat geldiğinde otomatik hesaplanır.
+              Dilerseniz aşağıdan &quot;Manuel&quot; fiyat girin.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Canlı Güncel TL Değeri Paneli */}
       {valueCalculation && (
         <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-950/30 via-zinc-900 to-zinc-900 border border-yellow-500/30 shadow-[0_0_25px_rgba(234,179,8,0.1)] space-y-3">
-          <div className="flex items-center gap-2 border-b border-white/10 pb-2.5">
-            <Coins size={18} weight="fill" className="text-yellow-400" />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">
-              Güncel TL Karşılığı Özeti
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Coins size={18} weight="fill" className="text-yellow-400" />
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                Güncel TL Karşılığı Özeti
+              </span>
+            </div>
+            {gold.source && priceSource === "CANLI" && (
+              <span className="text-[10px] text-zinc-500">
+                {gold.source}
+                {gold.fetchedAt && ` · ${formatDate(gold.fetchedAt, "dd.MM HH:mm")}`}
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <p className="text-[11px] text-zinc-400">Toplam TL Borç Karşılığı</p>
-              <p className="text-xl font-bold text-yellow-400 font-mono">
+              <p className="text-xl font-bold text-yellow-400 font-mono tabular-nums">
                 {formatCurrency(valueCalculation.totalTL)}
               </p>
             </div>
 
             <div>
               <p className="text-[11px] text-zinc-400">Efektif Birim Fiyat (Marj Dahil)</p>
-              <p className="text-sm font-semibold text-white font-mono">
+              <p className="text-sm font-semibold text-white font-mono tabular-nums">
                 {formatCurrency(valueCalculation.unitPriceWithPremiumTL)}{" "}
                 <span className="text-[10px] text-zinc-400 font-normal">
                   / {isPiece ? "adet" : "gr"}
                 </span>
               </p>
+              {/* Rakamin nereden geldigi acikca yazilir. */}
+              {priceSource === "CANLI" && priceRecord && (
+                <p className="mt-0.5 text-[10px] text-zinc-500">
+                  {formatNumber(priceRecord.sellPrice, 2)} piyasa
+                  {premiumTL > 0 && ` + ${formatNumber(premiumTL, 0)} marj`}
+                  {priceRecord.source ? ` · ${priceRecord.source}` : ""}
+                </p>
+              )}
             </div>
           </div>
+
+          {gold.warning && priceSource === "CANLI" && (
+            <p className="text-[10px] text-amber-300/90">{gold.warning}</p>
+          )}
         </div>
       )}
     </div>

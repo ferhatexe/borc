@@ -20,7 +20,7 @@ export function OtherDebtForm({ initialData, institutionName, onChange }: OtherD
   const [title, setTitle] = useState(
     initialData?.title || (institutionName ? `${institutionName} Borcu` : "Genel Borç Kaydı")
   );
-  const [amount, setAmount] = useState<number>(initialData?.amount || 10000);
+  const [amount, setAmount] = useState<number>(initialData?.amount ?? 0);
   const [dueDate, setDueDate] = useState(initialData?.dueDate || "");
   const [notes, setNotes] = useState(initialData?.notes || "");
 

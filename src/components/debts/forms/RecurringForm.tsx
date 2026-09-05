@@ -22,7 +22,7 @@ export function RecurringForm({ initialData, institutionName, onChange }: Recurr
   const [title, setTitle] = useState(
     initialData?.title || (institutionName ? `${institutionName} Ödemesi` : "Ev Kirası")
   );
-  const [amount, setAmount] = useState<number>(initialData?.amount || 15000);
+  const [amount, setAmount] = useState<number>(initialData?.amount ?? 0);
   const [frequency, setFrequency] = useState<"AYLIK" | "UC_AYLIK" | "ALTI_AYLIK" | "YILLIK">(
     initialData?.frequency || "AYLIK"
   );
