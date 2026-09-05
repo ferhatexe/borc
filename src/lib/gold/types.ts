@@ -33,6 +33,17 @@ export interface GoldPriceRecord {
   isPiece: boolean;
   /** Weight of one piece in grams (piece products only). */
   effectiveGrams?: number;
+  /**
+   * true  -> computed from the pure gram price via the millesimal table
+   * false -> a real market quote for this exact product
+   *
+   * A real quote wins when valuing a debt: the şartname says to use "web'den
+   * bulunan" price for 21 and 22 ayar, and a jeweller's quote carries its own
+   * spread that the millesimal formula cannot reproduce.
+   */
+  isDerived: boolean;
+  /** Which provider the quote came from, for the UI and for debugging. */
+  source?: string;
 }
 
 /** One troy ounce in grams - used to derive the ONS price. */

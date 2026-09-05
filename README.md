@@ -71,10 +71,43 @@ Hiçbiri yoksa uygulama **hata döndürür**; uydurma bir fiyat göstermez.
 Veri canlı değilse arayüzde sarı uyarı bandı çıkar ("Fiyatlar X dakika önce güncellendi",
 "Canlı servise ulaşılamadı, kayıtlı veri kullanılıyor" gibi).
 
-Kullanılan ürün kodları: `HAS` (gram has altın — tüm gram hesaplarının temeli), `GRA`,
+Kullanılan ürün kodları: `HAS` (gram has altın — türetme için temel), `GRA`,
 `CEYREKALTIN`, `YARIMALTIN`, `TAMALTIN`, `ATAALTIN`, `GREMSEALTIN`, `YIA` (22 ayar bilezik),
-`18AYARALTIN`, `14AYARALTIN`. Sağlayıcının yayınlamadığı ürünler (örn. 21 ayar) sabit bir
-değerle değil, **milyem tablosundan türetilerek** hesaplanır.
+`18AYARALTIN`, `14AYARALTIN`.
+
+### 21 ayar ayrı kaynaktan
+
+Birincil sağlayıcı 21 ayar kotasyonu yayınlamıyor. Bu ürün
+[anlikaltinfiyati.com](https://www.anlikaltinfiyati.com/21-ayar-altin-bugun-ne-kadar.html)
+sayfasından okunur (`lib/gold/anlikAltinAdapter.ts`).
+
+Bu bir **HTML kazıma** işlemidir, sağlayıcının JSON API'si yok. Kırılganlığa karşı
+iki savunma var:
+
+1. Desen, tablodaki `0.01 gram` / `0.1 gram` / `1000 gram` satırlarını 1 gram
+   sanmayacak şekilde çıpalanmıştır (bu tuzak testle sabitlendi).
+2. Okunan fiyat, milyemden türetilen değere karşı **makullük kontrolünden**
+   geçer (±%15). Sayfa yapısı değişip alakasız bir sayı gelirse reddedilir ve
+   türetilmiş değere dönülür — yani kırık bir kazıma, yanlış bir borç tutarı
+   değil, biraz daha az isabetli bir tahmin üretir.
+
+### Kotasyon mu, türetme mi
+
+Her fiyat kaydı `isDerived` bayrağı taşır:
+
+- **`false`** → ürünün kendi piyasa kotasyonu (21 ayar, 22 ayar bilezik, 14/18 ayar)
+- **`true`** → milyem tablosundan hesaplandı (külçe, diğer, kotasyonu gelmeyen ürünler)
+
+Değerlemede gerçek kotasyon her zaman milyem formülünün önüne geçer. Şartname
+21 ve 22 ayar için "web'den bulunan fiyat" dediği için doğrusu budur; kuyumcu
+kotasyonu, `(gram × milyem × has altın) / 1000` formülünün tutturamayacağı
+kendi marjını taşır.
+
+Kotasyon yoksa milyem formülü devreye girer:
+
+```
+TL = (Gram × Milyem × Has Altın Gram Satış) / 1000 + (Gram × Marj)
+```
 
 Önbellek: 15 dakika. Manuel yenileme için arayüzdeki "Fiyatları Yenile" düğmesi
 veya `POST /api/gold`.
@@ -90,8 +123,15 @@ Marjlar `Setting` tablosundaki `gold_margins` anahtarından okunur, Ayarlar'dan 
 Hesaplama:
 
 ```
-Adet bazlı  : TL = Adet × (Birim Satış + Marj)
-Gram bazlı  : TL = (Gram × Milyem × Has Altın Gram Satış) / 1000 + (Gram × Marj)
+Adet bazlı : TL = Adet × (Birim Satış + Marj)
+Gram bazlı : TL = Gram × (Gram Satış Fiyatı + Marj)
+```
+
+Örnek (5 Eylül 2026 kurlarıyla):
+
+```
+100 gr 21 ayar : 6.023,53 × 100 + 200 × 100 = 622.353,00 ₺
+100 gr 22 ayar : 6.228,19 × 100 +   0 × 100 = 622.819,00 ₺
 ```
 
 ---

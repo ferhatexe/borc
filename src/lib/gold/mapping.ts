@@ -90,6 +90,7 @@ export function buildGoldRecords(q: GoldQuoteSet): GoldProviderResult {
       sellPrice: round2(quote.sell),
       isPiece: true,
       effectiveGrams: grams,
+      isDerived: false,
     };
   };
 
@@ -108,6 +109,7 @@ export function buildGoldRecords(q: GoldQuoteSet): GoldProviderResult {
       sellPrice: round2(value.sell),
       isPiece: false,
       effectiveGrams: 1,
+      isDerived: !quote,
     };
   };
 

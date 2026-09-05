@@ -68,6 +68,15 @@ describe("buildGoldRecords", () => {
     expect(withCeyrek.prices.find((p) => p.goldType === "CEYREK")?.sellPrice).toBe(11165);
   });
 
+  it("türetilen ve kotasyonu olan ürünleri ayırt eder", () => {
+    const res = buildGoldRecords({ pure, bilezik22: { buy: 6218, sell: 6228 } });
+
+    // 22 ayar: gercek kotasyon geldi
+    expect(res.prices.find((p) => p.goldType === "BILEZIK_22")?.isDerived).toBe(false);
+    // 21 ayar: kotasyon yok, milyemden turetildi
+    expect(res.prices.find((p) => p.goldType === "ZINCIR_21_HALEP")?.isDerived).toBe(true);
+  });
+
   it("marj uygulamaz - marjlar kullanıcı ayarıdır", () => {
     const res = buildGoldRecords({ pure });
     const halep = res.prices.find((p) => p.goldType === "ZINCIR_21_HALEP")!;

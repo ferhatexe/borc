@@ -8,10 +8,11 @@ const NOW = new Date(2026, 8, 15); // 15 Eylül 2026
 
 const gold: GoldSyncResult = {
   prices: [
-    { goldType: "GRAM_ALTIN", name: "Gram Altın", karat: 24, buyPrice: 6863, sellPrice: 6864, isPiece: false, effectiveGrams: 1 },
-    { goldType: "CEYREK", name: "Çeyrek", karat: 22, buyPrice: 10908, sellPrice: 11165, isPiece: true, effectiveGrams: 1.75 },
-    { goldType: "ZINCIR_21_HALEP", name: "21 Ayar Halep", karat: 21, buyPrice: 6005, sellPrice: 6006, isPiece: false, effectiveGrams: 1 },
-    { goldType: "BILEZIK_22", name: "22 Ayar Bilezik", karat: 22, buyPrice: 6285, sellPrice: 6287, isPiece: false, effectiveGrams: 1 },
+    { goldType: "GRAM_ALTIN", name: "Gram Altın", karat: 24, buyPrice: 6863, sellPrice: 6864, isPiece: false, effectiveGrams: 1, isDerived: false },
+    { goldType: "CEYREK", name: "Çeyrek", karat: 22, buyPrice: 10908, sellPrice: 11165, isPiece: true, effectiveGrams: 1.75, isDerived: false },
+    // Kotasyonu olmayan urun: milyem formulunden turetilir.
+    { goldType: "ZINCIR_21_HALEP", name: "21 Ayar Halep", karat: 21, buyPrice: 6005, sellPrice: 6006, isPiece: false, effectiveGrams: 1, isDerived: true },
+    { goldType: "BILEZIK_22", name: "22 Ayar Bilezik", karat: 22, buyPrice: 6285, sellPrice: 6287, isPiece: false, effectiveGrams: 1, isDerived: true },
   ],
   pureGramSellTL: 6864,
   pureGramBuyTL: 6863,
@@ -298,6 +299,44 @@ describe("Altın borcu değerlemesi", () => {
     const v = valuateDebt(g, gold, DEFAULT_SETTINGS, NOW);
     expect(v.outstandingTL).toBeCloseTo(4 * 11165, 0);
     expect(v.goldDetail?.isPiece).toBe(true);
+  });
+
+  it("gercek kotasyon varsa milyem formulu yerine o kullanilir", () => {
+    // 21 ayar icin anlikaltinfiyati.com'dan gelen gram fiyati (isDerived: false)
+    const quoted = {
+      ...gold,
+      prices: gold.prices.map((p) =>
+        p.goldType === "ZINCIR_21_HALEP"
+          ? { ...p, sellPrice: 6023.53, isDerived: false, source: "anlikaltinfiyati.com" }
+          : p
+      ),
+    };
+
+    const g = debt({
+      type: "ALTIN_BORCU",
+      goldType: "ZINCIR_21_HALEP" as never,
+      grams: 100 as never,
+      karat: 21,
+    });
+
+    const v = valuateDebt(g, quoted, DEFAULT_SETTINGS, NOW);
+    // Kotasyon x gram + ayardaki 200 TL/gr marj
+    expect(v.outstandingTL).toBeCloseTo(6023.53 * 100 + 200 * 100, 0);
+
+    // Milyem yolu (6864 x 875/1000 = 6006) kullanilsaydi daha dusuk cikardi.
+    const derivedValue = (100 * 875 * 6864) / 1000 + 100 * 200;
+    expect(v.outstandingTL).toBeGreaterThan(derivedValue);
+  });
+
+  it("kotasyon yoksa milyem formulune duser", () => {
+    const g = debt({
+      type: "ALTIN_BORCU",
+      goldType: "ZINCIR_21_HALEP" as never,
+      grams: 100 as never,
+      karat: 21,
+    });
+    const v = valuateDebt(g, gold, DEFAULT_SETTINGS, NOW);
+    expect(v.outstandingTL).toBeCloseTo((100 * 875 * 6864) / 1000 + 100 * 200, 0);
   });
 
   it("fiyat yoksa uydurma kur kullanmaz", () => {

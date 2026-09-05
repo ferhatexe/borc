@@ -14,6 +14,7 @@ import {
 } from "./types";
 import { TruncgilGoldAdapter } from "./truncgilAdapter";
 import { TruncgilFlatGoldAdapter } from "./truncgilFlatAdapter";
+import { AnlikAltin21Adapter, isPlausibleGramPrice } from "./anlikAltinAdapter";
 import { calculateGoldValueTL } from "@/lib/finance/gold";
 import { getSettingsForOwner } from "@/lib/db/settings";
 import {
@@ -37,6 +38,39 @@ interface CachedSnapshot extends GoldProviderResult {
 let inMemoryCache: CachedSnapshot | null = null;
 
 const providers: GoldPriceProvider[] = [new TruncgilGoldAdapter(), new TruncgilFlatGoldAdapter()];
+
+/** 21 ayar icin ayri kaynak; birincil saglayici bu urunu yayinlamiyor. */
+const anlikAltin21 = new AnlikAltin21Adapter();
+
+/**
+ * 21 ayar gram fiyatini gercek piyasa kotasyonuyla degistirir.
+ *
+ * Milyemden turetilen deger yalnizca bir yaklasimdir; sartname 21 ayar icin
+ * "web'den bulunan fiyat" diyor. Kazima basarisiz olur ya da makul araligin
+ * disinda bir sayi donerse katalog oldugu gibi birakilir.
+ */
+async function enrichWith21Ayar(result: GoldProviderResult): Promise<void> {
+  const record = result.prices.find((p) => p.goldType === "ZINCIR_21_HALEP");
+  if (!record) return;
+
+  const scraped = await anlikAltin21.fetchGramPrice();
+  if (scraped === null) {
+    console.warn("21 ayar fiyati alinamadi, milyemden turetilen deger kullanilacak.");
+    return;
+  }
+
+  if (!isPlausibleGramPrice(scraped, record.sellPrice)) {
+    console.warn(
+      `21 ayar fiyati makul araligin disinda (kazinan ${scraped}, turetilen ${record.sellPrice}); yok sayildi.`
+    );
+    return;
+  }
+
+  record.sellPrice = scraped;
+  record.buyPrice = scraped;
+  record.isDerived = false;
+  record.source = anlikAltin21.name;
+}
 
 export function resetGoldCache() {
   inMemoryCache = null;
@@ -150,6 +184,9 @@ async function loadLatestSnapshot(): Promise<CachedSnapshot | null> {
     sellPrice: Number(row.sellPrice),
     isPiece: isPieceGoldType(row.goldType),
     effectiveGrams: DEFAULT_GOLD_UNIT_GRAMS[row.goldType] ?? 1,
+    // Snapshot, canli cekimde ne kaydedildiyse odur; yeniden turetilmez.
+    isDerived: false,
+    source: row.source,
   }));
 
   // KULCE is stored straight from the pure gram price, so it restores the basis.
@@ -256,6 +293,7 @@ export async function getGoldPrices(forceRefresh = false): Promise<GoldSyncResul
   for (const provider of providers) {
     try {
       const result = await provider.fetchPrices();
+      await enrichWith21Ayar(result);
       const fetchedAt = new Date();
       const snap: CachedSnapshot = {
         ...result,
@@ -345,6 +383,22 @@ export function calculateGoldDebtLiveTL(
       ? Number(debt.premiumTL)
       : (options.margins?.[debt.goldType] ?? 0);
 
+  /*
+   * Gram ürünlerinde fiyat kaynağı önceliği:
+   *   1. Kullanıcının girdiği manuel gram fiyatı
+   *   2. Ürünün kendi piyasa kotasyonu (21 ayar, 22 ayar bilezik, 14/18 ayar)
+   *   3. Milyem formülü: (gram × milyem × has altın) / 1000
+   *
+   * Şartname 21 ve 22 ayar için "web'den bulunan fiyat" diyor. Gerçek kotasyon
+   * kuyumcunun kendi marjını da taşıdığı için milyem hesabının tutturamayacağı
+   * bir farkı vardır; kotasyon varsa o kullanılır.
+   */
+  let perGramPriceTL: number | undefined;
+  if (!isPiece) {
+    if (useManual) perGramPriceTL = Number(debt.manualUnitPrice);
+    else if (meta && meta.isDerived === false) perGramPriceTL = meta.sellPrice;
+  }
+
   const res = calculateGoldValueTL({
     goldType: debt.goldType,
     quantity: isPiece ? Number(debt.quantity ?? 0) : undefined,
@@ -352,9 +406,7 @@ export function calculateGoldDebtLiveTL(
     karat: debt.karat ?? meta?.karat ?? undefined,
     unitPriceTL,
     pureGoldGramSellTL: pureGramSellTL,
-    // A manual price on a gram product is already per-gram, so it must not be
-    // scaled by the millesimal a second time.
-    perGramPriceTL: useManual && !isPiece ? Number(debt.manualUnitPrice) : undefined,
+    perGramPriceTL,
     premiumTL: margin,
     millesimalMap,
   });
