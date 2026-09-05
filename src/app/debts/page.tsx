@@ -194,6 +194,16 @@ export default function DebtsPage() {
         </div>
       </div>
 
+      {/* Altın fiyatı canlı değilse toplamların dayandığı veriyi açıkça bildir */}
+      {goldWarning && (
+        <div
+          role="status"
+          className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-200"
+        >
+          {goldWarning}
+        </div>
+      )}
+
       {/* Arama & Filtreleme Çubuğu */}
       <div className="p-4 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-3">
         <div className="flex flex-wrap gap-2.5">
