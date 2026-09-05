@@ -21,9 +21,9 @@ const loginSchema = z.object({
 
 /**
  * Credentials are checked against the database only. The previous version fell
- * back to comparing the plaintext password against SEED_USER_PASSWORD, which had a compiled-in default value,
- * so any deployment that had not set that variable was left with a publicly
- * known login.
+ * back to comparing the plaintext password against SEED_USER_PASSWORD, which
+ * had a compiled-in default value, so any deployment that had not set that
+ * variable was left with a publicly known login.
  */
 export async function POST(req: NextRequest) {
   try {
