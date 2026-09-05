@@ -14,6 +14,8 @@ import { defineConfig } from "prisma/config";
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
-    seed: "tsx prisma/seed.ts",
+    // `npx` sart: tsx bir devDependency, PATH'te dogrudan bulunmuyor.
+    // Bu olmadan hem yerelde hem Vercel build'inde seed adimi patliyor.
+    seed: "npx tsx prisma/seed.ts",
   },
 });
