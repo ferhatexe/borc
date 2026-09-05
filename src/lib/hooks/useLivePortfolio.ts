@@ -5,6 +5,10 @@ import type { CurrencyRate, GoldPriceRecord, OunceQuote } from "@/lib/gold/types
 import type { UpcomingPayment } from "@/lib/finance/debtValuation";
 
 export interface LiveTotals {
+  /** Kasadaki nakit: tüm zamanların geliri eksi gideri. */
+  cashBalanceTL: number;
+  totalIncomeAllTimeTL: number;
+  totalExpenseAllTimeTL: number;
   totalDebtTL: number;
   goldDebtTL: number;
   accruedInterestTL: number;

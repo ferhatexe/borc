@@ -20,7 +20,7 @@ import {
   Receipt,
   Link as LinkIcon,
 } from "@phosphor-icons/react";
-import { formatCurrency, formatDateTR } from "@/lib/formatters";
+import { formatCurrency, formatDateTR, toDateInputValue } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 
 export default function ExpensesPage() {
@@ -43,7 +43,7 @@ export default function ExpensesPage() {
   const [categoryId, setCategoryId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("KREDI_KARTI");
   const [relatedDebtId, setRelatedDebtId] = useState<string>("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(toDateInputValue());
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 

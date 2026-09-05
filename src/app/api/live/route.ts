@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
 import { getDebts } from "@/lib/db/debts";
-import { getIncomes, getExpenses } from "@/lib/db/transactions";
+import { getIncomes, getExpenses, getCashBalance } from "@/lib/db/transactions";
 import { getSettings } from "@/lib/db/settings";
 import { getGoldPrices } from "@/lib/gold/goldService";
 import { buildPortfolioSummary } from "@/lib/finance/debtValuation";
@@ -26,11 +26,12 @@ export async function GET() {
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
 
-    const [debts, incomes, expenses, settings] = await Promise.all([
+    const [debts, incomes, expenses, settings, cash] = await Promise.all([
       getDebts(session.userId),
       getIncomes(session.userId, { from: monthStart, to: monthEnd }),
       getExpenses(session.userId, { from: monthStart, to: monthEnd }),
       getSettings(session.userId),
+      getCashBalance(session.userId),
     ]);
 
     let gold: GoldSyncResult | null = null;
@@ -50,6 +51,9 @@ export async function GET() {
       {
         serverTime: now.toISOString(),
         totals: {
+          cashBalanceTL: cash.balanceTL,
+          totalIncomeAllTimeTL: cash.totalIncomeTL,
+          totalExpenseAllTimeTL: cash.totalExpenseTL,
           totalDebtTL: portfolio.totalDebtTL,
           goldDebtTL: portfolio.goldDebtTL,
           accruedInterestTL: portfolio.totalAccruedInterestTL,

@@ -122,3 +122,40 @@ export function formatLiveAmount(value: number | null | undefined): string {
   if (!Number.isFinite(n)) return formatCurrency(0);
   return Math.abs(n) >= 100 ? formatCurrency(n) : `${formatNumber(n, 4)} ₺`;
 }
+
+/**
+ * <input type="date"> için YEREL tarihi "yyyy-MM-dd" olarak verir.
+ *
+ * `new Date(...).toISOString().split("T")[0]` kullanmayın: yerel gece yarısını
+ * UTC'ye çevirdiği için UTC+3'te tarihi bir gün geri alır. Bu, kredi
+ * sihirbazında "ilk ödeme 04.10" yazıp taksit planını 05.10'dan başlatıyordu.
+ */
+export function toDateInputValue(date: Date | string | number = new Date()): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return "";
+  return format(d, "yyyy-MM-dd");
+}
+
+/**
+ * "yyyy-MM-dd" değerini YEREL gece yarısı olarak çözer.
+ *
+ * `new Date("2026-10-04")` bu dizeyi UTC sayar; UTC+3'te 03:00'e, UTC-5'te ise
+ * bir önceki güne denk gelir. Tarih girişleri her zaman yerel gün olarak
+ * yorumlanmalıdır.
+ */
+export function parseDateInput(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) {
+    const fallback = new Date(value);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+  }
+  const [, y, m, d] = match;
+  return new Date(Number(y), Number(m) - 1, Number(d));
+}
+
+/** Tarih girişinden ayın gününü yerel olarak okur. */
+export function dayOfMonthFromInput(value: string): number | null {
+  const date = parseDateInput(value);
+  return date ? date.getDate() : null;
+}

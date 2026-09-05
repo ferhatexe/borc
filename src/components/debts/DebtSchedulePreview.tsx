@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { generateAmortizationSchedule } from "@/lib/finance/annuity";
-import { formatCurrency, formatDateTR } from "@/lib/formatters";
+import { formatCurrency, formatDateTR, parseDateInput } from "@/lib/formatters";
 import {
   CheckCircle,
   Calendar,
@@ -54,7 +54,7 @@ export function DebtSchedulePreview({
           kkdfRate: formData.kkdfRate,
           includeBSMV: formData.includeBSMV,
           bsmvRate: formData.bsmvRate,
-          firstPaymentDate: formData.firstPaymentDate || new Date(),
+          firstPaymentDate: parseDateInput(formData.firstPaymentDate) ?? new Date(),
           paymentDayOfMonth: formData.paymentDayOfMonth,
           installmentAmountOverride: formData.installmentAmount || null,
         });

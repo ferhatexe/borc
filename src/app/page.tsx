@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { endOfMonth, startOfMonth } from "date-fns";
 import { getCurrentSession } from "@/lib/auth";
 import { getDebts } from "@/lib/db/debts";
-import { getIncomes, getExpenses } from "@/lib/db/transactions";
+import { getIncomes, getExpenses, getCashBalance } from "@/lib/db/transactions";
 import { getSettings } from "@/lib/db/settings";
 import { getGoldPrices } from "@/lib/gold/goldService";
 import { getAnalyticsSummary } from "@/lib/db/reports";
@@ -21,11 +21,12 @@ export default async function DashboardPage() {
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
-  const [debts, incomes, expenses, settings] = await Promise.all([
+  const [debts, incomes, expenses, settings, cash] = await Promise.all([
     getDebts(session.userId),
     getIncomes(session.userId, { from: monthStart, to: monthEnd }),
     getExpenses(session.userId, { from: monthStart, to: monthEnd }),
     getSettings(session.userId),
+    getCashBalance(session.userId),
   ]);
 
   // Gold prices may be unavailable; the UI shows a warning band rather than
@@ -55,6 +56,9 @@ export default async function DashboardPage() {
   const initialLive: LivePayload = {
     serverTime: now.toISOString(),
     totals: {
+      cashBalanceTL: cash.balanceTL,
+      totalIncomeAllTimeTL: cash.totalIncomeTL,
+      totalExpenseAllTimeTL: cash.totalExpenseTL,
       totalDebtTL: portfolio.totalDebtTL,
       goldDebtTL: portfolio.goldDebtTL,
       accruedInterestTL: portfolio.totalAccruedInterestTL,

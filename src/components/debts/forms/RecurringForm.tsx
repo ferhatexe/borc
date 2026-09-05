@@ -1,5 +1,7 @@
 "use client";
 
+import { toDateInputValue } from "@/lib/formatters";
+
 import { useState, useEffect } from "react";
 import { CalendarCheck, Repeat } from "@phosphor-icons/react";
 
@@ -29,7 +31,7 @@ export function RecurringForm({ initialData, institutionName, onChange }: Recurr
 
   const today = new Date();
   const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  const defaultNextDate = nextMonth.toISOString().split("T")[0];
+  const defaultNextDate = toDateInputValue(nextMonth);
 
   const [nextDueDate, setNextDueDate] = useState(initialData?.nextDueDate || defaultNextDate);
   const [autoCreateExpense, setAutoCreateExpense] = useState(

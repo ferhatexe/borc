@@ -207,3 +207,41 @@ export async function deleteExpensePermanently(userId: string, id: string) {
   if (result.count === 0) throw new NotFoundError("Gider kaydı bulunamadı");
   return true;
 }
+
+// ------------------------------ KASA ----------------------------------
+
+export interface CashBalance {
+  /** Elde kalan nakit: tüm zamanların geliri eksi gideri. */
+  balanceTL: number;
+  totalIncomeTL: number;
+  totalExpenseTL: number;
+}
+
+/**
+ * Kasadaki nakit.
+ *
+ * Gelir eklendiğinde artar, gider (borç ödemeleri dahil, çünkü ödeme aynı
+ * anda bir gider kaydı oluşturur) düştüğünde azalır. Satırları çekip toplamak
+ * yerine veritabanında toplanır; kayıt sayısı büyüdükçe fark eder.
+ */
+export async function getCashBalance(userId: string): Promise<CashBalance> {
+  const [income, expense] = await Promise.all([
+    prisma.income.aggregate({
+      where: { userId, isArchived: false },
+      _sum: { amount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { userId, isArchived: false },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const totalIncomeTL = Number(income._sum.amount ?? 0);
+  const totalExpenseTL = Number(expense._sum.amount ?? 0);
+
+  return {
+    balanceTL: Math.round((totalIncomeTL - totalExpenseTL) * 100) / 100,
+    totalIncomeTL,
+    totalExpenseTL,
+  };
+}

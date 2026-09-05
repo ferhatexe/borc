@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { calculateOverdraftInterest } from "@/lib/finance/overdraft";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, toDateInputValue } from "@/lib/formatters";
 import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import { Vault, Lightning, CalendarBlank } from "@phosphor-icons/react";
 
@@ -38,7 +38,7 @@ export function OverdraftForm({ initialData, institutionName, onChange }: Overdr
   );
   // Faizin hangi tarihten beri isledigi; canli sayac bunu esas alir.
   const [lastInterestChargeDate, setLastInterestChargeDate] = useState<string>(
-    initialData?.lastInterestChargeDate ?? new Date().toISOString().slice(0, 10)
+    initialData?.lastInterestChargeDate ?? toDateInputValue()
   );
   const [notes, setNotes] = useState(initialData?.notes || "");
 
@@ -201,7 +201,7 @@ export function OverdraftForm({ initialData, institutionName, onChange }: Overdr
           <input
             type="date"
             required
-            max={new Date().toISOString().slice(0, 10)}
+            max={toDateInputValue()}
             value={lastInterestChargeDate}
             onChange={(e) => setLastInterestChargeDate(e.target.value)}
             className="w-full h-11 pl-10 pr-4 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-amber-500"

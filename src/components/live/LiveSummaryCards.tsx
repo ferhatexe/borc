@@ -8,6 +8,7 @@ import {
   Lightning,
   TrendDown,
   TrendUp,
+  Vault,
   WarningOctagon,
 } from "@phosphor-icons/react";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
@@ -30,13 +31,14 @@ function Card({
 }: {
   label: string;
   icon: React.ReactNode;
-  tone: "debt" | "warn" | "income" | "cyan" | "gold";
+  tone: "debt" | "warn" | "income" | "cyan" | "gold" | "cash";
   children: React.ReactNode;
   footer?: React.ReactNode;
   href?: string;
 }) {
   const tones = {
     debt: "text-rose-400 bg-rose-500/10 border-rose-500/20",
+    cash: "text-teal-300 bg-teal-500/10 border-teal-500/25",
     warn: "text-amber-400 bg-amber-500/10 border-amber-500/20",
     income: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     cyan: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",
@@ -84,7 +86,7 @@ function Amount({ value, tone }: { value: number; tone: "debt" | "income" | "neu
 function Skeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {[0, 1, 2, 3].map((i) => (
+      {[0, 1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
           className="glass-card h-[7.5rem] animate-pulse motion-reduce:animate-none"
@@ -111,10 +113,39 @@ export function LiveSummaryCards({
   const cashFlowPositive = totals.cashFlowTL >= 0;
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <Card
-        label="Toplam Borç"
-        tone="debt"
+    <div className="space-y-3">
+      {/* En üstte iki başlık rakamı: elde ne var, ne borç var. */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Card
+          label="Kasa · Nakit Bakiye"
+          tone="cash"
+          icon={<Vault size={17} weight="duotone" />}
+          href="/income"
+          footer={
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className="text-emerald-400">
+                +{formatCurrency(totals.totalIncomeAllTimeTL)} gelir
+              </span>
+              <span className="text-rose-400">
+                −{formatCurrency(totals.totalExpenseAllTimeTL)} gider
+              </span>
+            </span>
+          }
+        >
+          <Amount
+            value={totals.cashBalanceTL}
+            tone={totals.cashBalanceTL >= 0 ? "income" : "debt"}
+          />
+          <span className="mt-1.5 text-[10px] text-zinc-400">
+            {totals.cashBalanceTL >= 0
+              ? "Gelirlerinizden harcanmayan tutar"
+              : "Gideriniz gelirinizi aştı"}
+          </span>
+        </Card>
+
+        <Card
+          label="Toplam Borç"
+          tone="debt"
         icon={<CreditCard size={17} weight="duotone" />}
         href="/debts"
         footer={
@@ -128,15 +159,17 @@ export function LiveSummaryCards({
           </span>
         }
       >
-        <Amount value={liveTotalDebtTL} tone="debt" />
-        {totals.dailyAccrualTL > 0 && (
-          <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-amber-400">
-            <Lightning size={11} weight="fill" />
-            <span className="tabular-nums">+{formatNumber(tickedInterestTL, 4)} ₺ işledi</span>
-          </span>
-        )}
-      </Card>
+          <Amount value={liveTotalDebtTL} tone="debt" />
+          {totals.dailyAccrualTL > 0 && (
+            <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-amber-400">
+              <Lightning size={11} weight="fill" />
+              <span className="tabular-nums">+{formatNumber(tickedInterestTL, 4)} ₺ işledi</span>
+            </span>
+          )}
+        </Card>
+      </div>
 
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
       <Card
         label={totals.overdueCount > 0 ? "Ödemesi Geçti" : "Bu Ay Ödenecek"}
         tone={totals.overdueCount > 0 ? "warn" : "cyan"}
@@ -205,6 +238,7 @@ export function LiveSummaryCards({
           {cashFlowPositive ? "Pozitif denge" : "Açık var"}
         </span>
       </Card>
+      </div>
     </div>
   );
 }

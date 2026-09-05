@@ -6,7 +6,7 @@ import {
   calculateAnnuityInstallment,
   solveMonthlyInterestRate,
 } from "@/lib/finance/annuity";
-import { formatCurrency } from "@/lib/formatters";
+import { dayOfMonthFromInput, formatCurrency, toDateInputValue } from "@/lib/formatters";
 import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import {
   Calculator,
@@ -79,7 +79,7 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
 
   const today = new Date();
   const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-  const defaultFirstDate = nextMonth.toISOString().split("T")[0];
+  const defaultFirstDate = toDateInputValue(nextMonth);
 
   const [firstPaymentDate, setFirstPaymentDate] = useState<string>(
     initialData?.firstPaymentDate || defaultFirstDate
@@ -467,10 +467,10 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
               value={firstPaymentDate}
               onChange={(e) => {
                 setFirstPaymentDate(e.target.value);
-                if (e.target.value) {
-                  const day = new Date(e.target.value).getDate();
-                  setPaymentDayOfMonth(day);
-                }
+                // Ayin gunu yerel olarak okunur; new Date("2026-10-04") UTC
+                // sayildigi icin plan bir gun kayabiliyordu.
+                const day = dayOfMonthFromInput(e.target.value);
+                if (day) setPaymentDayOfMonth(day);
               }}
               className="w-full h-11 px-3.5 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500"
             />

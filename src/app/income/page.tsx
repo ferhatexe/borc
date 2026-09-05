@@ -16,7 +16,7 @@ import {
   CaretRight,
   Laptop,
 } from "@phosphor-icons/react";
-import { formatCurrency, formatDateTR } from "@/lib/formatters";
+import { formatCurrency, formatDateTR, toDateInputValue } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 
 export default function IncomePage() {
@@ -35,7 +35,7 @@ export default function IncomePage() {
   const [amount, setAmount] = useState<number | "">("");
   const [source, setSource] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(toDateInputValue());
   const [isRecurring, setIsRecurring] = useState(true);
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
