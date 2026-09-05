@@ -3,8 +3,8 @@
  * Runs three times a day (09:00, 13:00, 17:00 TRT).
  *
  * It talks to the database directly instead of calling the web service over
- * HTTP. The old version fetched NEXT_PUBLIC_APP_URL, which the cron service was
- * never given, so every run silently hit http://localhost:3000 and failed.
+ * HTTP, so it needs no app URL and no shared secret. On Vercel this script is
+ * not used at all: the vercel.json cron calls /api/cron/gold instead.
  */
 import { getGoldPrices } from "../src/lib/gold/goldService";
 import { prisma } from "../src/lib/prisma";

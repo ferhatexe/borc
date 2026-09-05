@@ -258,7 +258,6 @@ Prisma migrate pgbouncer üzerinden çalışamadığı için ikisi de gerekir.
 | `CRON_SECRET` | 16+ karakter rastgele dizi |
 | `SEED_USER_EMAIL` | Giriş e-postanız |
 | `SEED_USER_PASSWORD` | **En az 10 karakter** |
-| `NEXT_PUBLIC_APP_URL` | Deploy sonrası verilen adres |
 
 Rastgele değer üretmek için:
 
@@ -274,7 +273,6 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 ### 3. Deploy sonrası
 
-- `NEXT_PUBLIC_APP_URL`'i gerçek adresle güncelleyip yeniden deploy edin.
 - `/api/health` adresini açın: `status: "ok"` ve `database: "ok"` görmelisiniz.
 - Telefonda tarayıcı menüsünden **"Ana ekrana ekle"** ile PWA olarak kurun.
 
