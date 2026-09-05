@@ -170,6 +170,11 @@ model Debt {
   bsmvRate                Decimal?            @default(0.15) @db.Decimal(5, 4)
   earlyPayoffEnabled      Boolean?            @default(false)
   loanAccountNo           String?
+  // Bankadaki guncel kalan anapara. Erken/kismi odeme, dosya masrafi, sigorta
+  // ya da yapilandirma yuzunden amortisman tablosu bankanin rakamini birebir
+  // tutturamaz; kullanici bankadaki degeri girdiginde o esas alinir.
+  currentPrincipalOverride Decimal?           @db.Decimal(18, 4)
+  principalOverrideAt      DateTime?
 
   // 2) KREDI_KARTI
   cardName                String?

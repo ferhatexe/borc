@@ -1,7 +1,11 @@
 import { Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import { prisma } from "@/lib/prisma";
-import { generateAmortizationSchedule } from "@/lib/finance/annuity";
+import {
+  calculateAnnuityInstallment,
+  generateAmortizationSchedule,
+  solveMonthlyInterestRate,
+} from "@/lib/finance/annuity";
 import { getSettings } from "@/lib/db/settings";
 import type { CreateDebtInput, PayInstallmentInput, UpdateDebtInput } from "@/lib/validation/debt";
 
@@ -60,18 +64,59 @@ async function buildSchedules(userId: string, input: CreateDebtInput) {
 
   const settings = await getSettings(userId);
 
+  const kkdfRate = input.kkdfRate ?? settings.taxRates.kkdfRate;
+  const bsmvRate = input.bsmvRate ?? settings.taxRates.bsmvRate;
+
+  /*
+   * Türk bankalarında taksit genellikle dosya masrafı ve sigorta da içerir, bu
+   * yüzden akdi faizden hesaplanan taksitten yüksektir. Kullanıcı bankanın
+   * söylediği taksiti girdiyse plan ona göre kurulmalı, AMA faiz oranı da o
+   * taksitten çözülmeli.
+   *
+   * Aksi hâlde faiz payları düşük kalır, anapara payları yüksek çıkar ve son
+   * taksit kalanı emerek diğerlerinden farklı bir tutara düşer; oysa bankanın
+   * tablosunda beş taksit de eşittir. Kullanıcının girdiği akdi faiz
+   * `interestRateMonthly` alanında gösterim için saklanmaya devam eder.
+   */
+  const statedInstallment = input.installmentAmount ?? 0;
+  let scheduleRatePercent: number | Decimal = input.interestRateMonthly;
+
+  if (statedInstallment > 0) {
+    const fromRate = calculateAnnuityInstallment({
+      principal: input.principal,
+      monthlyInterestRatePercent: input.interestRateMonthly,
+      installmentCount: input.installmentCount,
+      includeKKDF: input.includeKKDF,
+      kkdfRate,
+      includeBSMV: input.includeBSMV,
+      bsmvRate,
+    }).installmentAmount;
+
+    // Bir kuruştan fazla fark varsa taksit, orandan türetilenle uyuşmuyor.
+    if (fromRate.minus(statedInstallment).abs().greaterThan("0.01")) {
+      scheduleRatePercent = solveMonthlyInterestRate(
+        input.principal,
+        statedInstallment,
+        input.installmentCount,
+        input.includeKKDF,
+        input.includeBSMV,
+        kkdfRate,
+        bsmvRate
+      ).rawMonthlyRatePercent;
+    }
+  }
+
   const rows = generateAmortizationSchedule({
     principal: input.principal,
-    monthlyInterestRatePercent: input.interestRateMonthly,
+    monthlyInterestRatePercent: scheduleRatePercent,
     installmentCount: input.installmentCount,
     includeKKDF: input.includeKKDF,
-    kkdfRate: input.kkdfRate ?? settings.taxRates.kkdfRate,
+    kkdfRate,
     includeBSMV: input.includeBSMV,
-    bsmvRate: input.bsmvRate ?? settings.taxRates.bsmvRate,
+    bsmvRate,
     firstPaymentDate: input.firstPaymentDate ?? input.startDate,
     paymentDayOfMonth: input.paymentDayOfMonth,
-    // Honour a bank-stated instalment so the plan matches the real contract.
-    installmentAmountOverride: input.installmentAmount || null,
+    installmentAmountOverride: statedInstallment || null,
   });
 
   // Kredi ortasından ekleniyorsa ilk N taksit ödenmiş kabul edilir; böylece
@@ -131,6 +176,9 @@ export async function createDebt(userId: string, input: CreateDebtInput): Promis
       bsmvRate: dec(input.bsmvRate),
       earlyPayoffEnabled: input.earlyPayoffEnabled ?? false,
       loanAccountNo: input.loanAccountNo ?? null,
+      currentPrincipalOverride: dec(input.currentPrincipalOverride),
+      principalOverrideAt:
+        input.currentPrincipalOverride != null ? new Date() : null,
 
       cardName: input.cardName ?? null,
       last4: input.last4 ?? null,
@@ -259,6 +307,10 @@ export async function updateDebt(
   assign("drawee", input.drawee ?? null);
   assign("loanAccountNo", input.loanAccountNo ?? null);
   assign("earlyPayoffEnabled", input.earlyPayoffEnabled);
+  if (input.currentPrincipalOverride !== undefined) {
+    data.currentPrincipalOverride = dec(input.currentPrincipalOverride);
+    data.principalOverrideAt = input.currentPrincipalOverride != null ? new Date() : null;
+  }
 
   if (input.installmentsOnCard !== undefined) {
     data.installmentsOnCard = jsonOrNull(input.installmentsOnCard);

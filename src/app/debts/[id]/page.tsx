@@ -385,7 +385,9 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
           </p>
           <p className="text-[10px] text-zinc-500">
             {isLoan
-              ? `Toplam Kredi: ${formatCurrency(debt.principal || 0)}`
+              ? valuation?.principalIsManual
+                ? `Bankadan girilen kalan · Toplam Kredi: ${formatCurrency(debt.principal || 0)}`
+                : `Toplam Kredi: ${formatCurrency(debt.principal || 0)}`
               : debt.type === "EK_HESAP_KMH"
               ? `Limit: ${formatCurrency(debt.limit || 0)}`
               : debt.type === "ALTIN_BORCU"

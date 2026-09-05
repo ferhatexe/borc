@@ -31,6 +31,9 @@ export interface DebtValuation {
 
   monthlyInterestRatePercent: number | null;
   installmentAmountTL: number | null;
+  /** Kalan anapara kullanıcı tarafından mı verildi? */
+  principalIsManual: boolean;
+  principalOverrideAt: string | null;
   remainingInstallments: number | null;
   paidInstallments: number | null;
   totalInstallments: number | null;
@@ -205,6 +208,15 @@ export function valuateDebt(
       } else if (schedules.length === 0) {
         principalTL = num(debt.principal);
       }
+
+      /*
+       * Kullanıcı bankadaki güncel kalan anaparayı girdiyse o kazanır.
+       * Erken ödeme, kısmi ödeme, dosya masrafı ve sigorta yüzünden amortisman
+       * tablosu bankanın rakamını birebir tutturamaz; bu alan o farkı kapatır.
+       * Plan yine taksit tarihleri ve tutarları için kullanılmaya devam eder.
+       */
+      const override = numOrNull(debt.currentPrincipalOverride);
+      if (override !== null && override >= 0) principalTL = override;
 
       for (const row of pending) {
         const due = new Date(row.dueDate);
@@ -414,6 +426,11 @@ export function valuateDebt(
 
     monthlyInterestRatePercent: numOrNull(debt.interestRateMonthly),
     installmentAmountTL: numOrNull(debt.installmentAmount),
+    principalIsManual:
+      debt.type === "TAKSITLI_KREDI" && numOrNull(debt.currentPrincipalOverride) !== null,
+    principalOverrideAt: debt.principalOverrideAt
+      ? new Date(debt.principalOverrideAt).toISOString()
+      : null,
     remainingInstallments: schedules.length > 0 ? pending.length : null,
     paidInstallments: schedules.length > 0 ? paidCount : null,
     totalInstallments: schedules.length > 0 ? schedules.length : debt.installmentCount,

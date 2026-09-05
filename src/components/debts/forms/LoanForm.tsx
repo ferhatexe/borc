@@ -31,6 +31,8 @@ export interface LoanFormData {
   paymentDayOfMonth: number;
   /** Krediyi ortasından ekleyenler için: kaç taksit zaten ödendi. */
   paidInstallments: number;
+  /** Bankadaki güncel kalan anapara; girilirse hesaplananın yerine geçer. */
+  currentPrincipalOverride?: number;
   loanAccountNo?: string;
   title: string;
   notes?: string;
@@ -92,6 +94,16 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
   const [paidInstallments, setPaidInstallments] = useState<number>(
     initialData?.paidInstallments ?? 0
   );
+  const [currentPrincipalOverride, setCurrentPrincipalOverride] = useState<number>(
+    initialData?.currentPrincipalOverride ?? 0
+  );
+  /*
+   * Turkiye'de banka taksiti genellikle dosya masrafi ve sigorta da icerir, bu
+   * yuzden saf faizden hesaplanan taksitten yuksek olur. Kullanici hem akdi
+   * faizi hem bankanin soyledigi gercek taksiti girebilmeli; plan gercek
+   * taksite gore kurulur.
+   */
+  const [actualInstallment, setActualInstallment] = useState<number>(0);
   const [loanAccountNo, setLoanAccountNo] = useState<string>(initialData?.loanAccountNo || "");
   const [title, setTitle] = useState<string>(
     initialData?.title || `${institutionName || "Banka"} İhtiyaç Kredisi`
@@ -213,7 +225,9 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
         : calculation?.solvedMonthlyRate || 0;
     const finalInstallment =
       calcMode === "RATE_TO_INSTALLMENT"
-        ? calculation?.installmentAmount || 0
+        ? actualInstallment > 0
+          ? actualInstallment
+          : calculation?.installmentAmount || 0
         : targetInstallmentAmount;
 
     onChange(
@@ -230,6 +244,8 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
         firstPaymentDate,
         paymentDayOfMonth: Number(paymentDayOfMonth),
         paidInstallments: Number(paidInstallments),
+        currentPrincipalOverride:
+          currentPrincipalOverride > 0 ? Number(currentPrincipalOverride) : undefined,
         loanAccountNo,
         title,
         notes,
@@ -247,6 +263,8 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
     firstPaymentDate,
     paymentDayOfMonth,
     paidInstallments,
+    currentPrincipalOverride,
+    actualInstallment,
     loanAccountNo,
     title,
     notes,
@@ -369,6 +387,31 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
                 %
               </span>
             </div>
+
+            <label className="mt-2 block text-[11px] font-medium text-zinc-400">
+              Bankanın söylediği gerçek taksit (opsiyonel)
+            </label>
+            <div className="relative mt-1">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={actualInstallment || ""}
+                onChange={(e) => setActualInstallment(Number(e.target.value))}
+                placeholder={
+                  calculation ? formatCurrency(calculation.installmentAmount) : "9.598,57"
+                }
+                className="w-full h-10 pl-3.5 pr-10 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500 font-mono"
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 font-semibold">
+                ₺
+              </span>
+            </div>
+            <p className="mt-1 text-[10px] text-zinc-500">
+              Banka taksitine dosya masrafı ve sigorta da eklendiği için saf faizden
+              hesaplanandan yüksek çıkar. Buraya yazarsanız taksit planı bankadaki
+              tutarla birebir kurulur.
+            </p>
           </div>
         ) : (
           <div>
@@ -502,6 +545,32 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
             Krediyi <strong>bankadaki hâliyle</strong> girin: toplam anapara ve
             toplam taksit sayısı. Ödediklerinizi buraya yazın; kalan anapara ve
             erken kapama tutarı buna göre hesaplanır.
+          </p>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            Bankadaki Güncel Kalan Anapara (Opsiyonel)
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={currentPrincipalOverride || ""}
+              onChange={(e) => setCurrentPrincipalOverride(Number(e.target.value))}
+              placeholder="Örn: 32.195,95"
+              className="w-full h-11 pl-3.5 pr-10 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500 font-mono text-base"
+            />
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 font-semibold">
+              ₺
+            </span>
+          </div>
+          <p className="text-[10px] text-zinc-500 mt-1">
+            Taksitini <strong>erken veya farklı tutarda</strong> ödediyseniz, ya da
+            taksite dosya masrafı/sigorta dahilse, amortisman tablosu bankanın
+            rakamını birebir tutturamaz. Bankadaki kalan anaparayı buraya
+            yazarsanız kalan borç ve erken kapama tam olarak ona göre hesaplanır.
           </p>
         </div>
 

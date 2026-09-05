@@ -119,6 +119,11 @@ const baseDebtSchema = z.object({
   bsmvRate: rateFraction("BSMV oranı").optional().nullable(),
   earlyPayoffEnabled: z.coerce.boolean().optional(),
   loanAccountNo: z.string().trim().max(64).optional().nullable(),
+  /**
+   * Bankadaki güncel kalan anapara. Verilirse amortisman tablosundan
+   * hesaplanan bakiyenin yerine geçer.
+   */
+  currentPrincipalOverride: optionalMoney("Güncel kalan anapara"),
 
   // KREDI_KARTI
   cardName: z.string().trim().max(120).optional().nullable(),

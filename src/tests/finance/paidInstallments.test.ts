@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateAmortizationSchedule } from "@/lib/finance/annuity";
+import { generateAmortizationSchedule, solveMonthlyInterestRate } from "@/lib/finance/annuity";
 import { calculateEarlyPayoff } from "@/lib/finance/earlyPayoff";
 import { valuateDebt } from "@/lib/finance/debtValuation";
 import { DEFAULT_SETTINGS } from "@/lib/settings/defaults";
@@ -107,5 +107,83 @@ describe("Ortasından eklenen kredi", () => {
     expect(v.isOverdue).toBe(false);
     expect(v.outstandingTL).toBe(0);
     expect(v.remainingInstallments).toBe(0);
+  });
+});
+
+describe("Bankadaki kalan anapara ile hizalama", () => {
+  /**
+   * Gerçek vaka: 40.000 TL / 5 taksit, ilk taksit ERKEN ve farklı tutarda
+   * ödendi (8.849,09 yerine 9.598,57). Banka kalan anaparayı 32.195,95 diyor,
+   * amortisman tablosu ise 32.117,43 hesaplıyor. Aradaki fark erken ödemeden.
+   */
+  function withOverride(override: number | null): DebtWithRelations {
+    const base = loanWith(1) as unknown as Record<string, unknown>;
+    return {
+      ...base,
+      currentPrincipalOverride: override,
+      principalOverrideAt: override === null ? null : new Date(),
+    } as unknown as DebtWithRelations;
+  }
+
+  it("override verilince kalan anapara tam olarak o değerdir", () => {
+    const v = valuateDebt(withOverride(32195.95), null, DEFAULT_SETTINGS, new Date(2026, 8, 1));
+    expect(v.principalTL).toBeCloseTo(32195.95, 2);
+    expect(v.principalIsManual).toBe(true);
+  });
+
+  it("override yoksa plandan hesaplanır", () => {
+    const v = valuateDebt(withOverride(null), null, DEFAULT_SETTINGS, new Date(2026, 8, 1));
+    expect(v.principalIsManual).toBe(false);
+    expect(v.principalTL).not.toBeCloseTo(32195.95, 2);
+  });
+
+  it("erken kapama override edilen anaparayı kullanır", () => {
+    const v = valuateDebt(withOverride(32195.95), null, DEFAULT_SETTINGS, new Date(2026, 8, 1));
+    const payoff = calculateEarlyPayoff({
+      remainingPrincipal: v.principalTL,
+      amortizationSchedule: PLAN,
+      paidInstallmentCount: 1,
+      penaltyRate: 0.02,
+    });
+    expect(payoff.currentRemainingPrincipal.toNumber()).toBeCloseTo(32195.95, 2);
+    expect(payoff.totalPayoffAmount.toNumber()).toBeCloseTo(32195.95 * 1.02, 1);
+  });
+
+  it("override sıfır olabilir (kredi kapanmış)", () => {
+    const v = valuateDebt(withOverride(0), null, DEFAULT_SETTINGS, new Date(2026, 8, 1));
+    expect(v.principalTL).toBe(0);
+    expect(v.principalIsManual).toBe(true);
+  });
+});
+
+describe("Banka taksiti masraf içerdiğinde", () => {
+  it("REGRESYON: taksitler eşit kalır, son taksit farklı tutara düşmez", () => {
+    // %4,24 akdi faiz 9.371 taksit verir; banka 9.598,57 diyor (masraf dahil).
+    // Plan bankanın taksitiyle kurulmalı ve tüm satırlar eşit olmalı.
+    const solved = solveMonthlyInterestRate(40000, 9598.57, 5, true, true, 0.15, 0.15);
+    const plan = generateAmortizationSchedule({
+      principal: 40000,
+      monthlyInterestRatePercent: solved.rawMonthlyRatePercent,
+      installmentCount: 5,
+      installmentAmountOverride: 9598.57,
+      includeKKDF: true,
+      kkdfRate: 0.15,
+      includeBSMV: true,
+      bsmvRate: 0.15,
+      firstPaymentDate: new Date(2026, 7, 2),
+    });
+
+    const tutarlar = plan.map((r) => r.totalPayment.toNumber());
+    for (const t of tutarlar) expect(t).toBeCloseTo(9598.57, 0);
+
+    // Anapara toplami krediye esit olmali (kurus kaybi yok).
+    const anapara = plan.reduce((s, r) => s + r.principalPayment.toNumber(), 0);
+    expect(anapara).toBeCloseTo(40000, 1);
+  });
+
+  it("çözülen efektif oran, beyan edilen akdi faizden yüksektir", () => {
+    const solved = solveMonthlyInterestRate(40000, 9598.57, 5, true, true, 0.15, 0.15);
+    // Masraf ve sigorta gercek maliyeti akdi faizin uzerine cikarir.
+    expect(solved.rawMonthlyRatePercent.toNumber()).toBeGreaterThan(4.24);
   });
 });
