@@ -3,6 +3,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartPieSlice, TrendUp, TrendDown, Sparkle } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/formatters";
+import { useChartTheme } from "@/lib/hooks/useChartTheme";
 
 interface CategoryBreakdownItem {
   categoryId: string;
@@ -80,6 +81,7 @@ export function ExpenseCategoryDonut({
   previousTotalTL,
   totalChangePercent,
 }: ExpenseCategoryDonutProps) {
+  const chart = useChartTheme();
   const ayAdı = AY_ADLARI[new Date().getMonth()];
 
   if (!categories || categories.length === 0 || totalExpenseTL === 0) {
@@ -159,13 +161,8 @@ export function ExpenseCategoryDonut({
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Tooltip
-              contentStyle={{
-                backgroundColor: "#18181b",
-                borderColor: "#3f3f46",
-                borderRadius: "0.75rem",
-                fontSize: "12px",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
-              }}
+              contentStyle={chart.tooltipStyle}
+                labelStyle={chart.tooltipLabelStyle}
               formatter={(val: number | string) => [formatCurrency(Number(val)), "Tutar"]}
             />
             <Pie
@@ -182,7 +179,7 @@ export function ExpenseCategoryDonut({
                 <Cell
                   key={entry.categoryId}
                   fill={entry.color}
-                  stroke="#18181b"
+                  stroke={chart.sliceStroke}
                   strokeWidth={2}
                 />
               ))}

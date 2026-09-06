@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { THEME_STORAGE_KEY, type Theme } from "./constants";
+import { THEME_STORAGE_KEY, DEFAULT_THEME, type Theme } from "./constants";
 
 export type { Theme };
 
@@ -15,23 +15,22 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 /** `<html data-theme>` üzerinde okunur; sunucu ve istemci aynı değeri görür. */
 function readAppliedTheme(): Theme {
-  if (typeof document === "undefined") return "dark";
-  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  if (typeof document === "undefined") return DEFAULT_THEME;
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
 }
 
 /**
  * Koyu / açık tema.
  *
  * Seçim `localStorage`'da durur ve ilk boyamadan ÖNCE `ThemeScript` tarafından
- * `<html data-theme>` üzerine yazılır; yoksa açık temayı seçen kullanıcı her
- * yenilemede bir kare koyu ekran görürdü.
+ * `<html data-theme>` üzerine yazılır; yoksa tema her yüklemede bir kare yanlış
+ * görünürdü.
  *
- * Kullanıcı hiç seçim yapmadıysa işletim sisteminin tercihi kullanılır ve
- * sistem tercihi değiştikçe takip edilir - ta ki kullanıcı elle bir seçim
- * yapana kadar; ondan sonra kendi seçimi kazanır.
+ * Seçim yoksa uygulamanın ana teması olan açık tema kullanılır; işletim
+ * sisteminin tercihi bilerek okunmuyor (bkz. `DEFAULT_THEME`).
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME);
 
   // İlk render'da script'in koyduğu değeri devral.
   useEffect(() => {
@@ -52,24 +51,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Kullanıcı elle seçmediyse sistem tercihini izle.
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e: MediaQueryListEvent) => {
-      let stored: string | null = null;
-      try {
-        stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-      } catch {
-        stored = null;
-      }
-      if (stored === "light" || stored === "dark") return;
-      setThemeState(e.matches ? "light" : "dark");
-      document.documentElement.setAttribute("data-theme", e.matches ? "light" : "dark");
-    };
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, []);
-
   const toggleTheme = useCallback(
     () => setTheme(theme === "dark" ? "light" : "dark"),
     [theme, setTheme]
@@ -86,7 +67,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme(): ThemeContextValue {
   return (
     useContext(ThemeContext) ?? {
-      theme: "dark",
+      theme: DEFAULT_THEME,
       setTheme: () => {},
       toggleTheme: () => {},
     }

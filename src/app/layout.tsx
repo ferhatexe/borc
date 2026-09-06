@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0A0A0B",
+  themeColor: "#f6f6f7",
   width: "device-width",
   initialScale: 1,
   // Yakınlaştırma engellenmez (WCAG 2.1 - 1.4.4). Eski ayar
@@ -63,12 +63,12 @@ export default async function RootLayout({
      * olmayan bir değere ayarlıyor. Kasıtlı - yoksa açık temayı seçen kullanıcı
      * her yüklemede bir kare koyu ekran görür.
      */
-    <html lang="tr" className="dark" suppressHydrationWarning>
+    <html lang="tr" suppressHydrationWarning>
       <head>
         <ThemeScript />
       </head>
       <body
-        className={`${inter.className} min-h-[100dvh] bg-background text-zinc-100 antialiased`}
+        className={`${inter.className} min-h-[100dvh] bg-background text-foreground antialiased`}
       >
         {/* WCAG Erişilebilirlik: İçeriğe Atla Bağlantısı */}
         <a

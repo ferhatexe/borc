@@ -1,4 +1,4 @@
-import { THEME_STORAGE_KEY } from "./constants";
+import { THEME_STORAGE_KEY, DEFAULT_THEME } from "./constants";
 
 /**
  * Temayı ilk boyamadan önce `<html>` üzerine yazar.
@@ -11,11 +11,10 @@ import { THEME_STORAGE_KEY } from "./constants";
  * erişimin kendisi hata fırlatır ve script çökerse sayfa temasız kalır.
  */
 export function ThemeScript() {
-  const code = `(function(){try{
+  const code = `(function(){var d=${JSON.stringify(DEFAULT_THEME)};try{
 var s=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
-var t=(s==="light"||s==="dark")?s:(window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");
-document.documentElement.setAttribute("data-theme",t);
-}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();`;
+document.documentElement.setAttribute("data-theme",(s==="light"||s==="dark")?s:d);
+}catch(e){document.documentElement.setAttribute("data-theme",d);}})();`;
 
   return <script dangerouslySetInnerHTML={{ __html: code }} />;
 }

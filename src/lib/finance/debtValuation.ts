@@ -111,6 +111,12 @@ export interface InstitutionBreakdown {
     title: string;
     type: string;
     outstandingTL: number;
+    /** Anapara ve işleyen faiz ayrı ayrı; rapordaki kırılım için. */
+    principalTL: number;
+    accruedInterestTL: number;
+    dailyAccrualTL: number;
+    currency: string;
+    dueThisMonthTL: number;
     monthlyInterestRatePercent: number | null;
     remainingInstallments: number | null;
     totalInstallments: number | null;
@@ -598,6 +604,11 @@ export function buildPortfolioSummary(
       title: v.title,
       type: v.type,
       outstandingTL: v.outstandingTL,
+      principalTL: v.principalTL,
+      accruedInterestTL: v.accruedInterestTL,
+      dailyAccrualTL: v.dailyAccrualTL,
+      currency: v.currency,
+      dueThisMonthTL: v.dueThisMonthTL,
       monthlyInterestRatePercent: v.monthlyInterestRatePercent,
       remainingInstallments: v.remainingInstallments,
       totalInstallments: v.totalInstallments,

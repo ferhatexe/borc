@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { ChartLineUp, CalendarBlank, Info } from "@phosphor-icons/react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
+import { useChartTheme } from "@/lib/hooks/useChartTheme";
 
 interface TrajectoryPoint {
   monthIndex: number;
@@ -29,6 +30,7 @@ interface DebtTrajectoryChartProps {
 }
 
 export function DebtTrajectoryChart({ data, projectedDebtFreeDate }: DebtTrajectoryChartProps) {
+  const chart = useChartTheme();
   if (!data || data.length === 0) {
     return null;
   }
@@ -72,28 +74,23 @@ export function DebtTrajectoryChart({ data, projectedDebtFreeDate }: DebtTraject
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(113,113,122,0.28)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
             <XAxis
               dataKey="monthName"
-              stroke="#71717a"
+              stroke={chart.axis}
               fontSize={10}
               tickLine={false}
               tickFormatter={(str) => str.split(" ")[0]}
             />
             <YAxis
-              stroke="#71717a"
+              stroke={chart.axis}
               fontSize={10}
               tickLine={false}
               tickFormatter={(val) => `${(val / 1000).toFixed(0)}k ₺`}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: "#18181b",
-                borderColor: "#3f3f46",
-                borderRadius: "0.75rem",
-                fontSize: "12px",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
-              }}
+              contentStyle={chart.tooltipStyle}
+                labelStyle={chart.tooltipLabelStyle}
               formatter={(value: any) => [formatCurrency(value), "Kalan Borç"]}
               labelFormatter={(label) => `Vade: ${label}`}
             />

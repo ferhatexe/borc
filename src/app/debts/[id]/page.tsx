@@ -40,12 +40,14 @@ import { triggerHaptic } from "@/lib/haptics";
 import { calculateEarlyPayoff } from "@/lib/finance/earlyPayoff";
 import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import type { DebtValuation } from "@/lib/finance/debtValuation";
+import { useChartTheme } from "@/lib/hooks/useChartTheme";
 
 interface DebtDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
 export default function DebtDetailPage({ params }: DebtDetailPageProps) {
+  const chart = useChartTheme();
   const { id } = use(params);
   const router = useRouter();
 
@@ -692,21 +694,17 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
                     <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(113,113,122,0.28)" />
-                <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                <XAxis dataKey="name" stroke={chart.axis} fontSize={10} tickLine={false} />
                 <YAxis
-                  stroke="#71717a"
+                  stroke={chart.axis}
                   fontSize={10}
                   tickLine={false}
                   tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#18181b",
-                    borderColor: "#3f3f46",
-                    borderRadius: "0.75rem",
-                    fontSize: "12px",
-                  }}
+                  contentStyle={chart.tooltipStyle}
+                labelStyle={chart.tooltipLabelStyle}
                   formatter={(val: any) => formatCurrency(val)}
                 />
                 <Area

@@ -18,6 +18,7 @@ import {
   calculateScenarioProjection,
   LoanProjectionInput,
 } from "@/lib/finance/scenarioProjection";
+import { useChartTheme } from "@/lib/hooks/useChartTheme";
 
 interface ScenarioSimulatorCardProps {
   /**
@@ -30,6 +31,7 @@ interface ScenarioSimulatorCardProps {
 }
 
 export function ScenarioSimulatorCard({ loans }: ScenarioSimulatorCardProps) {
+  const chart = useChartTheme();
   const [monthlyExtra, setMonthlyExtra] = useState<number>(2000);
   const [lumpSum, setLumpSum] = useState<number>(0);
   const [lumpSumMonth, setLumpSumMonth] = useState<number>(3);
@@ -237,22 +239,17 @@ export function ScenarioSimulatorCard({ loans }: ScenarioSimulatorCardProps) {
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(113,113,122,0.28)" vertical={false} />
-            <XAxis dataKey="monthLabel" stroke="#71717a" fontSize={10} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+            <XAxis dataKey="monthLabel" stroke={chart.axis} fontSize={10} tickLine={false} />
             <YAxis
-              stroke="#71717a"
+              stroke={chart.axis}
               fontSize={10}
               tickLine={false}
               tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: "#18181b",
-                borderColor: "#3f3f46",
-                borderRadius: "0.75rem",
-                fontSize: "12px",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
-              }}
+              contentStyle={chart.tooltipStyle}
+                labelStyle={chart.tooltipLabelStyle}
               formatter={(val: any, name: any) => [
                 formatCurrency(val),
                 name === "baseRemainingPrincipal" ? "Normal Plan Kalan" : "Hızlandırılmış Kalan",
@@ -270,7 +267,7 @@ export function ScenarioSimulatorCard({ loans }: ScenarioSimulatorCardProps) {
               type="monotone"
               dataKey="baseRemainingPrincipal"
               name="baseRemainingPrincipal"
-              stroke="#71717a"
+              stroke={chart.axis}
               strokeDasharray="4 4"
               fillOpacity={1}
               fill="url(#colorBase)"

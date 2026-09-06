@@ -9,3 +9,12 @@
 export const THEME_STORAGE_KEY = "borcolcme-theme";
 
 export type Theme = "dark" | "light";
+
+/**
+ * Uygulamanın ana teması açık.
+ *
+ * İşletim sistemi tercihi başlangıçta kasten dikkate alınmıyor: kullanıcıların
+ * çoğunun sistemi koyu ve bu uygulamanın olması gereken görünümü açık. Kullanıcı
+ * bir kez seçim yaparsa o seçim kalıcı olur ve her şeyin önüne geçer.
+ */
+export const DEFAULT_THEME: Theme = "light";

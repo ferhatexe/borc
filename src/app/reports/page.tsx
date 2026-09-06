@@ -34,6 +34,9 @@ import { triggerHaptic } from "@/lib/haptics";
 import { DebtTrajectoryChart } from "@/components/dashboard/DebtTrajectoryChart";
 import { ExpenseCategoryDonut } from "@/components/dashboard/ExpenseCategoryDonut";
 import { ScenarioSimulatorCard } from "@/components/dashboard/ScenarioSimulatorCard";
+import { useChartTheme } from "@/lib/hooks/useChartTheme";
+import { useLiveData } from "@/components/live/LiveDataProvider";
+import { LiveDebtBreakdown } from "@/components/reports/LiveDebtBreakdown";
 
 /**
  * Bir tutarın geçen aya göre durumu.
@@ -83,7 +86,18 @@ function MonthComparison({
 }
 
 export default function ReportsPage() {
+  const chart = useChartTheme();
   const [analytics, setAnalytics] = useState<any>(null);
+  /*
+   * Raporlar tek seferlik bir çekimle geliyordu; altın ve kur hareket ettikçe
+   * ekrandaki rakamlar sessizce eskiyordu. Paylaşılan canlı yoklama zaten 60
+   * saniyede bir çalışıyor - analitik de her yoklamada tazeleniyor.
+   */
+  const live = useLiveData();
+  const liveTotals = live?.data?.totals ?? null;
+  const lastUpdatedAt = live?.lastUpdatedAt ?? null;
+  const liveTotalDebtTL =
+    (liveTotals?.totalDebtTL ?? analytics?.totalDebtTL ?? 0) + (live?.tickedInterestTL ?? 0);
   const [loans, setLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "scenarios" | "exports">("overview");
@@ -113,7 +127,9 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetchReportsData();
-  }, []);
+    // Canlı yoklama her tamamlandığında rapor da tazelensin.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastUpdatedAt]);
 
   const handleDownload = (endpoint: string) => {
     triggerHaptic("selection");
@@ -302,21 +318,17 @@ export default function ReportsPage() {
                       data={analytics.cashFlowHistory}
                       margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(113,113,122,0.28)" vertical={false} />
-                      <XAxis dataKey="monthLabel" stroke="#71717a" fontSize={11} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+                      <XAxis dataKey="monthLabel" stroke={chart.axis} fontSize={11} tickLine={false} />
                       <YAxis
-                        stroke="#71717a"
+                        stroke={chart.axis}
                         fontSize={10}
                         tickLine={false}
                         tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
                       />
                       <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#18181b",
-                          borderColor: "#3f3f46",
-                          borderRadius: "0.75rem",
-                          fontSize: "12px",
-                        }}
+                        contentStyle={chart.tooltipStyle}
+                labelStyle={chart.tooltipLabelStyle}
                         formatter={(val: number | string, name: string) => [
                           formatCurrency(Number(val)),
                           name === "incomeTL" ? "Gelir" : name === "expenseTL" ? "Gider" : "Net",
@@ -348,6 +360,12 @@ export default function ReportsPage() {
                   </ResponsiveContainer>
                 </div>
               </div>
+
+              <p className="px-1 text-[11px] leading-relaxed text-zinc-500">
+                Kesikli çizginin solu gerçekleşen gelir ve giderleriniz, sağı ise
+                taksit planlarınızdan bilinen ödemeler. Gelecek için gelir tahmini
+                yapılmaz; yalnızca ödeyeceğiniz kesin olan tutarlar gösterilir.
+              </p>
             </div>
           )}
 
@@ -371,8 +389,8 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Borç Türleri Dağılımı ve Banka Dağılımı Tablosu */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Borç türleri kırılımı */}
+          <div className="grid grid-cols-1 gap-6">
             {/* Borç Türleri Kırılımı */}
             <div className="glass-card p-6 space-y-4">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -400,47 +418,18 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            {/* Kurum / Banka Bazlı Borç Tablosu */}
-            <div className="glass-card p-6 space-y-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Bank size={20} className="text-purple-400" />
-                <span>Kurum / Banka Bazlı Kırılım</span>
-              </h3>
-
-              {analytics?.institutionBreakdown?.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left">
-                    <thead>
-                      <tr className="text-zinc-500 border-b border-white/10 pb-2">
-                        <th className="pb-2">Banka / Kurum</th>
-                        <th className="pb-2 text-center">Aktif Borç</th>
-                        <th className="pb-2 text-right">Kalan Tutar</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5 font-mono">
-                      {analytics.institutionBreakdown.map((inst: any) => (
-                        <tr key={inst.institutionId} className="hover:bg-white/[0.02]">
-                          <td className="py-2.5 font-sans font-medium text-zinc-200">
-                            {inst.institutionName}
-                          </td>
-                          <td className="py-2.5 text-center text-zinc-400">
-                            {inst.debtCount} adet
-                          </td>
-                          <td className="py-2.5 text-right font-bold text-emerald-400">
-                            {formatCurrency(inst.totalOutstandingTL)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="py-8 text-center text-xs text-zinc-500">
-                  Kayıtlı banka borcu bulunmuyor.
-                </div>
-              )}
-            </div>
           </div>
+
+          {/*
+            Her borcun anlık dökümü. Kurum tablosu yalnızca adet ve toplam
+            veriyordu; asıl istenen bir rakamın neden o kadar olduğunu görmek.
+          */}
+          <LiveDebtBreakdown
+            institutions={analytics?.institutionBreakdown ?? []}
+            totalDebtTL={liveTotalDebtTL}
+            totalDailyAccrualTL={liveTotals?.dailyAccrualTL ?? 0}
+            updatedAt={lastUpdatedAt}
+          />
         </div>
       )}
 

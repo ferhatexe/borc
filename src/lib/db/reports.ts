@@ -79,6 +79,23 @@ export interface AnalyticsSummary {
     expenseTL: number;
     netTL: number;
   }>;
+  /**
+   * Grafikte gösterilecek nakit akışı: kayıt olan ilk aydan bugüne, ardından
+   * önümüzdeki aylarda ödemesi kesin olan taksitler.
+   *
+   * `cashFlowHistory` 12 ayı olduğu gibi verir ve CSV çıktısı onu kullanır;
+   * ekranda ise veri girilmemiş boş aylar sıfır çizgisi olarak duruyordu ve
+   * grafiğin çoğu boştu. Kullanıcının görmek istediği bugün ve sonrası.
+   */
+  cashFlowSeries: Array<{
+    monthLabel: string;
+    incomeTL: number;
+    expenseTL: number;
+    netTL: number;
+    /** Gelecek aylarda vadesi gelen taksit toplamı. */
+    scheduledPaymentTL: number;
+    isFuture: boolean;
+  }>;
   goldStatus: {
     source: string;
     sourceKind: string;
@@ -310,6 +327,32 @@ export async function getAnalyticsSummary(userId: string, now = new Date()): Pro
     });
   }
 
+  /*
+   * Ekran serisi.
+   *
+   * Geçmiş tarafta ilk hareketin olduğu aydan başlanır - ondan öncesi kullanıcı
+   * uygulamayı kullanmaya başlamadan önceki aylar, sıfır çizgisinden başka bir
+   * şey göstermiyor. Hiç hareket yoksa yalnızca içinde bulunulan ay kalır.
+   *
+   * Gelecek tarafta gelir tahmin edilmez (uydurma olurdu); yalnızca taksit
+   * planlarından gelen, ödeneceği kesin olan tutarlar gider olarak konur.
+   */
+  const ilkHareket = cashFlowHistory.findIndex((m) => m.incomeTL > 0 || m.expenseTL > 0);
+  const gecmis = (ilkHareket === -1 ? cashFlowHistory.slice(-1) : cashFlowHistory.slice(ilkHareket))
+    .map((m) => ({ ...m, scheduledPaymentTL: 0, isFuture: false }));
+
+  const GELECEK_AY_SAYISI = 6;
+  const gelecek = monthlyProjection12Months.slice(0, GELECEK_AY_SAYISI).map((m) => ({
+    monthLabel: format(addMonths(monthStart, m.monthIndex), "LLL yy", { locale: tr }),
+    incomeTL: 0,
+    expenseTL: m.monthlyPaymentTL,
+    netTL: -m.monthlyPaymentTL,
+    scheduledPaymentTL: m.monthlyPaymentTL,
+    isFuture: true,
+  }));
+
+  const cashFlowSeries = [...gecmis, ...gelecek];
+
   return {
     totalDebtTL: round(portfolio.totalDebtTL),
     totalAccruedInterestTL: round(portfolio.totalAccruedInterestTL),
@@ -328,6 +371,7 @@ export async function getAnalyticsSummary(userId: string, now = new Date()): Pro
     institutionBreakdown: portfolio.institutionBreakdown,
     monthlyProjection12Months,
     cashFlowHistory,
+    cashFlowSeries,
     goldStatus: gold
       ? {
           source: gold.source,
