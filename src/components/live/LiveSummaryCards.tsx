@@ -18,7 +18,8 @@ interface LiveSummaryCardsProps {
   totals: LiveTotals | null;
   /** Total debt including interest accrued since the last poll. */
   liveTotalDebtTL: number;
-  tickedInterestTL: number;
+  /** Son ödemeden bugüne işlemiş toplam faiz; sayfa yenilenince sıfırlanmaz. */
+  liveAccruedInterestTL: number;
 }
 
 function Card({
@@ -106,7 +107,7 @@ function Skeleton() {
 export function LiveSummaryCards({
   totals,
   liveTotalDebtTL,
-  tickedInterestTL,
+  liveAccruedInterestTL,
 }: LiveSummaryCardsProps) {
   if (!totals) return <Skeleton />;
 
@@ -160,10 +161,17 @@ export function LiveSummaryCards({
         }
       >
           <Amount value={liveTotalDebtTL} tone="debt" />
-          {totals.dailyAccrualTL > 0 && (
+          {(liveAccruedInterestTL > 0 || totals.dailyAccrualTL > 0) && (
             <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-amber-400">
               <Lightning size={11} weight="fill" />
-              <span className="tabular-nums">+{formatNumber(tickedInterestTL, 4)} ₺ işledi</span>
+              <span className="tabular-nums">
+                {formatNumber(liveAccruedInterestTL, 2)} ₺ faiz işledi
+              </span>
+              {totals.dailyAccrualTL > 0 && (
+                <span className="tabular-nums text-amber-400/70">
+                  · günde {formatNumber(totals.dailyAccrualTL, 2)} ₺
+                </span>
+              )}
             </span>
           )}
         </Card>

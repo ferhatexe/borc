@@ -54,7 +54,13 @@ export interface LivePortfolio {
   data: LivePayload | null;
   /** Total debt with the interest accrued since the last poll added on top. */
   liveTotalDebtTL: number;
-  /** Interest accrued since this page loaded, in TL. */
+  /**
+   * Son ödemeden bugüne gerçekten işlemiş faiz, saniye saniye ilerler.
+   * Sunucudan gelen birikmiş faizin üstüne son yoklamadan beri geçen sürenin
+   * payı eklenir; sayfa yenilenince sıfırlanmaz.
+   */
+  liveAccruedInterestTL: number;
+  /** Yalnızca son yoklamadan beri işleyen kısım; toplam borcu ilerletmek için. */
   tickedInterestTL: number;
   isRefreshing: boolean;
   error: string | null;
@@ -180,6 +186,7 @@ export function useLivePortfolio(
   return {
     data,
     liveTotalDebtTL: (data?.totals.totalDebtTL ?? 0) + tickedInterestTL,
+    liveAccruedInterestTL: (data?.totals.accruedInterestTL ?? 0) + tickedInterestTL,
     tickedInterestTL,
     isRefreshing,
     error,

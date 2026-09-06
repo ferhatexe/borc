@@ -67,6 +67,10 @@ export function DashboardClient({
   const tickedInterestTL = live?.tickedInterestTL ?? 0;
   const liveTotalDebtTL =
     (data?.totals.totalDebtTL ?? initialLive.totals.totalDebtTL) + tickedInterestTL;
+  // Sayfa açıldığından beri değil, son ödemeden beri işlemiş faiz.
+  const liveAccruedInterestTL =
+    (data?.totals.accruedInterestTL ?? initialLive.totals.accruedInterestTL) +
+    tickedInterestTL;
 
   const [openInstitution, setOpenInstitution] = useState<string | null>(null);
 
@@ -112,7 +116,7 @@ export function DashboardClient({
       <LiveSummaryCards
         totals={totals}
         liveTotalDebtTL={liveTotalDebtTL}
-        tickedInterestTL={tickedInterestTL}
+        liveAccruedInterestTL={liveAccruedInterestTL}
       />
 
       {/* Ödemesi geçmiş kalemler - en üstte, çünkü acil olan bu */}
