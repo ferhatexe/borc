@@ -18,20 +18,69 @@ import {
   CheckCircle,
 } from "@phosphor-icons/react";
 import {
-  BarChart,
+  ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
   Legend,
+  ReferenceLine,
 } from "recharts";
 import { formatCurrency } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 import { DebtTrajectoryChart } from "@/components/dashboard/DebtTrajectoryChart";
 import { ExpenseCategoryDonut } from "@/components/dashboard/ExpenseCategoryDonut";
 import { ScenarioSimulatorCard } from "@/components/dashboard/ScenarioSimulatorCard";
+
+/**
+ * Bir tutarın geçen aya göre durumu.
+ *
+ * Gelirde artış iyi, giderde kötü; renk `higherIsBetter` ile belirlenir.
+ * Geçen ay sıfırsa yüzde hesaplanmaz, sadece "geçen ay kayıt yok" denir.
+ */
+function MonthComparison({
+  changePercent,
+  previousTL,
+  higherIsBetter = false,
+}: {
+  changePercent?: number | null;
+  previousTL?: number;
+  higherIsBetter?: boolean;
+}) {
+  if (previousTL === undefined) return null;
+
+  if (changePercent === null || changePercent === undefined) {
+    return (
+      <span className="mt-1 block text-[10px] text-zinc-500">
+        {previousTL > 0
+          ? `Geçen ay ${formatCurrency(previousTL)}`
+          : "Geçen ay kayıt yok"}
+      </span>
+    );
+  }
+
+  const arttı = changePercent > 0;
+  const iyi = higherIsBetter ? arttı : !arttı;
+  const renk =
+    Math.abs(changePercent) < 0.05
+      ? "text-zinc-500"
+      : iyi
+        ? "text-emerald-400"
+        : "text-rose-400";
+
+  return (
+    <span className="mt-1 flex items-center gap-1 text-[10px] text-zinc-500">
+      <span className={`inline-flex items-center gap-0.5 font-semibold ${renk}`}>
+        {arttı ? <ArrowUp size={9} weight="bold" /> : <ArrowDown size={9} weight="bold" />}
+        %{Math.abs(changePercent).toFixed(1)}
+      </span>
+      <span>geçen aya göre ({formatCurrency(previousTL)})</span>
+    </span>
+  );
+}
 
 export default function ReportsPage() {
   const [analytics, setAnalytics] = useState<any>(null);
@@ -84,6 +133,10 @@ export default function ReportsPage() {
 
   const netMonthly =
     (analytics?.totalMonthlyIncomeTL || 0) - (analytics?.totalMonthlyExpenseTL || 0);
+  const previousNet =
+    analytics?.previousMonthIncomeTL !== undefined
+      ? analytics.previousMonthIncomeTL - analytics.previousMonthExpenseTL
+      : null;
 
   return (
     <div className="space-y-8 pb-16">
@@ -100,14 +153,19 @@ export default function ReportsPage() {
         </div>
 
         {/* Tab Seçici */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-zinc-900 border border-white/10 self-start sm:self-auto">
+        {/*
+          Uc sekim dar telefona sigmiyor (~390px). Serit kendi icinde yatay
+          kayar; sayfa govdesi asla yatay kaymaz.
+        */}
+        <div className="-mx-3 max-w-full overflow-x-auto px-3 sm:mx-0 sm:px-0">
+        <div className="flex w-max items-center gap-1.5 p-1 rounded-2xl bg-zinc-900 border border-white/10 self-start sm:self-auto">
           <button
             type="button"
             onClick={() => {
               triggerHaptic("selection");
               setActiveTab("overview");
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "overview"
                 ? "bg-white/10 text-white shadow-sm"
                 : "text-zinc-400 hover:text-white"
@@ -121,13 +179,14 @@ export default function ReportsPage() {
               triggerHaptic("selection");
               setActiveTab("scenarios");
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "scenarios"
                 ? "bg-emerald-500 text-zinc-950 shadow-sm font-bold"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            Senaryo Simülatörü
+            <span className="sm:hidden">Senaryo</span>
+            <span className="hidden sm:inline">Senaryo Simülatörü</span>
           </button>
           <button
             type="button"
@@ -135,14 +194,16 @@ export default function ReportsPage() {
               triggerHaptic("selection");
               setActiveTab("exports");
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "exports"
                 ? "bg-cyan-500 text-zinc-950 shadow-sm font-bold"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            Dışa Aktar (CSV/Excel)
+            <span className="sm:hidden">Dışa Aktar</span>
+            <span className="hidden sm:inline">Dışa Aktar (CSV/Excel)</span>
           </button>
+        </div>
         </div>
       </div>
 
@@ -165,7 +226,11 @@ export default function ReportsPage() {
           <p className="text-2xl font-extrabold text-emerald-400 font-mono">
             +{formatCurrency(analytics?.totalMonthlyIncomeTL || 0)}
           </p>
-          <span className="text-[10px] text-zinc-500 mt-1 block">Tüm gelir kaynakları</span>
+          <MonthComparison
+            changePercent={analytics?.incomeChangePercent}
+            previousTL={analytics?.previousMonthIncomeTL}
+            higherIsBetter
+          />
         </div>
 
         <div className="glass-card p-5">
@@ -175,7 +240,10 @@ export default function ReportsPage() {
           <p className="text-2xl font-extrabold text-rose-400 font-mono">
             -{formatCurrency(analytics?.totalMonthlyExpenseTL || 0)}
           </p>
-          <span className="text-[10px] text-zinc-500 mt-1 block">Harcama ve kart ödemeleri</span>
+          <MonthComparison
+            changePercent={analytics?.expenseChangePercent}
+            previousTL={analytics?.previousMonthExpenseTL}
+          />
         </div>
 
         <div className="glass-card p-5">
@@ -191,6 +259,12 @@ export default function ReportsPage() {
           </p>
           <span className="text-[10px] text-zinc-500 mt-1 block">
             {netMonthly >= 0 ? "Pozitif nakit dengesi" : "Açık var, bütçe desteği gerekir"}
+            {previousNet !== null && (
+              <>
+                {" · geçen ay "}
+                <span className="font-mono">{formatCurrency(previousNet)}</span>
+              </>
+            )}
           </span>
         </div>
       </div>
@@ -207,46 +281,72 @@ export default function ReportsPage() {
                     <ChartBar size={20} weight="duotone" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white">Nakit Akışı Trendi (Son 6 Ay)</h3>
-                    <p className="text-xs text-zinc-400">Aylık toplam gelir ve gider karşılaştırması</p>
+                    <h3 className="text-base font-bold text-white">
+                      Nakit Akışı Trendi (Son 12 Ay)
+                    </h3>
+                    <p className="text-xs text-zinc-400">
+                      Aylık gelir, gider ve aradaki net fark
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="h-64 w-full pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={analytics.cashFlowHistory}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                    <XAxis dataKey="monthLabel" stroke="#71717a" fontSize={11} tickLine={false} />
-                    <YAxis
-                      stroke="#71717a"
-                      fontSize={10}
-                      tickLine={false}
-                      tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#18181b",
-                        borderColor: "#3f3f46",
-                        borderRadius: "0.75rem",
-                        fontSize: "12px",
-                      }}
-                      formatter={(val: any, name: any) => [
-                        formatCurrency(val),
-                        name === "incomeTL" ? "Gelir" : "Gider",
-                      ]}
-                    />
-                    <Legend
-                      wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
-                      formatter={(value) => (value === "incomeTL" ? "Aylık Gelir" : "Aylık Gider")}
-                    />
-                    <Bar dataKey="incomeTL" fill="#10b981" radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="expenseTL" fill="#f43f5e" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              {/*
+                12 ay dar telefon ekranina sigmaz; grafik kendi icinde yatay
+                kayar ve sutunlar okunakli kalir.
+              */}
+              <div className="-mx-2 overflow-x-auto px-2 pt-2">
+                <div className="h-64 min-w-[34rem]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={analytics.cashFlowHistory}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                      <XAxis dataKey="monthLabel" stroke="#71717a" fontSize={11} tickLine={false} />
+                      <YAxis
+                        stroke="#71717a"
+                        fontSize={10}
+                        tickLine={false}
+                        tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#18181b",
+                          borderColor: "#3f3f46",
+                          borderRadius: "0.75rem",
+                          fontSize: "12px",
+                        }}
+                        formatter={(val: number | string, name: string) => [
+                          formatCurrency(Number(val)),
+                          name === "incomeTL" ? "Gelir" : name === "expenseTL" ? "Gider" : "Net",
+                        ]}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
+                        formatter={(value) =>
+                          value === "incomeTL"
+                            ? "Aylık Gelir"
+                            : value === "expenseTL"
+                              ? "Aylık Gider"
+                              : "Net (gelir - gider)"
+                        }
+                      />
+                      {/* Sifir cizgisi: net cizgi altina dustugunde acik ay demektir. */}
+                      <ReferenceLine y={0} stroke="#52525b" strokeDasharray="2 2" />
+                      <Bar dataKey="incomeTL" fill="#10b981" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="expenseTL" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+                      <Line
+                        type="monotone"
+                        dataKey="netTL"
+                        stroke="#22d3ee"
+                        strokeWidth={2}
+                        dot={{ r: 2.5, fill: "#22d3ee" }}
+                        activeDot={{ r: 4 }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           )}
@@ -264,6 +364,8 @@ export default function ReportsPage() {
                 <ExpenseCategoryDonut
                   categories={analytics.expenseCategoryBreakdown}
                   totalExpenseTL={analytics.totalMonthlyExpenseTL}
+                  previousTotalTL={analytics.previousMonthExpenseTL}
+                  totalChangePercent={analytics.expenseChangePercent}
                 />
               </div>
             </div>

@@ -183,6 +183,8 @@ export function DashboardClient({
           <ExpenseCategoryDonut
             categories={analyticsSummary.expenseCategoryBreakdown}
             totalExpenseTL={analyticsSummary.totalMonthlyExpenseTL}
+            previousTotalTL={analyticsSummary.previousMonthExpenseTL}
+            totalChangePercent={analyticsSummary.expenseChangePercent}
           />
         </div>
       )}

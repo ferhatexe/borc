@@ -33,6 +33,13 @@ export interface CategoryBreakdownRow {
   amountTL: number;
   percentage: number;
   color: string;
+  /** Aynı kategorinin geçen ayki toplamı; kategori geçen ay yoksa 0. */
+  previousAmountTL: number;
+  /**
+   * Geçen aya göre değişim yüzdesi. Geçen ay bu kategoride harcama yoksa
+   * null - sıfırdan artışı "%sonsuz" diye göstermek yerine "yeni" denir.
+   */
+  changePercent: number | null;
 }
 
 export interface AnalyticsSummary {
@@ -43,6 +50,11 @@ export interface AnalyticsSummary {
   totalMonthlyIncomeTL: number;
   totalMonthlyExpenseTL: number;
   netCashFlowTL: number;
+  /** Geçen ayın toplamları ve bu aya göre değişimi. */
+  previousMonthIncomeTL: number;
+  previousMonthExpenseTL: number;
+  incomeChangePercent: number | null;
+  expenseChangePercent: number | null;
   debtTypeBreakdown: Array<{
     type: string;
     label: string;
@@ -139,22 +151,50 @@ export async function getAnalyticsSummary(userId: string, now = new Date()): Pro
   const totalMonthlyIncomeTL = thisMonthIncomes.reduce((s, i) => s + Number(i.amount), 0);
   const totalMonthlyExpenseTL = thisMonthExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
+  /*
+   * Geçen ay. Tek başına bir tutar bir şey söylemiyor - 1.038 TL gider çok mu
+   * az mı, ancak geçen ayın yanında anlam kazanıyor. Veri penceresi zaten 12
+   * ayı kapsadığı için ek sorgu gerekmiyor.
+   */
+  const prevStart = startOfMonth(subMonths(now, 1));
+  const prevEnd = endOfMonth(subMonths(now, 1));
+  const inPrevMonth = (d: Date | string) => {
+    const date = new Date(d);
+    return date >= prevStart && date <= prevEnd;
+  };
+  const prevMonthIncomes = incomes.filter((i) => inPrevMonth(i.date));
+  const prevMonthExpenses = expenses.filter((e) => inPrevMonth(e.date));
+  const previousMonthIncomeTL = prevMonthIncomes.reduce((s, i) => s + Number(i.amount), 0);
+  const previousMonthExpenseTL = prevMonthExpenses.reduce((s, e) => s + Number(e.amount), 0);
+
+  /** Geçen ay sıfırsa yüzde anlamsız; null dönülür. */
+  const changePct = (current: number, previous: number): number | null =>
+    previous > 0 ? Number((((current - previous) / previous) * 100).toFixed(1)) : null;
+
   const categoryLookup = new Map(categories.map((c) => [c.id, c]));
 
-  const buildCategoryBreakdown = (
-    rows: Array<{ categoryId: string; amount: unknown }>,
-    total: number,
-    fallbackName: string,
-    usePalette: boolean
-  ): CategoryBreakdownRow[] => {
+  const sumByCategory = (rows: Array<{ categoryId: string; amount: unknown }>) => {
     const map = new Map<string, number>();
     for (const row of rows) {
       map.set(row.categoryId, (map.get(row.categoryId) ?? 0) + Number(row.amount));
     }
+    return map;
+  };
+
+  const buildCategoryBreakdown = (
+    rows: Array<{ categoryId: string; amount: unknown }>,
+    previousRows: Array<{ categoryId: string; amount: unknown }>,
+    total: number,
+    fallbackName: string,
+    usePalette: boolean
+  ): CategoryBreakdownRow[] => {
+    const map = sumByCategory(rows);
+    const previousMap = sumByCategory(previousRows);
     let idx = 0;
     return Array.from(map.entries())
       .map(([categoryId, amountTL]) => {
         const cat = categoryLookup.get(categoryId);
+        const previousAmountTL = previousMap.get(categoryId) ?? 0;
         return {
           categoryId,
           categoryName: cat?.name ?? fallbackName,
@@ -163,6 +203,8 @@ export async function getAnalyticsSummary(userId: string, now = new Date()): Pro
           color:
             cat?.color ??
             (usePalette ? EXPENSE_PALETTE[idx++ % EXPENSE_PALETTE.length] : "#10b981"),
+          previousAmountTL: round(previousAmountTL),
+          changePercent: changePct(amountTL, previousAmountTL),
         };
       })
       .sort((a, b) => b.amountTL - a.amountTL);
@@ -170,12 +212,14 @@ export async function getAnalyticsSummary(userId: string, now = new Date()): Pro
 
   const expenseCategoryBreakdown = buildCategoryBreakdown(
     thisMonthExpenses,
+    prevMonthExpenses,
     totalMonthlyExpenseTL,
     "Sınıflandırılmamış",
     true
   );
   const incomeCategoryBreakdown = buildCategoryBreakdown(
     thisMonthIncomes,
+    prevMonthIncomes,
     totalMonthlyIncomeTL,
     "Sınıflandırılmamış",
     false
@@ -273,6 +317,10 @@ export async function getAnalyticsSummary(userId: string, now = new Date()): Pro
     overdueTL: round(portfolio.overdueTL),
     totalMonthlyIncomeTL: round(totalMonthlyIncomeTL),
     totalMonthlyExpenseTL: round(totalMonthlyExpenseTL),
+    previousMonthIncomeTL: round(previousMonthIncomeTL),
+    previousMonthExpenseTL: round(previousMonthExpenseTL),
+    incomeChangePercent: changePct(totalMonthlyIncomeTL, previousMonthIncomeTL),
+    expenseChangePercent: changePct(totalMonthlyExpenseTL, previousMonthExpenseTL),
     netCashFlowTL: round(totalMonthlyIncomeTL - totalMonthlyExpenseTL - portfolio.dueThisMonthTL),
     debtTypeBreakdown,
     expenseCategoryBreakdown,

@@ -8,6 +8,7 @@ import {
   Plus,
   ArrowsLeftRight,
   WarningOctagon,
+  ChartBar,
 } from "@phosphor-icons/react";
 import { haptics } from "@/lib/haptics";
 import { useLiveData } from "@/components/live/LiveDataProvider";
@@ -15,9 +16,12 @@ import { useLiveData } from "@/components/live/LiveDataProvider";
 /**
  * Bottom navigation for phones.
  *
- * Every target is at least 56x44 px so it is comfortably reachable one-handed,
- * and the bar sits above the iOS home indicator via the safe-area inset. The
- * overdue tab carries a live count badge fed by the shared live poll.
+ * Beş sekme ve ortada bir ekleme düğmesi. Hedefler tek elle rahat erişilsin
+ * diye en az 48x44 px; çubuk iOS home indicator'ının üstünde durur (safe-area).
+ * Geciken sekmesi paylaşılan canlı yoklamadan beslenen bir sayaç rozeti taşır.
+ *
+ * Raporlar bu çubukta olmalı: telefonda kenar çubuğu yok, o yüzden bir sayfa
+ * buraya girmiyorsa mobilde erişilemez hâle geliyor.
  */
 export function MobileNav() {
   const pathname = usePathname();
@@ -34,12 +38,13 @@ export function MobileNav() {
       icon: WarningOctagon,
       badge: overdueCount,
     },
-    { href: "/income", label: "Gelir/Gider", icon: ArrowsLeftRight },
+    { href: "/income", label: "Gelir", icon: ArrowsLeftRight },
+    { href: "/reports", label: "Rapor", icon: ChartBar },
   ];
 
   return (
     <div className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0A0A0B]/95 backdrop-blur-2xl md:hidden">
-      <nav aria-label="Ana gezinme" className="mx-auto flex h-[3.75rem] max-w-lg items-stretch justify-around px-1">
+      <nav aria-label="Ana gezinme" className="mx-auto flex h-[3.75rem] max-w-lg items-stretch justify-around gap-0.5 px-1">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -66,12 +71,12 @@ export function MobileNav() {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               onClick={() => haptics.selection()}
-              className={`relative flex min-w-[3.5rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors active:bg-white/5 ${
+              className={`relative flex min-w-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors active:bg-white/5 ${
                 isActive ? "text-emerald-400" : "text-zinc-500"
               }`}
             >
               <span className="relative">
-                <Icon size={22} weight={isActive ? "fill" : "regular"} />
+                <Icon size={21} weight={isActive ? "fill" : "regular"} />
                 {item.badge != null && item.badge > 0 && (
                   <span
                     aria-label={`${item.badge} gecikmiş ödeme`}
@@ -81,7 +86,7 @@ export function MobileNav() {
                   </span>
                 )}
               </span>
-              <span className="text-[9.5px] font-medium leading-none">{item.label}</span>
+              <span className="text-[9px] font-medium leading-none">{item.label}</span>
               {isActive && (
                 <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-emerald-400" />
               )}
