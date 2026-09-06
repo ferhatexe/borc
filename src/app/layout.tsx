@@ -7,6 +7,10 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { PwaRegister } from "@/components/shared/PwaRegister";
 import { LiveDataProvider } from "@/components/live/LiveDataProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { ThemeScript } from "@/components/theme/ThemeScript";
+import { AuroraBackground } from "@/components/shared/AuroraBackground";
+import { PageTransition } from "@/components/layout/PageTransition";
 import "./globals.css";
 
 const inter = Inter({
@@ -54,8 +58,18 @@ export default async function RootLayout({
   const session = await getCurrentSession();
 
   return (
-    <html lang="tr" className="dark">
-      <body className={`${inter.className} min-h-[100dvh] bg-[#0A0A0B] text-zinc-100 antialiased`}>
+    /*
+     * `suppressHydrationWarning`: ThemeScript `data-theme`i sunucu HTML'inde
+     * olmayan bir değere ayarlıyor. Kasıtlı - yoksa açık temayı seçen kullanıcı
+     * her yüklemede bir kare koyu ekran görür.
+     */
+    <html lang="tr" className="dark" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
+      <body
+        className={`${inter.className} min-h-[100dvh] bg-background text-zinc-100 antialiased`}
+      >
         {/* WCAG Erişilebilirlik: İçeriğe Atla Bağlantısı */}
         <a
           href="#main-content"
@@ -64,8 +78,11 @@ export default async function RootLayout({
           Ana İçeriğe Atla
         </a>
 
+        <ThemeProvider>
+        <AuroraBackground />
         <LiveDataProvider isAuthenticated={Boolean(session)}>
-          <div className="flex min-h-[100dvh] flex-col">
+          {/* Hareketli zemin arkada (z-0); arayüz onun üstünde durmalı. */}
+          <div className="relative z-10 flex min-h-[100dvh] flex-col">
             <PwaRegister />
             {session && <Navbar userEmail={session.email} />}
 
@@ -83,13 +100,14 @@ export default async function RootLayout({
                     : "flex w-full flex-1 flex-col focus:outline-none"
                 }
               >
-                {children}
+                <PageTransition>{children}</PageTransition>
               </main>
             </div>
 
             {session && <MobileNav />}
           </div>
         </LiveDataProvider>
+        </ThemeProvider>
 
         <Toaster
           theme="dark"

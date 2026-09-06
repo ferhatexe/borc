@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Coins, SignOut, ShieldCheck, User } from "@phosphor-icons/react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { haptics } from "@/lib/haptics";
 
 interface NavbarProps {
@@ -25,7 +26,7 @@ export function Navbar({ userEmail }: NavbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-white/10 bg-[#0A0A0B]/80 px-4 backdrop-blur-xl md:px-8">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-white/10 bg-background/80 px-4 backdrop-blur-xl md:px-8">
       <div className="flex items-center gap-3">
         <Link
           href="/"
@@ -50,6 +51,7 @@ export function Navbar({ userEmail }: NavbarProps) {
       </div>
 
       <div className="flex items-center gap-3">
+        <ThemeToggle />
         {userEmail ? (
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">

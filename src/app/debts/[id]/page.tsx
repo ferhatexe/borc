@@ -692,7 +692,7 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
                     <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(113,113,122,0.28)" />
                 <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} />
                 <YAxis
                   stroke="#71717a"

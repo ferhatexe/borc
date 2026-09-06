@@ -38,7 +38,7 @@ export function Sidebar() {
      * Navbar 4rem yuksekliginde ve sticky; kenar cubugu onun altina yapisir ve
      * kendi icinde kayar. Boylece uzun sayfalarda menu ekrandan kaybolmaz.
      */
-    <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-64 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-[#0A0A0B]/60 p-4 backdrop-blur-xl md:flex">
+    <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-64 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-background/60 p-4 backdrop-blur-xl md:flex">
       <div className="mb-4">
         <Link
           href="/debts/new"

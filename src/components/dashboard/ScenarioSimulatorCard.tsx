@@ -237,7 +237,7 @@ export function ScenarioSimulatorCard({ loans }: ScenarioSimulatorCardProps) {
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(113,113,122,0.28)" vertical={false} />
             <XAxis dataKey="monthLabel" stroke="#71717a" fontSize={10} tickLine={false} />
             <YAxis
               stroke="#71717a"

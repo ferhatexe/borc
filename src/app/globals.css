@@ -132,3 +132,239 @@ body {
   }
 }
 
+
+/* ============================================================================
+   AÇIK TEMA
+   ----------------------------------------------------------------------------
+   Uygulama baştan koyu yazıldı: bileşenlerde ~1.340 yerde doğrudan `bg-zinc-900`,
+   `text-white`, `border-white/10` gibi sınıflar var. Hepsini semantik sınıflara
+   çevirmek 44 dosyaya dokunmak demekti; onun yerine rengin kendisi çevriliyor.
+
+   Tailwind v4 düz renkleri değişkenle üretiyor:
+       .bg-zinc-900 { background-color: var(--color-zinc-900) }
+   Bu yüzden nötr ekseni burada ters çevirmek bütün uygulamayı çeviriyor.
+
+   Alfa varyantları ise hex olarak gömülüyor:
+       .border-white/10 { border-color: #ffffff1a }
+   Onlar değişkenle çevrilemiyor, aşağıda tek tek ele alınıyor. Kullanılan 15
+   varyantın tamamı listede; yenisi eklenirse buraya da eklenmeli.
+   ========================================================================== */
+
+:root[data-theme="light"] {
+  /* Nötr eksen aynalanır: 950 <-> 50, 900 <-> 100, ... 500 ortada kalır. */
+  --color-zinc-950: #fafafa;
+  --color-zinc-900: #f4f4f5;
+  --color-zinc-800: #e4e4e7;
+  --color-zinc-700: #d4d4d8;
+  --color-zinc-600: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-400: #52525b;
+  --color-zinc-300: #3f3f46;
+  --color-zinc-200: #27272a;
+  --color-zinc-100: #18181b;
+  --color-zinc-50: #09090b;
+
+  /* `text-white` koyu temada "en parlak metin" demek; açıkta en koyu mürekkep. */
+  --color-white: #09090b;
+
+  --background: #f6f6f7;
+  --surface: rgba(9, 9, 11, 0.035);
+  --surface-hover: rgba(9, 9, 11, 0.06);
+  --surface-active: rgba(9, 9, 11, 0.09);
+  --border: rgba(9, 9, 11, 0.1);
+  --border-active: rgba(9, 9, 11, 0.18);
+  --foreground: #18181b;
+  --muted: #52525b;
+  --subtle: #71717a;
+
+  /* Vurgu renkleri beyaz zeminde kontrast için bir tık koyulaşır. */
+  --accent: #059669;
+  --debt: #dc2626;
+  --income: #059669;
+  --gold: #b45309;
+  --kmh: #2563eb;
+}
+
+/* Beyaz alfa katmanı: cam kartların kenarı ve zemini. */
+:root[data-theme="light"] .border-white\/10 { border-color: rgba(9, 9, 11, 0.1); }
+:root[data-theme="light"] .border-white\/5 { border-color: rgba(9, 9, 11, 0.07); }
+:root[data-theme="light"] .border-white\/8 { border-color: rgba(9, 9, 11, 0.09); }
+:root[data-theme="light"] .border-white\/6 { border-color: rgba(9, 9, 11, 0.08); }
+:root[data-theme="light"] .border-white\/20 { border-color: rgba(9, 9, 11, 0.18); }
+:root[data-theme="light"] .border-white\/\[0\.02\] { border-color: rgba(9, 9, 11, 0.04); }
+:root[data-theme="light"] .bg-white\/5 { background-color: rgba(9, 9, 11, 0.04); }
+:root[data-theme="light"] .bg-white\/10 { background-color: rgba(9, 9, 11, 0.07); }
+:root[data-theme="light"] .bg-white\/15 { background-color: rgba(9, 9, 11, 0.1); }
+:root[data-theme="light"] .bg-white\/\[0\.02\] { background-color: rgba(9, 9, 11, 0.03); }
+:root[data-theme="light"] .bg-white\/\[0\.03\] { background-color: rgba(9, 9, 11, 0.035); }
+:root[data-theme="light"] .bg-white\/\[0\.04\] { background-color: rgba(9, 9, 11, 0.04); }
+:root[data-theme="light"] .bg-white\/\[0\.06\] { background-color: rgba(9, 9, 11, 0.05); }
+:root[data-theme="light"] .bg-white\/\[0\.07\] { background-color: rgba(9, 9, 11, 0.06); }
+:root[data-theme="light"] .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(9, 9, 11, 0.07);
+}
+
+/*
+ * Zinc'in alfa varyantları da hex olarak gömülüyor. Bunlar panel ve giriş
+ * alanı zeminleri: koyu temada "yarı saydam koyu", açıkta "yarı saydam beyaz"
+ * olmalı. Çevrilmezlerse açık temada input'lar gri blok gibi görünüyor.
+ */
+:root[data-theme="light"] .bg-zinc-900\/90 { background-color: rgba(255, 255, 255, 0.9); }
+:root[data-theme="light"] .bg-zinc-900\/80 { background-color: rgba(255, 255, 255, 0.85); }
+:root[data-theme="light"] .bg-zinc-900\/70 { background-color: rgba(255, 255, 255, 0.78); }
+:root[data-theme="light"] .bg-zinc-900\/60 { background-color: rgba(255, 255, 255, 0.7); }
+:root[data-theme="light"] .bg-zinc-900\/40 { background-color: rgba(255, 255, 255, 0.55); }
+:root[data-theme="light"] .bg-zinc-900\/30 { background-color: rgba(255, 255, 255, 0.45); }
+:root[data-theme="light"] .bg-zinc-900\/20 { background-color: rgba(255, 255, 255, 0.35); }
+:root[data-theme="light"] .bg-zinc-950\/60 { background-color: rgba(255, 255, 255, 0.75); }
+:root[data-theme="light"] .via-zinc-900\/90 { --tw-gradient-via: rgba(255, 255, 255, 0.9); }
+
+/*
+ * Giriş alanları açık temada zeminden ayrılsın: kart da beyaz, input da beyaz
+ * olunca sınır kayboluyor.
+ */
+:root[data-theme="light"] input,
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea {
+  background-color: #ffffff;
+  border-color: rgba(9, 9, 11, 0.14);
+}
+
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] textarea::placeholder {
+  color: #a1a1aa;
+}
+
+/*
+ * `text-zinc-950` bu uygulamada tek bir iş yapıyor: yeşil/mavi düğmenin
+ * ÜZERİNDEKİ koyu yazı. Nötr eksen çevrilince açık renge dönüp okunmaz hâle
+ * geliyordu; iki temada da koyu kalmalı.
+ */
+:root[data-theme="light"] .text-zinc-950 { color: #09090b; }
+
+/* Cam kartın iç parlaması açık zeminde ters etki yapıyor. */
+:root[data-theme="light"] .glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.04), 0 8px 24px -12px rgba(9, 9, 11, 0.12);
+}
+
+:root[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(9, 9, 11, 0.18);
+}
+:root[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(9, 9, 11, 0.3);
+}
+
+/* Tema değişimi anlık değil, kısa bir geçişle yumuşasın. */
+html[data-theme] body {
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+/* ============================================================================
+   HAREKETLİ ARKA PLAN
+   ----------------------------------------------------------------------------
+   Sayfanın arkasında yavaşça sürüklenen üç yumuşak ışık lekesi ve ince bir
+   ızgara. Tamamı CSS: JavaScript yok, sadece transform animasyonu, o yüzden
+   compositor'da çalışır ve kaydırmayı yavaşlatmaz.
+   `prefers-reduced-motion` için genel kural zaten animasyonları durduruyor.
+   ========================================================================== */
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.aurora__blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.5;
+  will-change: transform;
+}
+
+:root[data-theme="light"] .aurora__blob {
+  opacity: 0.32;
+  filter: blur(90px);
+}
+
+.aurora__blob--1 {
+  top: -12%;
+  left: -8%;
+  width: 46vw;
+  height: 46vw;
+  min-width: 320px;
+  min-height: 320px;
+  background: radial-gradient(circle at 30% 30%, #10b981, transparent 68%);
+  animation: aurora-drift-1 26s ease-in-out infinite;
+}
+
+.aurora__blob--2 {
+  top: 18%;
+  right: -14%;
+  width: 40vw;
+  height: 40vw;
+  min-width: 280px;
+  min-height: 280px;
+  background: radial-gradient(circle at 60% 40%, #0ea5e9, transparent 68%);
+  animation: aurora-drift-2 32s ease-in-out infinite;
+}
+
+.aurora__blob--3 {
+  bottom: -18%;
+  left: 22%;
+  width: 44vw;
+  height: 44vw;
+  min-width: 300px;
+  min-height: 300px;
+  background: radial-gradient(circle at 40% 60%, #8b5cf6, transparent 70%);
+  animation: aurora-drift-3 38s ease-in-out infinite;
+}
+
+/* İnce ızgara: lekelere derinlik verir, tek başına neredeyse görünmez. */
+.aurora__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+:root[data-theme="light"] .aurora__grid {
+  background-image:
+    linear-gradient(to right, rgba(9, 9, 11, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(9, 9, 11, 0.05) 1px, transparent 1px);
+}
+
+@keyframes aurora-drift-1 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(8vw, 6vh, 0) scale(1.12); }
+  66% { transform: translate3d(-4vw, 10vh, 0) scale(0.94); }
+}
+
+@keyframes aurora-drift-2 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  40% { transform: translate3d(-10vw, 8vh, 0) scale(1.15); }
+  70% { transform: translate3d(-3vw, -6vh, 0) scale(0.92); }
+}
+
+@keyframes aurora-drift-3 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  35% { transform: translate3d(10vw, -8vh, 0) scale(0.9); }
+  70% { transform: translate3d(-8vw, -4vh, 0) scale(1.18); }
+}
+
+/* Sayfa geçişi: içerik alttan hafifçe yükselerek belirir. */
+@keyframes page-enter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.page-enter {
+  animation: page-enter 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}

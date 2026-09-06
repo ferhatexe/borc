@@ -45,7 +45,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center p-4 bg-[#0A0A0B]">
+    <div className="relative z-10 flex min-h-[100dvh] items-center justify-center p-4">
       <div className="relative w-full max-w-md">
         {/* Arka plan parlaklık efekti */}
         <div className="absolute -top-16 -left-16 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />

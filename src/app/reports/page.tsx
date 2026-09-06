@@ -302,7 +302,7 @@ export default function ReportsPage() {
                       data={analytics.cashFlowHistory}
                       margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(113,113,122,0.28)" vertical={false} />
                       <XAxis dataKey="monthLabel" stroke="#71717a" fontSize={11} tickLine={false} />
                       <YAxis
                         stroke="#71717a"
