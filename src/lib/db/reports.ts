@@ -1,4 +1,11 @@
-import { addMonths, endOfMonth, format, startOfMonth, subMonths } from "date-fns";
+import {
+  addMonths,
+  differenceInCalendarMonths,
+  endOfMonth,
+  format,
+  startOfMonth,
+  subMonths,
+} from "date-fns";
 import { tr } from "date-fns/locale";
 import { prisma } from "@/lib/prisma";
 import { getDebts } from "./debts";
@@ -337,7 +344,28 @@ export async function getAnalyticsSummary(userId: string, now = new Date()): Pro
    * Gelecek tarafta gelir tahmin edilmez (uydurma olurdu); yalnızca taksit
    * planlarından gelen, ödeneceği kesin olan tutarlar gider olarak konur.
    */
-  const ilkHareket = cashFlowHistory.findIndex((m) => m.incomeTL > 0 || m.expenseTL > 0);
+  /*
+   * Geçmişin nereden başlayacağı yalnızca gelir/gider kayıtlarına bakılarak
+   * bulunamaz: borcun kullanıldığı ay henüz hiç ödeme yapılmamış olsa bile
+   * kullanıcının mali geçmişinin başladığı andır ve grafikte görünmelidir.
+   * Bu yüzden borçların başlangıç tarihleri de hesaba katılır.
+   */
+  const enEskiBorc = debts.reduce<Date | null>((eldeki, d) => {
+    const baslangic = new Date(d.startDate);
+    if (Number.isNaN(baslangic.getTime())) return eldeki;
+    return eldeki === null || baslangic < eldeki ? baslangic : eldeki;
+  }, null);
+
+  const sonIndeks = cashFlowHistory.length - 1; // dizinin sonu = içinde bulunulan ay
+  const ilkKayitliAy = cashFlowHistory.findIndex((m) => m.incomeTL > 0 || m.expenseTL > 0);
+  const ilkBorcAyi = enEskiBorc
+    ? // Pencereden daha eski bir borç varsa 0'a kırpılır: 12 ayın tamamı gösterilir.
+      Math.max(0, sonIndeks - differenceInCalendarMonths(monthStart, startOfMonth(enEskiBorc)))
+    : -1;
+
+  const adaylar = [ilkKayitliAy, ilkBorcAyi].filter((i) => i >= 0);
+  const ilkHareket = adaylar.length > 0 ? Math.min(...adaylar) : -1;
+
   const gecmis = (ilkHareket === -1 ? cashFlowHistory.slice(-1) : cashFlowHistory.slice(ilkHareket))
     .map((m) => ({ ...m, scheduledPaymentTL: 0, isFuture: false }));
 

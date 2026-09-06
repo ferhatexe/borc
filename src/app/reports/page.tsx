@@ -288,8 +288,8 @@ export default function ReportsPage() {
       {/* SEKME 1: GENEL ANALİZ */}
       {activeTab === "overview" && (
         <div className="space-y-6">
-          {/* Son 6 Aylık Gelir vs Gider Çift Sütun Grafiği */}
-          {analytics?.cashFlowHistory && analytics.cashFlowHistory.length > 0 && (
+          {/* Nakit akisi: ilk hareketten bugune, ve bilinen taksitlerle ileri */}
+          {analytics?.cashFlowSeries && analytics.cashFlowSeries.length > 0 && (
             <div className="glass-card p-6 border-white/10 space-y-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2.5">
@@ -297,25 +297,24 @@ export default function ReportsPage() {
                     <ChartBar size={20} weight="duotone" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white">
-                      Nakit Akışı Trendi (Son 12 Ay)
-                    </h3>
+                    <h3 className="text-base font-bold text-white">Nakit Akışı</h3>
                     <p className="text-xs text-zinc-400">
-                      Aylık gelir, gider ve aradaki net fark
+                      İlk hareketinizden bugüne, ve önümüzdeki 6 ayın kesinleşmiş
+                      taksitleri
                     </p>
                   </div>
                 </div>
               </div>
 
               {/*
-                12 ay dar telefon ekranina sigmaz; grafik kendi icinde yatay
+                Cok ay dar telefon ekranina sigmaz; grafik kendi icinde yatay
                 kayar ve sutunlar okunakli kalir.
               */}
               <div className="-mx-2 overflow-x-auto px-2 pt-2">
                 <div className="h-64 min-w-[34rem]">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
-                      data={analytics.cashFlowHistory}
+                      data={analytics.cashFlowSeries}
                       margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
@@ -338,16 +337,53 @@ export default function ReportsPage() {
                         wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
                         formatter={(value) =>
                           value === "incomeTL"
-                            ? "Aylık Gelir"
+                            ? "Gelir"
                             : value === "expenseTL"
-                              ? "Aylık Gider"
-                              : "Net (gelir - gider)"
+                              ? "Gider / planlı taksit"
+                              : "Net"
                         }
                       />
                       {/* Sifir cizgisi: net cizgi altina dustugunde acik ay demektir. */}
-                      <ReferenceLine y={0} stroke="#52525b" strokeDasharray="2 2" />
-                      <Bar dataKey="incomeTL" fill="#10b981" radius={[6, 6, 0, 0]} />
-                      <Bar dataKey="expenseTL" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+                      <ReferenceLine y={0} stroke={chart.axis} strokeDasharray="2 2" />
+                      {/*
+                        Bugun ile gelecek arasindaki sinir. Sagindaki sutunlar
+                        gerceklesmis harcama degil, plandan bilinen taksitler.
+                      */}
+                      {analytics.cashFlowSeries.some((m: any) => m.isFuture) && (
+                        <ReferenceLine
+                          x={
+                            analytics.cashFlowSeries.find((m: any) => m.isFuture)
+                              .monthLabel
+                          }
+                          stroke="#22d3ee"
+                          strokeDasharray="4 4"
+                          label={{
+                            value: "bugünden sonrası",
+                            position: "insideTopRight",
+                            fill: "#22d3ee",
+                            fontSize: 10,
+                          }}
+                        />
+                      )}
+                      {/*
+                        Giris animasyonu kapali: ResponsiveContainer yatay kayan
+                        bir kutunun icinde once dar olcup sonra genisliyor, ve
+                        animasyon ilk olcumun koordinatlarini onbellege aliyor.
+                        Sonuc: sutunlar 1198px'lik eksenin altinda 600px'lik bir
+                        duzene gore diziliyor, yani aylarla hizalanmiyordu.
+                      */}
+                      <Bar
+                        dataKey="incomeTL"
+                        fill="#10b981"
+                        radius={[6, 6, 0, 0]}
+                        isAnimationActive={false}
+                      />
+                      <Bar
+                        dataKey="expenseTL"
+                        fill="#f43f5e"
+                        radius={[6, 6, 0, 0]}
+                        isAnimationActive={false}
+                      />
                       <Line
                         type="monotone"
                         dataKey="netTL"
@@ -355,6 +391,7 @@ export default function ReportsPage() {
                         strokeWidth={2}
                         dot={{ r: 2.5, fill: "#22d3ee" }}
                         activeDot={{ r: 4 }}
+                        isAnimationActive={false}
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
