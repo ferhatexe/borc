@@ -15,6 +15,7 @@ import {
 import { TruncgilGoldAdapter } from "./truncgilAdapter";
 import { TruncgilFlatGoldAdapter } from "./truncgilFlatAdapter";
 import { AnlikAltin21Adapter, isPlausibleGramPrice } from "./anlikAltinAdapter";
+import { OunceAdapter, isPlausibleOunceUsd } from "./ounceAdapter";
 import { calculateGoldValueTL } from "@/lib/finance/gold";
 import { getSettingsForOwner } from "@/lib/db/settings";
 import {
@@ -41,6 +42,39 @@ const providers: GoldPriceProvider[] = [new TruncgilGoldAdapter(), new TruncgilF
 
 /** 21 ayar icin ayri kaynak; birincil saglayici bu urunu yayinlamiyor. */
 const anlikAltin21 = new AnlikAltin21Adapter();
+
+/** ONS icin ayri kaynak; birincil saglayici ONS'u sifir gonderiyor. */
+const ounceAdapter = new OunceAdapter();
+
+/**
+ * Son basarili ONS kotasyonu.
+ *
+ * Fiyat anlik goruntuyle birlikte cekilir ama anlik goruntude saklanmaz (o
+ * tabloda ONS sutunu yok); burada tutulur ki onbellekten donen sonuclar da
+ * gercek kotasyonu tasisin. Kotasyon alinamazsa null kalir ve ons yeniden
+ * gram fiyatindan turetilir.
+ */
+let ounceCache: { usd: number; source: string; fetchedAt: Date } | null = null;
+
+/** ONS kotasyonunu tazeler; basarisiz olursa eski deger korunur. */
+async function refreshOunceQuote(pureGramSellTL: number, currencies: CurrencyRate[]) {
+  const quote = await ounceAdapter.fetchOunceUsd();
+  if (!quote) {
+    console.warn("ONS kotasyonu alinamadi; gram fiyatindan turetilecek.");
+    return;
+  }
+
+  // Bozuk bir kaynagi yakalamak icin gram fiyatindan turetilenle karsilastir.
+  const derived = deriveOunce(pureGramSellTL, currencies);
+  if (derived && !isPlausibleOunceUsd(quote.usd, derived.usd)) {
+    console.warn(
+      `ONS kotasyonu makul araligin disinda (cekilen ${quote.usd}, turetilen ${derived.usd}); yok sayildi.`
+    );
+    return;
+  }
+
+  ounceCache = { usd: quote.usd, source: quote.source, fetchedAt: new Date() };
+}
 
 /**
  * 21 ayar gram fiyatini gercek piyasa kotasyonuyla degistirir.
@@ -74,6 +108,7 @@ async function enrichWith21Ayar(result: GoldProviderResult): Promise<void> {
 
 export function resetGoldCache() {
   inMemoryCache = null;
+  ounceCache = null;
 }
 
 /**
@@ -95,6 +130,25 @@ function deriveOunce(pureGramSellTL: number, currencies: CurrencyRate[]): OunceQ
     tryValue: Math.round(tryValue * 100) / 100,
     basis: "DERIVED",
   };
+}
+
+/**
+ * Gercek kotasyon varsa o kazanir; yoksa gram fiyatindan turetilene dusulur.
+ * TL karsiligi her iki durumda da ayni yoldan hesaplanmaz: kotasyonda
+ * ONS x USD-TRY, turetmede gram x 31,1035 - ikisi ayni sayiya cikmaz ve
+ * gosterilen deger her zaman gosterilen ons fiyatiyla tutarli olmali.
+ */
+function resolveOunce(pureGramSellTL: number, currencies: CurrencyRate[]): OunceQuote | null {
+  if (ounceCache) {
+    const usd = currencies.find((c) => c.code === "USD");
+    return {
+      usd: Math.round(ounceCache.usd * 100) / 100,
+      tryValue: usd && usd.sellPrice > 0 ? Math.round(ounceCache.usd * usd.sellPrice * 100) / 100 : 0,
+      basis: "QUOTED",
+      source: ounceCache.source,
+    };
+  }
+  return deriveOunce(pureGramSellTL, currencies);
 }
 
 function minutesSince(date: Date): number {
@@ -122,7 +176,7 @@ function buildResult(snap: CachedSnapshot, isCached: boolean): GoldSyncResult {
     pureGramSellTL: snap.pureGramSellTL,
     pureGramChangePercent: snap.pureGramChangePercent,
     currencies: snap.currencies,
-    ounce: deriveOunce(snap.pureGramSellTL, snap.currencies),
+    ounce: resolveOunce(snap.pureGramSellTL, snap.currencies),
     providerUpdatedAt: snap.providerUpdatedAt,
     source: snap.source,
     sourceKind: snap.sourceKind,
@@ -293,7 +347,11 @@ export async function getGoldPrices(forceRefresh = false): Promise<GoldSyncResul
   for (const provider of providers) {
     try {
       const result = await provider.fetchPrices();
-      await enrichWith21Ayar(result);
+      // 21 ayar ve ONS ayri kaynaklardan; birbirini beklemesinler.
+      await Promise.all([
+        enrichWith21Ayar(result),
+        refreshOunceQuote(result.pureGramSellTL, result.currencies),
+      ]);
       const fetchedAt = new Date();
       const snap: CachedSnapshot = {
         ...result,

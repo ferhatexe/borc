@@ -87,11 +87,15 @@ export interface OunceQuote {
   usd: number;
   tryValue: number;
   /**
-   * "DERIVED" means it was computed as (gram has altın TL / USD-TRY) x 31.1035
-   * rather than quoted directly. The UI labels it so the number is never
-   * mistaken for a primary market quote.
+   * "QUOTED" means XAU/USD came straight from a market feed. "DERIVED" means
+   * every ounce source failed and it was computed as
+   * (gram has altın TL / USD-TRY) x 31.1035, which runs about %0,6 below the
+   * real quote. The UI labels it so the number is never mistaken for a
+   * primary market quote.
    */
   basis: "DERIVED" | "QUOTED";
+  /** Hangi kaynaktan geldiği; QUOTED ise besleme adı. */
+  source?: string;
 }
 
 export interface GoldSyncResult {

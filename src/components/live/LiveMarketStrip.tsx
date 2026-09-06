@@ -162,7 +162,7 @@ export function LiveMarketStrip({
             <Chip
               label="ONS Altın"
               value={`$${formatNumber(market.ounce.usd, 2)}`}
-              sub="hesaplanan"
+              sub={market.ounce.basis === "QUOTED" ? "canlı XAU/USD" : "hesaplanan"}
               accent="gold"
             />
           )}
@@ -236,8 +236,10 @@ export function LiveMarketStrip({
       <div className="mt-1.5 space-y-0.5 px-0.5 text-[9px] leading-tight text-zinc-600">
         {market?.ounce?.basis === "DERIVED" && (
           <p>
-            ONS değeri, gram has altın ve USD/TRY kurundan hesaplanır
-            (gram × 31,1035 ÷ USD). Sağlayıcı doğrudan ONS kotasyonu yayınlamıyor.
+            <span className="font-semibold text-amber-500/80">HESAPLANAN</span> ONS:
+            canlı XAU/USD kotasyonuna ulaşılamadı, değer gram has altın ve USD/TRY
+            kurundan türetildi (gram × 31,1035 ÷ USD). Gerçek kotasyondan yaklaşık
+            %0,6 sapabilir.
           </p>
         )}
         {market && Object.values(market.margins ?? {}).some((m) => m > 0) && (
