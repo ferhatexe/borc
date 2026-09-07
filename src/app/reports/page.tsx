@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   ChartBar,
   ChartLine,
@@ -98,25 +98,47 @@ export default function ReportsPage() {
   const lastUpdatedAt = live?.lastUpdatedAt ?? null;
   const liveTotalDebtTL =
     (liveTotals?.totalDebtTL ?? analytics?.totalDebtTL ?? 0) + (live?.tickedInterestTL ?? 0);
-  const [loans, setLoans] = useState<any[]>([]);
+  /*
+   * Simülatör borcun ham kaydını değil, değerlemesini ister:
+   * `remainingPrincipal`, `monthlyPayment`, `monthlyInterestRatePercent`.
+   * Bu sayfa /api/debts'ten gelen ham satırları olduğu gibi veriyordu; o
+   * satırlarda bu adlar yok, dolayısıyla simülatörün girdi listesi her zaman
+   * boş kalıyor ve bileşen sessizce hiçbir şey çizmiyordu.
+   *
+   * Analitik zaten her borcun güncel anaparasını ve taksitini taşıyor; panelin
+   * yaptığı eşleme burada da yapılıyor ve fazladan bir istek gerekmiyor.
+   */
+  const loans = useMemo(() => {
+    const hepsi = (analytics?.institutionBreakdown ?? []).flatMap(
+      (kurum: any) => kurum.debts ?? []
+    );
+    return hepsi
+      .filter(
+        (d: any) =>
+          d.type === "TAKSITLI_KREDI" &&
+          Number(d.principalTL) > 0 &&
+          Number(d.installmentAmountTL ?? 0) > 0 &&
+          Number(d.remainingInstallments ?? 0) > 0
+      )
+      .map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        remainingPrincipal: d.principalTL,
+        monthlyPayment: d.installmentAmountTL ?? 0,
+        monthlyInterestRatePercent: d.monthlyInterestRatePercent ?? 0,
+        remainingMonths: d.remainingInstallments ?? 0,
+      }));
+  }, [analytics]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "scenarios" | "exports">("overview");
 
   const fetchReportsData = async () => {
     try {
       setLoading(true);
-      const [resAnalytics, resDebts] = await Promise.all([
-        fetch("/api/reports/analytics"),
-        fetch("/api/debts"),
-      ]);
-
+      const resAnalytics = await fetch("/api/reports/analytics");
       if (resAnalytics.ok) {
         const data = await resAnalytics.json();
         setAnalytics(data);
-      }
-      if (resDebts.ok) {
-        const debts = await resDebts.json();
-        setLoans(debts.filter((d: any) => d.type === "TAKSITLI_KREDI"));
       }
     } catch (err) {
       console.error("Rapor verisi yüklenemedi:", err);
@@ -473,17 +495,9 @@ export default function ReportsPage() {
       {/* SEKME 2: SENARYO SİMÜLATÖRÜ */}
       {activeTab === "scenarios" && (
         <div className="space-y-6">
-          {loans.length > 0 ? (
-            <ScenarioSimulatorCard loans={loans} />
-          ) : (
-            <div className="glass-card p-12 text-center space-y-3">
-              <Sparkle size={36} className="mx-auto text-emerald-500/50" />
-              <h4 className="text-sm font-bold text-white">Simülasyon İçin Kredi Kaydı Gerekli</h4>
-              <p className="text-xs text-zinc-400 max-w-sm mx-auto">
-                Erken kapama veya aylık ek ödeme simülasyonunu çalıştırmak için en az 1 taksitli kredi kaydı bulunmalıdır.
-              </p>
-            </div>
-          )}
+          {/* Bos durumu bilesenin kendisi anlatiyor; burada ikinci bir kopya tutmak
+              ikisinin ayrisma riskini getiriyordu. */}
+          <ScenarioSimulatorCard loans={loans} />
         </div>
       )}
 

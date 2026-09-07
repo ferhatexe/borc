@@ -56,9 +56,27 @@ export function ScenarioSimulatorCard({ loans }: ScenarioSimulatorCardProps) {
     });
   }, [loanInputs, monthlyExtra, lumpSum, lumpSumMonth]);
 
-  if (!simulation || loanInputs.length === 0) {
-    return null;
+  /*
+   * Eskiden burada sessizce `null` donuluyordu. Rapor sayfasi bilesene yanlis
+   * bicimde veri verdiginde (ham borc kaydi, degerleme yerine) sekme bombos
+   * aciliyor ve hicbir sey neden gorunmedigini soylemiyordu. Bos durum artik
+   * gorunur ve sebebini yaziyor.
+   */
+  if (loanInputs.length === 0) {
+    return (
+      <div className="glass-card space-y-3 p-8 text-center">
+        <Sparkle size={32} className="mx-auto text-emerald-500/50" />
+        <h4 className="text-sm font-bold text-white">Simülasyon için uygun kredi yok</h4>
+        <p className="mx-auto max-w-sm text-xs leading-relaxed text-zinc-400">
+          {loans.length === 0
+            ? "Erken kapama ve ek ödeme simülasyonu için en az bir taksitli kredi kaydı gerekiyor."
+            : `${loans.length} kredi bulundu ama hiçbirinde simülasyon için gereken kalan anapara, taksit tutarı ve faiz oranı birlikte yok.`}
+        </p>
+      </div>
+    );
   }
+
+  if (!simulation) return null;
 
   const handleExtraClick = (val: number) => {
     triggerHaptic("selection");
