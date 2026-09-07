@@ -38,6 +38,21 @@ export default function ExpensesPage() {
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+
+  /*
+   * `?ekle=1` ile gelinirse form dogrudan acilir.
+   *
+   * Harcama eklemek icin once Giderler sayfasina gidip sonra dugmeyi bulmak
+   * gerekiyordu; alt cubuktaki ekleme dugmesi buraya boyle baglaniyor.
+   * `useSearchParams` yerine dogrudan adres okunuyor: bu sayfa zaten istemci
+   * bileseni ve o kanca statik render icin Suspense sarmalayicisi istiyor.
+   */
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("ekle")) {
+      setShowAddModal(true);
+    }
+  }, []);
+
   const [amount, setAmount] = useState<number | "">("");
   const [merchant, setMerchant] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -513,30 +528,68 @@ export default function ExpensesPage() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                  Harcama Tarihi *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full h-11 px-3.5 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-rose-500"
-                />
-              </div>
+              {/*
+                Tarih kendi satirinda tam genislik kapliyordu; bir tarih icin
+                fazla yer. Aciklama ile ayni satiri paylasiyor ve gunluk kullanimda
+                neredeyse her zaman "bugun" ya da "dun" oldugu icin iki kisayol
+                var - takvimi acmaya gerek kalmiyor.
+              */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="harcama-tarihi"
+                    className="mb-1.5 block text-xs font-medium text-zinc-300"
+                  >
+                    Harcama Tarihi *
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      id="harcama-tarihi"
+                      type="date"
+                      required
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      /* text-base sart: iOS 16px altindaki alanlara odaklanildiginda
+                         sayfayi kendiliginden yakinlastiriyor. */
+                      className="h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-zinc-900 px-3 text-base text-white focus:border-rose-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setDate(toDateInputValue())}
+                      className="h-11 shrink-0 rounded-xl border border-white/10 bg-white/5 px-2.5 text-[11px] font-medium text-zinc-300 transition-colors hover:bg-white/10"
+                    >
+                      Bugün
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const dun = new Date();
+                        dun.setDate(dun.getDate() - 1);
+                        setDate(toDateInputValue(dun));
+                      }}
+                      className="h-11 shrink-0 rounded-xl border border-white/10 bg-white/5 px-2.5 text-[11px] font-medium text-zinc-300 transition-colors hover:bg-white/10"
+                    >
+                      Dün
+                    </button>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                  Açıklama & Not (Opsiyonel)
-                </label>
-                <input
-                  type="text"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Ürün veya fiş notu"
-                  className="w-full h-10 px-3.5 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-rose-500"
-                />
+                <div>
+                  <label
+                    htmlFor="harcama-notu"
+                    className="mb-1.5 block text-xs font-medium text-zinc-300"
+                  >
+                    Açıklama & Not (Opsiyonel)
+                  </label>
+                  <input
+                    id="harcama-notu"
+                    type="text"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Ürün veya fiş notu"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-zinc-900 px-3.5 text-xs text-white focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">

@@ -758,8 +758,14 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
             <span className="text-[11px] text-zinc-500">Tıklayarak Taksit Ödeyin</span>
           </div>
 
+            {/*
+              Kaydirma kutusu tek basina yetmiyor: `w-full` tabloyu kapsayicinin
+              genisligine sikistirdigi icin sutunlar dar telefonda ust uste
+              biniyordu. Asgari genislik verilince tablo sikismak yerine yatay
+              kayiyor ve sutunlar hizasini koruyor.
+            */}
           <div className="overflow-x-auto rounded-2xl border border-white/10 bg-zinc-900/80">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[52rem] text-left text-xs border-collapse whitespace-nowrap">
               <thead>
                 <tr className="border-b border-white/10 bg-white/5 text-[11px] text-zinc-400 font-medium">
                   <th className="py-3 px-3">No</th>

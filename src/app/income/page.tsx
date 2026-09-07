@@ -32,6 +32,21 @@ export default function IncomePage() {
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+
+  /*
+   * `?ekle=1` ile gelinirse form dogrudan acilir.
+   *
+   * Harcama eklemek icin once Giderler sayfasina gidip sonra dugmeyi bulmak
+   * gerekiyordu; alt cubuktaki ekleme dugmesi buraya boyle baglaniyor.
+   * `useSearchParams` yerine dogrudan adres okunuyor: bu sayfa zaten istemci
+   * bileseni ve o kanca statik render icin Suspense sarmalayicisi istiyor.
+   */
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("ekle")) {
+      setShowAddModal(true);
+    }
+  }, []);
+
   const [amount, setAmount] = useState<number | "">("");
   const [source, setSource] = useState("");
   const [categoryId, setCategoryId] = useState("");

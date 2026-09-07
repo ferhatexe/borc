@@ -18,6 +18,7 @@ import { haptics } from "@/lib/haptics";
 import { useLiveData } from "@/components/live/LiveDataProvider";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { MobileMenuSheet } from "./MobileMenuSheet";
+import { QuickAddSheet } from "./QuickAddSheet";
 
 interface NavLink {
   kind: "link";
@@ -43,6 +44,7 @@ export function MobileNav() {
   const live = useLiveData();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [ekleOpen, setEkleOpen] = useState(false);
   const overdueCount = live?.data?.totals.overdueCount ?? 0;
 
   const solda: NavLink[] = [
@@ -106,15 +108,26 @@ export function MobileNav() {
         >
           {solda.map(renderLink)}
 
-          {/* 4/7: tam orta hücre. */}
-          <Link
-            href="/debts/new"
-            aria-label="Yeni borç ekle"
-            onClick={() => haptics.tap()}
-            className="relative -top-4 flex h-14 w-14 shrink-0 items-center justify-center self-start rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-zinc-950 shadow-[0_6px_20px_rgba(16,185,129,0.45)] transition-transform active:scale-90"
+          {/*
+            4/7: tam orta hücre.
+
+            Doğrudan borç sihirbazına gidiyordu; oysa günlük olarak en sık
+            eklenen şey harcama. Artık üçünü de sunan bir seçim açıyor.
+          */}
+          <button
+            type="button"
+            onClick={() => {
+              haptics.tap();
+              setEkleOpen(true);
+            }}
+            aria-label="Ekle"
+            aria-expanded={ekleOpen}
+            className={`relative -top-4 flex h-14 w-14 shrink-0 items-center justify-center self-start rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-zinc-950 shadow-[0_6px_20px_rgba(16,185,129,0.45)] transition-transform active:scale-90 ${
+              ekleOpen ? "rotate-45" : ""
+            }`}
           >
             <Plus size={26} weight="bold" />
-          </Link>
+          </button>
 
           {sagda.map(renderLink)}
 
@@ -170,6 +183,7 @@ export function MobileNav() {
         </nav>
       </div>
 
+      <QuickAddSheet open={ekleOpen} onClose={() => setEkleOpen(false)} />
       <MobileMenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
     </>
   );

@@ -229,8 +229,14 @@ export function DebtSchedulePreview({
             <span className="text-[11px] text-zinc-500">Otomatik Amortisman</span>
           </div>
 
+            {/*
+              Kaydirma kutusu tek basina yetmiyor: `w-full` tabloyu kapsayicinin
+              genisligine sikistirdigi icin sutunlar dar telefonda ust uste
+              biniyordu. Asgari genislik verilince tablo sikismak yerine yatay
+              kayiyor ve sutunlar hizasini koruyor.
+            */}
           <div className="overflow-x-auto rounded-xl border border-white/10 bg-zinc-900/60">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[40rem] text-left text-xs border-collapse whitespace-nowrap">
               <thead>
                 <tr className="border-b border-white/10 bg-white/5 text-[11px] text-zinc-400 font-medium">
                   <th className="py-2.5 px-3">No</th>
