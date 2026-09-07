@@ -5,23 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Bank,
   Calendar,
   CheckCircle,
   Clock,
   Coins,
-  CreditCard,
   CurrencyCircleDollar,
-  DotsThreeCircle,
   Lightning,
   PiggyBank,
-  PlusCircle,
-  Repeat,
-  Scroll,
   Trash,
-  UsersThree,
-  Vault,
   ShieldWarning,
+  Warning,
   ArrowsClockwise,
 } from "@phosphor-icons/react";
 import {
@@ -603,6 +596,18 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
       )}
 
       {/* Altın Borcu Canlı Piyasa Değerleme Kartı */}
+      {/*
+        Altın fiyat uyarısı sunucudan alınıyordu ama ekrana hiç basılmıyordu:
+        fiyatlar bayatladığında ya da manuel değerlerden hesaplandığında borcun
+        TL karşılığı sessizce yanlış görünebilirdi.
+      */}
+      {goldWarning && debt.type === "ALTIN_BORCU" && (
+        <div className="flex items-start gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5">
+          <Warning size={18} weight="fill" className="mt-0.5 shrink-0 text-amber-400" />
+          <p className="text-[11px] leading-relaxed text-amber-200/90">{goldWarning}</p>
+        </div>
+      )}
+
       {debt.type === "ALTIN_BORCU" && goldValuation && goldValuation.remaining > 0 && (
         <GoldPaymentCard
           debtId={String(id)}

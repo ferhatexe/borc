@@ -6,15 +6,9 @@ import { formatCurrency, formatDateTR, parseDateInput } from "@/lib/formatters";
 import {
   CheckCircle,
   Calendar,
-  Sparkle,
   CaretDown,
   CaretUp,
-  Bank,
-  CreditCard,
-  Vault,
-  Coins,
-  ShieldCheck,
-} from "@phosphor-icons/react";
+  } from "@phosphor-icons/react";
 
 interface DebtSchedulePreviewProps {
   debtType: string;

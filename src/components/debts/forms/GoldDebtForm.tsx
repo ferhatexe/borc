@@ -7,7 +7,8 @@ import { formatCurrency, formatDate, formatNumber } from "@/lib/formatters";
 import { useGoldPrices } from "@/lib/hooks/useGoldPrices";
 import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import { isPieceGoldType } from "@/lib/gold/types";
-import { Coins, Sparkle, Tag, Info, User, WarningCircle } from "@phosphor-icons/react";
+import { Coins, User, WarningCircle } from "@phosphor-icons/react";
+import { NotesField } from "./NotesField";
 
 export interface GoldDebtFormData {
   title: string;
@@ -92,9 +93,13 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
 
   const [creditorName, setCreditorName] = useState(initialData?.creditorName || "");
   const [dueDate, setDueDate] = useState(initialData?.dueDate || "");
-  const [isInterestFree, setIsInterestFree] = useState(
-    initialData?.isInterestFree !== undefined ? initialData.isInterestFree : true
-  );
+  /*
+   * Altın borcu bu uygulamada faiz işletmez: değer, borçlu olunan altının
+   * gün fiyatından karşılığıdır. Bayrak kayıt ve raporlar için tutuluyor ama
+   * her zaman "faizsiz". Değiştirilebilir gibi göstermek yanıltıcı olurdu -
+   * hesaplamada karşılığı yok.
+   */
+  const isInterestFree = initialData?.isInterestFree ?? true;
   const [notes, setNotes] = useState(initialData?.notes || "");
 
   // Altın tipi değişince ayar ve marj varsayılanlarını güncelle.
@@ -442,6 +447,8 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
           )}
         </div>
       )}
+
+      <NotesField value={notes} onChange={setNotes} />
     </div>
   );
 }

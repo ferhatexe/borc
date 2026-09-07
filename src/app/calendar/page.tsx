@@ -8,15 +8,12 @@ import {
   CaretRight,
   TrendUp,
   TrendDown,
-  Clock,
-  CheckCircle,
   CreditCard,
   Bank,
   ArrowRight,
-  Eye,
   PlusCircle,
 } from "@phosphor-icons/react";
-import { formatCurrency, formatDateTR } from "@/lib/formatters";
+import { formatCurrency } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 import { DayActivity, MonthCalendarData } from "@/lib/db/calendar";
 

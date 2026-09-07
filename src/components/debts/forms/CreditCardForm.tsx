@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/formatters";
 import { CreditCard, CalendarBlank, Sparkle } from "@phosphor-icons/react";
+import { NotesField } from "./NotesField";
 
 export interface CreditCardFormData {
   title: string;
@@ -313,6 +314,8 @@ export function CreditCardForm({ initialData, institutionName, onChange }: Credi
           <span>Toplam: {formatCurrency(creditLimit)}</span>
         </div>
       </div>
+
+      <NotesField value={notes} onChange={setNotes} />
     </div>
   );
 }

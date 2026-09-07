@@ -5,19 +5,9 @@ import {
   TrendDown,
   PlusCircle,
   CreditCard,
-  Bank,
-  ShoppingCart,
-  Car,
-  House,
-  Heart,
-  Coffee,
-  Bag,
-  DotsThreeCircle,
-  Lightning,
   Trash,
   CaretLeft,
   CaretRight,
-  Receipt,
   Link as LinkIcon,
 } from "@phosphor-icons/react";
 import { formatCurrency, formatDateTR, toDateInputValue } from "@/lib/formatters";
@@ -324,6 +314,45 @@ export default function ExpensesPage() {
           ))}
         </div>
       )}
+
+      {/*
+        Ödeme yöntemi süzgeci.
+
+        Süzme mantığı baştan beri vardı ama onu değiştirecek hiçbir denetim
+        konmamıştı: `selectedMethod` sonsuza kadar "ALL" kalıyor, yani süzgeç
+        ölü kod olarak duruyordu. Düğmeler eklendi.
+      */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        {(
+          [
+            ["ALL", "Tüm Yöntemler"],
+            ["KREDI_KARTI", "Kredi Kartı"],
+            ["BANKA_KARTI", "Banka Kartı"],
+            ["HAVALE", "Havale / FAST"],
+            ["NAKIT", "Nakit"],
+          ] as const
+        ).map(([deger, etiket]) => {
+          const adet =
+            deger === "ALL"
+              ? expenses.length
+              : expenses.filter((e: any) => e.paymentMethod === deger).length;
+          if (deger !== "ALL" && adet === 0) return null;
+          return (
+            <button
+              key={deger}
+              type="button"
+              onClick={() => setSelectedMethod(deger)}
+              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                selectedMethod === deger
+                  ? "bg-zinc-200 font-bold text-zinc-900"
+                  : "bg-white/5 text-zinc-400 hover:text-white"
+              }`}
+            >
+              {etiket} ({adet})
+            </button>
+          );
+        })}
+      </div>
 
       {/* Harcama Listesi */}
       {loading ? (

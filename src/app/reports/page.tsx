@@ -3,20 +3,13 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   ChartBar,
-  ChartLine,
-  ChartPieSlice,
   DownloadSimple,
   FileCsv,
   FileCode,
-  Bank,
   CreditCard,
-  Coins,
   ArrowDown,
   ArrowUp,
-  Sparkle,
-  ArrowsClockwise,
-  CheckCircle,
-} from "@phosphor-icons/react";
+  } from "@phosphor-icons/react";
 import {
   ComposedChart,
   Bar,
@@ -150,7 +143,7 @@ export default function ReportsPage() {
   useEffect(() => {
     fetchReportsData();
     // Canlı yoklama her tamamlandığında rapor da tazelensin.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [lastUpdatedAt]);
 
   const handleDownload = (endpoint: string) => {

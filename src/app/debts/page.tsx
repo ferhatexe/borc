@@ -14,11 +14,8 @@ import {
   CalendarCheck,
   DotsThreeCircle,
   MagnifyingGlass,
-  Funnel,
   ArrowRight,
   Clock,
-  CheckCircle,
-  Trash,
   Lightning,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -127,6 +124,23 @@ export default function DebtsPage() {
     }),
     [totals, debts.length]
   );
+
+  /**
+   * Kart üzerindeki tür etiketi.
+   *
+   * Ham enum basılıyordu: "TAKSITLI KREDI", "EK HESAP KMH". Ekranda okunan
+   * metin veritabanı sabiti gibi görünmemeli.
+   */
+  const TUR_ETIKETLERI: Record<string, string> = {
+    TAKSITLI_KREDI: "Taksitli Kredi",
+    KREDI_KARTI: "Kredi Kartı",
+    EK_HESAP_KMH: "KMH / Ek Hesap",
+    ALTIN_BORCU: "Altın Borcu",
+    KISI_BORCU: "Kişi Borcu",
+    SENET_CEK: "Senet / Çek",
+    DUZENLI_ODEME: "Düzenli Ödeme",
+    DIGER: "Diğer",
+  };
 
   const getDebtIcon = (type: string) => {
     switch (type) {
@@ -413,8 +427,9 @@ export default function DebtsPage() {
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 font-medium">
-                              {debt.type.replace(/_/g, " ")}
+                            <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-zinc-300">
+                              <Icon size={11} weight="duotone" />
+                              {TUR_ETIKETLERI[debt.type] ?? debt.type}
                             </span>
                             {debt.institution?.name && (
                               <span className="text-xs text-zinc-400 truncate">

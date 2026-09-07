@@ -16,11 +16,9 @@ import { TruncgilGoldAdapter } from "./truncgilAdapter";
 import { TruncgilFlatGoldAdapter } from "./truncgilFlatAdapter";
 import { AnlikAltin21Adapter, isPlausibleGramPrice } from "./anlikAltinAdapter";
 import { OunceAdapter, isPlausibleOunceUsd } from "./ounceAdapter";
-import { calculateGoldValueTL } from "@/lib/finance/gold";
 import { getSettingsForOwner } from "@/lib/db/settings";
 import {
   AppSettings,
-  DEFAULT_GOLD_MILLESIMAL,
   DEFAULT_GOLD_UNIT_GRAMS,
   GoldManualPrices,
 } from "@/lib/settings/defaults";

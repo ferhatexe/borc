@@ -4,6 +4,7 @@ import { toDateInputValue } from "@/lib/formatters";
 
 import { useState, useEffect } from "react";
 import { CalendarCheck, Repeat } from "@phosphor-icons/react";
+import { NotesField } from "./NotesField";
 
 export interface RecurringFormData {
   title: string;
@@ -143,6 +144,8 @@ export function RecurringForm({ initialData, institutionName, onChange }: Recurr
           </label>
         </div>
       </div>
+
+      <NotesField value={notes} onChange={setNotes} />
     </div>
   );
 }

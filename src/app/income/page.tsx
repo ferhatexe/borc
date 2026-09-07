@@ -4,18 +4,11 @@ import { useState, useEffect, useMemo } from "react";
 import {
   TrendUp,
   PlusCircle,
-  Briefcase,
-  House,
-  Coins,
-  Tag,
-  Calendar,
   Repeat,
   Trash,
-  Sparkle,
   CaretLeft,
   CaretRight,
-  Laptop,
-} from "@phosphor-icons/react";
+  } from "@phosphor-icons/react";
 import { formatCurrency, formatDateTR, toDateInputValue } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 

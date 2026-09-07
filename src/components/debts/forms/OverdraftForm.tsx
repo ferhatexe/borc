@@ -5,6 +5,7 @@ import { calculateOverdraftInterest } from "@/lib/finance/overdraft";
 import { formatCurrency, toDateInputValue } from "@/lib/formatters";
 import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import { Vault, Lightning, CalendarBlank } from "@phosphor-icons/react";
+import { NotesField } from "./NotesField";
 
 export interface OverdraftFormData {
   title: string;
@@ -268,6 +269,8 @@ export function OverdraftForm({ initialData, institutionName, onChange }: Overdr
           <span>Toplam Limit: {formatCurrency(limit)}</span>
         </div>
       </div>
+
+      <NotesField value={notes} onChange={setNotes} />
     </div>
   );
 }

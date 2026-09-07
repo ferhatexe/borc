@@ -16,6 +16,7 @@ import {
   GraduationCap,
   Sparkle,
 } from "@phosphor-icons/react";
+import { NotesField } from "./NotesField";
 
 export interface LoanFormData {
   loanSubType: string;
@@ -661,6 +662,8 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
           </div>
         </div>
       )}
+
+      <NotesField value={notes} onChange={setNotes} />
     </div>
   );
 }
