@@ -346,7 +346,15 @@ export async function payInstallment(
   return prisma.$transaction(async (tx) => {
     const debt = await tx.debt.findFirst({
       where: { id: debtId, userId },
-      select: { id: true, title: true, type: true, usedAmount: true, currentStatementBalance: true },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        usedAmount: true,
+        currentStatementBalance: true,
+        grams: true,
+        quantity: true,
+      },
     });
     if (!debt) throw new NotFoundError("Borç kaydı bulunamadı");
 
@@ -407,6 +415,28 @@ export async function payInstallment(
       debtUpdate.currentStatementBalance = newBalance.isNegative()
         ? new Prisma.Decimal(0)
         : newBalance;
+    }
+
+    /*
+     * Altın borcu altınla kapanır.
+     *
+     * Ödenen TL tutarı borcu azaltmaz - borç "50 gram" ise, ödeme de gram
+     * cinsinden düşülmelidir; aradaki kur farkı kalan borcun TL değerine
+     * kendiliğinden yansır. Bu blok olmadığı için altın borcuna yapılan ödeme
+     * kaydediliyor ama borç hiç azalmıyordu.
+     */
+    if (debt.type === "ALTIN_BORCU") {
+      if (input.goldGrams != null && debt.grams != null) {
+        const kalan = new Prisma.Decimal(debt.grams).minus(input.goldGrams.toString());
+        debtUpdate.grams = kalan.isNegative() ? new Prisma.Decimal(0) : kalan;
+        if (kalan.lessThanOrEqualTo(0)) debtUpdate.status = "KAPANDI";
+      } else if (input.goldQuantity != null && debt.quantity != null) {
+        const kalan = new Prisma.Decimal(debt.quantity).minus(input.goldQuantity.toString());
+        debtUpdate.quantity = kalan.isNegative() ? new Prisma.Decimal(0) : kalan;
+        if (kalan.lessThanOrEqualTo(0)) debtUpdate.status = "KAPANDI";
+      }
+      // Altın miktarı verilmediyse yalnızca ödeme ve gider kaydı düşülür;
+      // borcun kendisi bilerek değiştirilmez, uydurma bir gram hesaplanmaz.
     }
 
     await tx.debt.update({ where: { id: debt.id }, data: debtUpdate });

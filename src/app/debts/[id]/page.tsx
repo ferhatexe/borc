@@ -41,6 +41,7 @@ import { calculateEarlyPayoff } from "@/lib/finance/earlyPayoff";
 import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import type { DebtValuation } from "@/lib/finance/debtValuation";
 import { useChartTheme } from "@/lib/hooks/useChartTheme";
+import { GoldPaymentCard } from "@/components/debts/GoldPaymentCard";
 
 interface DebtDetailPageProps {
   params: Promise<{ id: string }>;
@@ -271,6 +272,10 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
       unitPriceWithPremiumTL: valuation.goldDetail.unitPriceWithPremiumTL,
       goldName: valuation.goldDetail.goldName,
       isPiece: valuation.goldDetail.isPiece,
+      // Kısmi ödeme kartı borçta kalan gram/adedi bilmek zorunda.
+      remaining: valuation.goldDetail.isPiece
+        ? (valuation.goldDetail.quantity ?? 0)
+        : (valuation.goldDetail.grams ?? 0),
     };
   }, [valuation]);
 
@@ -598,6 +603,17 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
       )}
 
       {/* Altın Borcu Canlı Piyasa Değerleme Kartı */}
+      {debt.type === "ALTIN_BORCU" && goldValuation && goldValuation.remaining > 0 && (
+        <GoldPaymentCard
+          debtId={String(id)}
+          goldName={goldValuation.goldName}
+          isPiece={goldValuation.isPiece}
+          remaining={goldValuation.remaining}
+          unitPriceWithPremiumTL={goldValuation.unitPriceWithPremiumTL}
+          onPaid={fetchDebt}
+        />
+      )}
+
       {debt.type === "ALTIN_BORCU" && goldValuation && (
         <div className="p-5 rounded-2xl bg-gradient-to-br from-yellow-950/40 via-zinc-900 to-zinc-900 border border-yellow-500/30 shadow-[0_0_30px_rgba(234,179,8,0.1)] space-y-4">
           <div className="flex items-center justify-between border-b border-white/10 pb-3">

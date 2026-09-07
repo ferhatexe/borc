@@ -289,5 +289,23 @@ export const payInstallmentSchema = z.object({
   /** Also write a matching expense record (şartname §6.2). */
   createExpense: z.coerce.boolean().default(true),
   expenseCategoryId: z.string().trim().min(1).optional().nullable(),
+  /*
+   * Altın borcunda ödeme TL değil, altındır.
+   *
+   * "500 TL ödedim" altın borcunu ne kadar azalttığını söylemez; kur değişince
+   * aynı TL farklı gram eder. Borç kaç gram / kaç adet azaldıysa o yazılır,
+   * `amount` ise o altının ödeme günündeki TL karşılığıdır - kasadan çıkan para
+   * ve gider kaydı bu tutardır.
+   */
+  goldGrams: z
+    .coerce.number()
+    .positive("Gram 0'dan büyük olmalıdır")
+    .optional()
+    .nullable(),
+  goldQuantity: z
+    .coerce.number()
+    .positive("Adet 0'dan büyük olmalıdır")
+    .optional()
+    .nullable(),
 });
 export type PayInstallmentInput = z.infer<typeof payInstallmentSchema>;

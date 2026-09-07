@@ -260,3 +260,34 @@ describe("Ayar şeması", () => {
     expect(updateSettingsSchema.safeParse({}).success).toBe(false);
   });
 });
+
+describe("Altın borcu ödemesi", () => {
+  const temel = { amount: 31103.95, method: "NAKIT" as const };
+
+  it("gram cinsinden ödemeyi kabul eder", () => {
+    const res = payInstallmentSchema.safeParse({ ...temel, goldGrams: 5 });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.goldGrams).toBe(5);
+  });
+
+  it("adet cinsinden ödemeyi kabul eder", () => {
+    const res = payInstallmentSchema.safeParse({ ...temel, goldQuantity: 2 });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.goldQuantity).toBe(2);
+  });
+
+  it("sıfır veya negatif miktarı reddeder", () => {
+    // "0 gram ödedim" borcu azaltmaz; kayıt olarak da anlamsızdır.
+    expect(payInstallmentSchema.safeParse({ ...temel, goldGrams: 0 }).success).toBe(false);
+    expect(payInstallmentSchema.safeParse({ ...temel, goldGrams: -3 }).success).toBe(false);
+  });
+
+  it("altın miktarı olmadan da geçerlidir; kredi ödemeleri bu alanı kullanmaz", () => {
+    expect(payInstallmentSchema.safeParse(temel).success).toBe(true);
+  });
+
+  it("ödemeye karşılık gider yazmayı varsayılan olarak açar", () => {
+    const res = payInstallmentSchema.safeParse({ ...temel, goldGrams: 5 });
+    expect(res.success && res.data.createExpense).toBe(true);
+  });
+});
