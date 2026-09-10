@@ -260,7 +260,16 @@ export async function updateDebt(
   id: string,
   input: UpdateDebtInput
 ): Promise<DebtWithRelations> {
-  const existing = await prisma.debt.findFirst({ where: { id, userId }, select: { id: true } });
+  const existing = await prisma.debt.findFirst({
+    where: { id, userId },
+    select: {
+      id: true,
+      type: true,
+      installmentCount: true,
+      paidInstallments: true,
+      firstPaymentDate: true,
+    },
+  });
   if (!existing) throw new NotFoundError("Borç kaydı bulunamadı");
 
   const data: Prisma.DebtUpdateInput = {};
@@ -307,6 +316,61 @@ export async function updateDebt(
   assign("drawee", input.drawee ?? null);
   assign("loanAccountNo", input.loanAccountNo ?? null);
   assign("earlyPayoffEnabled", input.earlyPayoffEnabled);
+
+  /*
+   * Aşağıdaki alanlar da güncellenebilmeli.
+   *
+   * Şemada tanımlıydılar ve düzenleme formu bunları gönderiyordu ama burada
+   * yazılmıyorlardı: kullanıcı kart adını, ayarını ya da vergi tercihini
+   * değiştirip kaydettiğinde istek 200 dönüyor, değişiklik ise hiç
+   * kaydedilmiyordu. Sessiz kayıp, hata mesajından beterdir.
+   *
+   * KKDF/BSMV bayrakları yalnızca kozmetik değil: taksitli kredinin günlük
+   * faiz tahakkuku bunlardan hesaplanıyor (bkz. valuateDebt).
+   */
+  assign("loanSubType", input.loanSubType ?? null);
+  assign("includeKKDF", input.includeKKDF);
+  assign("kkdfRate", dec(input.kkdfRate));
+  assign("includeBSMV", input.includeBSMV);
+  assign("bsmvRate", dec(input.bsmvRate));
+  assign("cardName", input.cardName ?? null);
+  assign("last4", input.last4 ?? null);
+  assign("accrualBasis", input.accrualBasis ?? null);
+  assign("goldType", input.goldType ?? null);
+  assign("isInterestFree", input.isInterestFree);
+  assign("hasInterest", input.hasInterest);
+  assign("documentType", input.documentType ?? null);
+
+  /*
+   * Planı yeniden kurmayı gerektiren alanlar.
+   *
+   * `updateDebt` amortisman tablosuna dokunmuyor; taksit sayısını ya da ilk
+   * vadeyi burada değiştirmek kaydı kendi planıyla çelişir hâle getirirdi -
+   * borç "6 taksit" der, tabloda 5 satır durur. Bu yüzden değişiklik sessizce
+   * yutulmuyor, açıkça reddediliyor: kullanıcı ne olduğunu görsün.
+   *
+   * Aynı değer tekrar gönderilirse (formun tamamını POST eden ekranlar böyle
+   * yapar) sorun yok, yalnızca gerçekten farklıysa hata verilir.
+   */
+  const planAlanlari: Array<[keyof UpdateDebtInput, unknown, string]> = [
+    ["type", existing.type, "Borç türü"],
+    ["installmentCount", existing.installmentCount, "Taksit sayısı"],
+    ["paidInstallments", existing.paidInstallments, "Ödenen taksit sayısı"],
+    ["firstPaymentDate", existing.firstPaymentDate, "İlk ödeme tarihi"],
+  ];
+  for (const [alan, mevcut, etiket] of planAlanlari) {
+    const gelen = input[alan];
+    if (gelen === undefined || gelen === null) continue;
+    const ayni =
+      gelen instanceof Date && mevcut instanceof Date
+        ? gelen.getTime() === mevcut.getTime()
+        : String(gelen) === String(mevcut ?? "");
+    if (!ayni) {
+      throw new ConflictError(
+        `${etiket} bir kaydın ödeme planını baştan kurmayı gerektirir; düzenleme ile değiştirilemez. Borcu silip yeniden ekleyin.`
+      );
+    }
+  }
   if (input.currentPrincipalOverride !== undefined) {
     data.currentPrincipalOverride = dec(input.currentPrincipalOverride);
     data.principalOverrideAt = input.currentPrincipalOverride != null ? new Date() : null;
