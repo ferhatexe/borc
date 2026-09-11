@@ -212,7 +212,7 @@ describe("KMH değerlemesi", () => {
 });
 
 describe("Kredi kartı değerlemesi", () => {
-  it("asgari ödeme tanımlıysa onu kullanır", () => {
+  it("bu ay ödenecek tutar kartın tamamıdır; asgari yalnızca bilgi olarak durur", () => {
     const card = debt({
       type: "KREDI_KARTI",
       title: "Bonus",
@@ -222,11 +222,13 @@ describe("Kredi kartı değerlemesi", () => {
       dueDay: 25,
     });
     const v = valuateDebt(card, gold, DEFAULT_SETTINGS, NOW);
-    expect(v.dueThisMonthTL).toBe(4000);
+    expect(v.dueThisMonthTL).toBe(20000);
+    expect(v.cardDetail?.minimumPayment).toBe(4000);
     expect(v.isOverdue).toBe(false);
+    expect(v.nextDueDate).toBe(new Date(2026, 8, 25).toISOString());
   });
 
-  it("asgari ödeme yoksa ayardaki orandan hesaplar", () => {
+  it("asgari tanımlı değilse ayardaki orandan hesaplanır ve bilgi olarak gösterilir", () => {
     const card = debt({
       type: "KREDI_KARTI",
       creditLimit: 50000 as never,
@@ -234,10 +236,32 @@ describe("Kredi kartı değerlemesi", () => {
       dueDay: 25,
     });
     const v = valuateDebt(card, gold, DEFAULT_SETTINGS, NOW);
-    expect(v.dueThisMonthTL).toBeCloseTo(20000 * 0.2, 2);
+    expect(v.cardDetail?.minimumPayment).toBeCloseTo(20000 * 0.2, 2);
+    expect(v.dueThisMonthTL).toBe(20000);
   });
 
-  it("son ödeme günü geçmişse gecikme faizi işletir", () => {
+  it("REGRESYON: ödeme günü bu ay geçtiyse sıradaki vade gelecek ayın günüdür, gecikme sayılmaz", () => {
+    // Ayın 4'ünde ödenen kart 11'inde gecikmiş sayılıp gecikme faizi
+    // işletiliyordu. Bakiye son ödemeden sonraki yeni harcamalar; 4 Ekim'de ödenir.
+    const card = debt({
+      type: "KREDI_KARTI",
+      creditLimit: 15000 as never,
+      currentStatementBalance: 7949.3 as never,
+      statementDay: 4,
+      dueDay: 4,
+      contractualInterestMonthly: 4.25 as never,
+      overdueInterestMonthly: 4.55 as never,
+    });
+    const v = valuateDebt(card, gold, DEFAULT_SETTINGS, NOW); // 15 Eylül
+    expect(v.isOverdue).toBe(false);
+    expect(v.accruedInterestTL).toBe(0);
+    expect(v.outstandingTL).toBe(7949.3);
+    expect(v.nextDueDate).toBe(new Date(2026, 9, 4).toISOString());
+    // Vade Ekim'de: Eylül'ün yükümlülüğüne girmez.
+    expect(v.dueThisMonthTL).toBe(0);
+  });
+
+  it("son ödeme günü geçtiği hâlde kart o günden beri hiç güncellenmediyse gecikme faizi işletir", () => {
     const card = debt({
       type: "KREDI_KARTI",
       creditLimit: 50000 as never,
@@ -246,11 +270,14 @@ describe("Kredi kartı değerlemesi", () => {
       dueDay: 5, // 15 Eylül itibarıyla 10 gün gecikmiş
       contractualInterestMonthly: 4.25 as never,
       overdueInterestMonthly: 4.75 as never,
+      updatedAt: new Date(2026, 7, 1), // 5 Eylül'den önce: ne ödeme ne harcama
     });
     const v = valuateDebt(card, gold, DEFAULT_SETTINGS, NOW);
     expect(v.isOverdue).toBe(true);
     expect(v.accruedInterestTL).toBeGreaterThan(0);
     expect(v.outstandingTL).toBeGreaterThan(20000);
+    expect(v.nextDueDate).toBe(new Date(2026, 8, 5).toISOString());
+    expect(v.dueThisMonthTL).toBe(20000);
   });
 
   it("kart üzerindeki taksitli harcamaların aylık toplamını çıkarır", () => {

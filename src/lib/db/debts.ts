@@ -418,6 +418,7 @@ export async function payInstallment(
         currentStatementBalance: true,
         grams: true,
         quantity: true,
+        currentPrincipalOverride: true,
       },
     });
     if (!debt) throw new NotFoundError("Borç kaydı bulunamadı");
@@ -468,6 +469,29 @@ export async function payInstallment(
 
     if (debt.type === "TAKSITLI_KREDI" && pendingCount === 0 && paidCount > 0) {
       debtUpdate.status = "KAPANDI";
+    }
+
+    /*
+     * Bankadan elle girilmiş bakiye ödemeyle birlikte düşmeli.
+     *
+     * `currentPrincipalOverride` doluysa değerleme plan yerine onu okur. Taksit
+     * ödeniyordu ama bu değer yerinde kalıyordu: kredi, taksidi ödendiği hâlde
+     * aynı anaparayı göstermeye devam ediyordu. Bankanın erken ödemede de
+     * yaptığı gibi ödenen taksitin plandaki anapara payı düşülür ve faiz saati
+     * ödeme anına çekilir - o güne kadar işleyen faiz bu ödemeyle kapandı.
+     * Son taksit ödenince elle girilmiş değer tamamen kalkar.
+     */
+    if (debt.type === "TAKSITLI_KREDI" && installment && debt.currentPrincipalOverride != null) {
+      if (pendingCount === 0) {
+        debtUpdate.currentPrincipalOverride = null;
+        debtUpdate.principalOverrideAt = null;
+      } else {
+        const kalan = new Prisma.Decimal(debt.currentPrincipalOverride).minus(
+          installment.principalPart
+        );
+        debtUpdate.currentPrincipalOverride = kalan.isNegative() ? new Prisma.Decimal(0) : kalan;
+        debtUpdate.principalOverrideAt = paidAt;
+      }
     }
     if (debt.type === "EK_HESAP_KMH") {
       const newUsed = new Prisma.Decimal(debt.usedAmount ?? 0).minus(amount);

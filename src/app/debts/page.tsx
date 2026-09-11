@@ -199,7 +199,7 @@ export default function DebtsPage() {
           <p className="text-2xl font-bold text-emerald-400 font-mono">
             {formatCurrency(metrics.monthlyObligation)}
           </p>
-          <p className="text-[10px] text-zinc-500">Kredi taksitleri + asgari tutarlar</p>
+          <p className="text-[10px] text-zinc-500">Kredi taksitleri + vadesi bu ay gelen kart borcu</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
@@ -503,10 +503,15 @@ export default function DebtsPage() {
                         </div>
                       ) : debt.type === "KREDI_KARTI" ? (
                         <span className="text-[11px]">
-                          Asgari:{" "}
+                          Ödenecek:{" "}
                           <strong className="text-white font-mono">
-                            {formatCurrency(debt.minimumPayment || 0)}
+                            {formatCurrency(
+                              valuations[debt.id]?.outstandingTL ?? debt.currentStatementBalance ?? 0
+                            )}
                           </strong>
+                          {valuations[debt.id]?.nextDueDate
+                            ? ` · ${new Date(valuations[debt.id]?.nextDueDate as string).toLocaleDateString("tr-TR")}`
+                            : ""}
                         </span>
                       ) : debt.dueDate ? (
                         <span className="text-[11px]">Vade: {formatDateTR(debt.dueDate)}</span>

@@ -66,13 +66,16 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Erken Kapama Simülatörü State (oran yüzde olarak tutulur)
-  const [penaltyPercent, setPenaltyPercent] = useState<number>(2);
-
-  // Varsayılan komisyon oranı Ayarlar'dan gelir.
-  useEffect(() => {
-    setPenaltyPercent(Number((settings.taxRates.earlyPayoffPenaltyRate * 100).toFixed(2)));
-  }, [settings.taxRates.earlyPayoffPenaltyRate]);
+  /*
+   * Erken kapama komisyonu Ayarlar'dan gelir; varsayılanı sıfır.
+   *
+   * Burada "%1 / %2 ceza" seçici vardı ve %2 varsayılandı. Kullanıcının
+   * bankaları erken ödemede ceza değil indirim uyguluyor (QNB taksitleri
+   * 9.598,57 yerine 8.849,09, 4.534,69 yerine 4.310,00 ile kapandı); her
+   * kredide komisyon eklemek kapama tutarını olduğundan yüksek gösteriyordu.
+   * Komisyon alan bir banka varsa oran Ayarlar'dan girilir.
+   */
+  const penaltyRate = settings.taxRates.earlyPayoffPenaltyRate;
 
   const fetchDebt = async () => {
     try {
@@ -206,10 +209,9 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
       accruedInterest: valuation?.accruedInterestTL ?? 0,
       amortizationSchedule: formattedSchedule,
       paidInstallmentCount: paidCount,
-      // Slider yüzde gösterir, motor oranı kesir olarak bekler.
-      penaltyRate: penaltyPercent / 100,
+      penaltyRate,
     });
-  }, [debt, penaltyPercent, valuation]);
+  }, [debt, penaltyRate, valuation]);
 
   /**
    * KMH accrual comes from the server, which anchors it to the account's
@@ -409,13 +411,13 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
 
         <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
           <p className="text-[11px] text-zinc-400">
-            {isLoan ? "Aylık Taksit" : debt.type === "KREDI_KARTI" ? "Asgari Ödeme" : "Vade / Durum"}
+            {isLoan ? "Aylık Taksit" : debt.type === "KREDI_KARTI" ? "Ödenecek (tamamı)" : "Vade / Durum"}
           </p>
           <p className="text-lg font-bold text-emerald-400 font-mono">
             {isLoan
               ? formatCurrency(debt.installmentAmount || 0)
               : debt.type === "KREDI_KARTI"
-              ? formatCurrency(debt.minimumPayment || 0)
+              ? formatCurrency(valuation?.outstandingTL ?? debt.currentStatementBalance ?? 0)
               : debt.dueDate
               ? formatDateTR(debt.dueDate)
               : "Süresiz"}
@@ -424,7 +426,7 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
             {isLoan
               ? `Ödeme Günü: Ayın ${debt.paymentDayOfMonth || 15}. günü`
               : debt.type === "KREDI_KARTI"
-              ? `Son Gün: Ayın ${debt.dueDay}. günü`
+              ? `Vade: ${valuation?.nextDueDate ? formatDateTR(valuation.nextDueDate) : `ayın ${debt.dueDay}. günü`} · asgari ${formatCurrency(valuation?.cardDetail?.minimumPayment ?? 0)}`
               : "Vade Tarihi"}
           </p>
         </div>
@@ -483,28 +485,6 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
                 </p>
               </div>
             </div>
-
-            <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-white/10 text-xs">
-              <span className="text-zinc-400 text-[10px] pl-1.5">Ceza:</span>
-              <button
-                type="button"
-                onClick={() => setPenaltyPercent(1)}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
-                  penaltyPercent === 1 ? "bg-emerald-500 text-zinc-950" : "text-zinc-400"
-                }`}
-              >
-                %1 (&lt;36 ay)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPenaltyPercent(2)}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
-                  penaltyPercent === 2 ? "bg-emerald-500 text-zinc-950" : "text-zinc-400"
-                }`}
-              >
-                %2 (&gt;36 ay)
-              </button>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -514,8 +494,9 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
                 {formatCurrency(earlyPayoff.totalPayoffAmount)}
               </p>
               <p className="text-[10px] text-zinc-500">
-                Kalan anapara + {formatCurrency(earlyPayoff.accruedInterest)} işlemiş
-                faiz + {formatCurrency(earlyPayoff.penaltyFee)} komisyon
+                Kalan anapara + {formatCurrency(earlyPayoff.accruedInterest)} işlemiş faiz
+                {Number(earlyPayoff.penaltyFee) > 0 &&
+                  ` + ${formatCurrency(earlyPayoff.penaltyFee)} komisyon`}
               </p>
             </div>
 

@@ -364,20 +364,49 @@ export function valuateDebt(
       const balance = num(debt.currentStatementBalance);
       const limit = num(debt.creditLimit);
       const configuredMin = numOrNull(debt.minimumPayment);
+      // Asgari yalnızca bilgi olarak tutulur (cardDetail); ödenecek olan kartın tamamı.
       const minimum =
         configuredMin ?? balance * settings.taxRates.creditCardMinPaymentRate;
 
       principalTL = balance;
 
-      // Determine this month's due date from the statement due day.
-      let dueDate: Date | null = null;
-      if (debt.dueDay) {
-        const lastDay = endOfMonth(now).getDate();
-        dueDate = new Date(now.getFullYear(), now.getMonth(), Math.min(debt.dueDay, lastDay));
+      /*
+       * Vade: bu ayın ödeme günü değil, SIRADAKİ ödeme günü.
+       *
+       * Eskiden bu ayın günü alınıyor, o gün geçmişse bakiye varken kart
+       * doğrudan "gecikmiş" sayılıp gecikme faizi işletiliyordu. Oysa eldeki
+       * bakiye çoğunlukla son ödemeden sonraki yeni harcamalardır ve bir sonraki
+       * ödeme gününde ödenir: ayın 4'ünde ödenen kart 11'inde gecikmiş
+       * görünüyor, toplam borca uydurma faiz ekleniyordu.
+       *
+       * Gecikme ancak şu durumda sayılır: son ödeme günü geçmiş, bakiye hâlâ
+       * sıfırdan büyük ve kart o günden beri hiç güncellenmemiş - ne harcama, ne
+       * ödeme, ne elle düzeltme. O günden sonra dokunulduysa bakiye yeni
+       * dönemin borcudur. (Ödenmemiş dönemin üstüne yeni harcama eklenirse
+       * gecikme gözden kaçabilir; uydurma faiz göstermektense bu tercih edildi.)
+       */
+      let prevDue: Date | null = null;
+      let nextDue: Date | null = null;
+      const day = debt.dueDay;
+      if (day) {
+        const dueIn = (year: number, month: number) => {
+          const lastDay = new Date(year, month + 1, 0).getDate();
+          return new Date(year, month, Math.min(day, lastDay));
+        };
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const thisMonth = dueIn(now.getFullYear(), now.getMonth());
+        if (thisMonth >= today) {
+          nextDue = thisMonth;
+          prevDue = dueIn(now.getFullYear(), now.getMonth() - 1);
+        } else {
+          prevDue = thisMonth;
+          nextDue = dueIn(now.getFullYear(), now.getMonth() + 1);
+        }
       }
 
-      if (dueDate && dueDate < now && balance > 0) {
-        const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / 86400000);
+      const lastTouched = debt.updatedAt ? new Date(debt.updatedAt) : null;
+      if (balance > 0 && prevDue && lastTouched && lastTouched < prevDue) {
+        const daysOverdue = Math.floor((now.getTime() - prevDue.getTime()) / 86400000);
         const interest = calculateCreditCardOverdueInterest({
           overdueBalance: balance,
           contractualMonthlyRatePercent: num(debt.contractualInterestMonthly),
@@ -393,7 +422,11 @@ export function valuateDebt(
         isOverdue = true;
       }
 
-      dueThisMonthTL = balance > 0 ? Math.min(minimum, balance) : 0;
+      // Kartın tamamı vadesinde ödenir; bu aya yalnızca vadesi bu ay olan ya da
+      // gecikmiş bakiye girer.
+      const dueDate = isOverdue ? prevDue : nextDue;
+      const vadesiBuAy = dueDate !== null && dueDate >= monthStart && dueDate <= monthEnd;
+      dueThisMonthTL = balance > 0 && (isOverdue || vadesiBuAy) ? balance : 0;
       nextDueDate = dueDate;
 
       cardDetail = {

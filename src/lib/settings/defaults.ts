@@ -55,7 +55,9 @@ export interface AppPreferences {
 export const DEFAULT_TAX_RATES: TaxRates = {
   kkdfRate: 0.15,
   bsmvRate: 0.15,
-  earlyPayoffPenaltyRate: 0.02,
+  // Sıfır: kullanıcının bankaları erken ödemede ceza değil indirim uyguluyor.
+  // Komisyon alan bir banka varsa oran Ayarlar'dan girilir.
+  earlyPayoffPenaltyRate: 0,
   creditCardMinPaymentRate: 0.2,
 };
 

@@ -12,7 +12,8 @@ export interface EarlyPayoffParams {
   paidInstallmentCount: number;
   /**
    * Early payoff commission as a FRACTION of the remaining principal
-   * (0.02 for %2). Comes from the `tax_rates` setting, never hardcoded.
+   * (0.01 for %1). Comes from the `tax_rates` setting; defaults to zero since
+   * the user's banks discount early payments instead of charging for them.
    */
   penaltyRate?: RateInput;
 }
@@ -39,7 +40,7 @@ export interface EarlyPayoffResult {
 export function calculateEarlyPayoff(params: EarlyPayoffParams): EarlyPayoffResult {
   const remainingPrincipal = new Decimal(params.remainingPrincipal.toString());
   const accruedInterest = new Decimal((params.accruedInterest ?? 0).toString());
-  const penaltyRate = new Decimal((params.penaltyRate ?? 0.02).toString());
+  const penaltyRate = new Decimal((params.penaltyRate ?? 0).toString());
 
   if (penaltyRate.isNegative()) throw new Error("Erken kapama komisyon oranı negatif olamaz.");
 

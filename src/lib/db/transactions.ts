@@ -211,9 +211,10 @@ export async function deleteExpensePermanently(userId: string, id: string) {
 // ------------------------------ KASA ----------------------------------
 
 export interface CashBalance {
-  /** Elde kalan nakit: tüm zamanların geliri eksi gideri. */
+  /** Elde kalan nakit: tüm zamanların geliri eksi kasadan çıkan gider. */
   balanceTL: number;
   totalIncomeTL: number;
+  /** Kasadan çıkan giderler; kredi kartıyla yapılan harcamalar hariç. */
   totalExpenseTL: number;
 }
 
@@ -223,6 +224,11 @@ export interface CashBalance {
  * Gelir eklendiğinde artar, gider (borç ödemeleri dahil, çünkü ödeme aynı
  * anda bir gider kaydı oluşturur) düştüğünde azalır. Satırları çekip toplamak
  * yerine veritabanında toplanır; kayıt sayısı büyüdükçe fark eder.
+ *
+ * Kredi kartıyla yapılan harcama kasadan düşülmez. O para hesaptan çıkmadı,
+ * karta yazıldı (createExpense kartın dönem borcunu zaten artırıyor). Kasadan
+ * da düşülürse aynı alışveriş iki kez sayılır: bir kez harcarken, bir kez de
+ * kart borcu ödenirken - o ödeme de ayrı bir gider kaydı oluşturur.
  */
 export async function getCashBalance(userId: string): Promise<CashBalance> {
   const [income, expense] = await Promise.all([
@@ -231,7 +237,7 @@ export async function getCashBalance(userId: string): Promise<CashBalance> {
       _sum: { amount: true },
     }),
     prisma.expense.aggregate({
-      where: { userId, isArchived: false },
+      where: { userId, isArchived: false, paymentMethod: { not: "KREDI_KARTI" } },
       _sum: { amount: true },
     }),
   ]);
