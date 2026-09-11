@@ -7,6 +7,8 @@ import {
   solveMonthlyInterestRate,
 } from "@/lib/finance/annuity";
 import { getSettings } from "@/lib/db/settings";
+import { valuateDebt } from "@/lib/finance/debtValuation";
+import { principalAfterPayment } from "@/lib/finance/loanPayment";
 import type { CreateDebtInput, PayInstallmentInput, UpdateDebtInput } from "@/lib/validation/debt";
 
 /**
@@ -406,6 +408,8 @@ export async function payInstallment(
 ) {
   const paidAt = input.paidAt ?? new Date();
   const amount = new Prisma.Decimal(input.amount.toString());
+  // Ödeme anındaki kapama tutarı için (bkz. aşağıdaki elle bakiye kuralı).
+  const settings = await getSettings(userId);
 
   return prisma.$transaction(async (tx) => {
     const debt = await tx.debt.findFirst({
@@ -424,6 +428,7 @@ export async function payInstallment(
     if (!debt) throw new NotFoundError("Borç kaydı bulunamadı");
 
     let installment = null as Awaited<ReturnType<typeof tx.installmentSchedule.findFirst>> | null;
+    let payoffBefore: number | null = null;
 
     if (input.installmentId) {
       installment = await tx.installmentSchedule.findFirst({
@@ -434,6 +439,13 @@ export async function payInstallment(
         throw new ConflictError(
           `${installment.installmentNo}. taksit zaten ödenmiş görünüyor.`
         );
+      }
+
+      // Kapama tutarı taksit ÖDENMEDEN okunur: faiz tavanı bekleyen ilk taksite,
+      // yani bu taksite bakıyor.
+      if (debt.type === "TAKSITLI_KREDI" && debt.currentPrincipalOverride != null) {
+        const tam = await tx.debt.findFirst({ where: { id: debt.id }, include: DEBT_INCLUDE });
+        if (tam) payoffBefore = valuateDebt(tam, null, settings, paidAt).outstandingTL;
       }
 
       await tx.installmentSchedule.update({
@@ -476,20 +488,22 @@ export async function payInstallment(
      *
      * `currentPrincipalOverride` doluysa değerleme plan yerine onu okur. Taksit
      * ödeniyordu ama bu değer yerinde kalıyordu: kredi, taksidi ödendiği hâlde
-     * aynı anaparayı göstermeye devam ediyordu. Bankanın erken ödemede de
-     * yaptığı gibi ödenen taksitin plandaki anapara payı düşülür ve faiz saati
-     * ödeme anına çekilir - o güne kadar işleyen faiz bu ödemeyle kapandı.
+     * aynı anaparayı göstermeye devam ediyordu.
+     *
+     * Yeni bakiye = ödeme anındaki kapama tutarı (anapara + işlemiş faiz) - ödenen;
+     * bankalar ödemeyi önce işlemiş faize, kalanını anaparaya sayıyor. İlk
+     * sürüm plandaki anapara payını düşüyordu ve erken ödemede 844,74 TL yanlış
+     * çıktı (15.690,88; banka 14.846,14). Faiz saati ödeme anına çekilir.
      * Son taksit ödenince elle girilmiş değer tamamen kalkar.
      */
     if (debt.type === "TAKSITLI_KREDI" && installment && debt.currentPrincipalOverride != null) {
       if (pendingCount === 0) {
         debtUpdate.currentPrincipalOverride = null;
         debtUpdate.principalOverrideAt = null;
-      } else {
-        const kalan = new Prisma.Decimal(debt.currentPrincipalOverride).minus(
-          installment.principalPart
+      } else if (payoffBefore !== null) {
+        debtUpdate.currentPrincipalOverride = new Prisma.Decimal(
+          principalAfterPayment(payoffBefore, Number(amount)).toFixed(2)
         );
-        debtUpdate.currentPrincipalOverride = kalan.isNegative() ? new Prisma.Decimal(0) : kalan;
         debtUpdate.principalOverrideAt = paidAt;
       }
     }
