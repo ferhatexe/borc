@@ -1,7 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0b;
+  --background: #0e0e0e;
+
+  /* Görsel dil: tek renkli yüzey, mürekkep ve çizgi (bkz. "GÖRSEL DİL"). */
+  --card: #151515;
+  --line: #242424;
+  --line-strong: #3a3a3a;
+  --ink: #f2f2f2;
+  --ink-fg: #0e0e0e;
+  --ink-hover: #d4d4d4;
+  --dot: 242, 242, 242;
+
   --surface: rgba(255, 255, 255, 0.04);
   --surface-hover: rgba(255, 255, 255, 0.07);
   --surface-active: rgba(255, 255, 255, 0.1);
@@ -25,6 +35,8 @@
 }
 
 @theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
@@ -61,25 +73,31 @@ body {
 
 /* Erişilebilirlik (WCAG 2.1 AA) Odak Stilleri */
 :focus-visible {
-  outline: 2px solid #10b981 !important;
+  outline: 2px solid var(--foreground) !important;
   outline-offset: 2px !important;
   border-radius: 6px;
 }
 
-/* Cam Efekti Kartlar (Glassmorphism) */
+/*
+ * Kart: düz yüzey, 1px çizgi, gölge yok.
+ *
+ * Hover yalnızca fareli cihazlarda. Ham CSS'teki :hover dokunmatik ekranda
+ * dokunuştan sonra takılı kalıyordu: kartlara bir kez dokununca kenarlık açık
+ * renkte asılı duruyordu. Tailwind'in hover: sınıfları bunu zaten yapıyor,
+ * bu kural yapmıyordu.
+ */
 .glass-card {
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  border-radius: 20px;
+  transition: border-color 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
 
-.glass-card:hover {
-  background: var(--surface-hover);
-  border-color: var(--border-active);
+@media (hover: hover) {
+  .glass-card:hover {
+    border-color: var(--line-strong);
+  }
 }
 
 /* Etkileşimli öğeler için tactile feedback */
@@ -165,15 +183,22 @@ body {
   --color-zinc-50: #09090b;
 
   /* `text-white` koyu temada "en parlak metin" demek; açıkta en koyu mürekkep. */
-  --color-white: #09090b;
+  --color-white: #141414;
 
-  --background: #f6f6f7;
+  --background: #fafafa;
+  --card: #ffffff;
+  --line: #e6e6e6;
+  --line-strong: #cccccc;
+  --ink: #141414;
+  --ink-fg: #fafafa;
+  --ink-hover: #333333;
+  --dot: 20, 20, 20;
   --surface: rgba(9, 9, 11, 0.035);
   --surface-hover: rgba(9, 9, 11, 0.06);
   --surface-active: rgba(9, 9, 11, 0.09);
   --border: rgba(9, 9, 11, 0.1);
   --border-active: rgba(9, 9, 11, 0.18);
-  --foreground: #18181b;
+  --foreground: #141414;
   --muted: #52525b;
   --subtle: #71717a;
 
@@ -183,6 +208,44 @@ body {
   --income: #059669;
   --gold: #b45309;
   --kmh: #2563eb;
+}
+
+/*
+ * Vurgu renklerinin açık tonları açık temada koyulaşır.
+ *
+ * Arayüz koyu zemine göre yazıldı: rakamlar ve etiketler ~250 yerde
+ * text-rose-300, text-emerald-400, text-amber-200 gibi açık tonlarla. Beyaz
+ * zeminde bunlar okunmuyordu (rose-300 #fda4af'in beyaz üstünde kontrastı
+ * ~1,9:1; okunaklılık için en az 4,5:1 gerekir). Tailwind v4 düz renkleri
+ * değişkenle ürettiği için tonları burada 600/700'e çekmek hepsini düzeltiyor.
+ */
+:root[data-theme="light"] {
+  --color-emerald-200: #047857;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #059669;
+  --color-rose-200: #be123c;
+  --color-rose-300: #be123c;
+  --color-rose-400: #e11d48;
+  --color-amber-200: #b45309;
+  --color-amber-300: #b45309;
+  --color-amber-400: #d97706;
+  --color-yellow-300: #a16207;
+  --color-yellow-400: #ca8a04;
+  --color-teal-300: #0f766e;
+  --color-teal-400: #0d9488;
+  --color-cyan-300: #0e7490;
+  --color-cyan-400: #0891b2;
+  --color-blue-300: #1d4ed8;
+  --color-blue-400: #2563eb;
+  --color-sky-300: #0369a1;
+  --color-sky-400: #0284c7;
+  --color-indigo-400: #4f46e5;
+  --color-purple-400: #9333ea;
+  --color-violet-400: #7c3aed;
+  --color-red-400: #dc2626;
+  --color-orange-300: #c2410c;
+  --color-green-400: #16a34a;
+  --color-pink-400: #db2777;
 }
 
 /* Beyaz alfa katmanı: cam kartların kenarı ve zemini. */
@@ -242,12 +305,6 @@ body {
  */
 :root[data-theme="light"] .text-zinc-950 { color: #09090b; }
 
-/* Cam kartın iç parlaması açık zeminde ters etki yapıyor. */
-:root[data-theme="light"] .glass-card {
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.04), 0 8px 24px -12px rgba(9, 9, 11, 0.12);
-}
-
 :root[data-theme="light"] ::-webkit-scrollbar-thumb {
   background: rgba(9, 9, 11, 0.18);
 }
@@ -261,102 +318,59 @@ html[data-theme] body {
 }
 
 /* ============================================================================
-   HAREKETLİ ARKA PLAN
+   GÖRSEL DİL
    ----------------------------------------------------------------------------
-   Sayfanın arkasında yavaşça sürüklenen üç yumuşak ışık lekesi ve ince bir
-   ızgara. Tamamı CSS: JavaScript yok, sadece transform animasyonu, o yüzden
-   compositor'da çalışır ve kaydırmayı yavaşlatmaz.
-   `prefers-reduced-motion` için genel kural zaten animasyonları durduruyor.
+   Tek renkli ve sade: kırık beyaz zemin, siyah mürekkep, 1px gri çizgiler,
+   hap biçimli düğmeler, 0,2 sn ease-in-out geçişler, arkada süzülen noktalar.
+   Anlam taşıyan renkler (borç kırmızı, gelir yeşil, altın sarı) yalnızca
+   rakamlarda kalır; arayüzün kendisi renksizdir.
    ========================================================================== */
 
-.aurora {
+.dot-field {
   position: fixed;
   inset: 0;
   z-index: 0;
-  overflow: hidden;
   pointer-events: none;
 }
 
-.aurora__blob {
-  position: absolute;
+h1,
+h2,
+h3 {
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+/*
+ * Ana eylem düğmeleri: yeşil degrade yerine siyah hap.
+ *
+ * Bileşenlerde ~45 yerde degrade/yeşil zemin sınıfı var; hepsini tek tek
+ * değiştirmek yerine sınıf birleşimleri burada yakalanıyor. :root özgüllüğü,
+ * açık temada text-zinc-950'yi koyuya sabitleyen kuralı geçmek için.
+ */
+:root .bg-gradient-to-r.from-emerald-500,
+:root .bg-gradient-to-br.from-emerald-400,
+:root .bg-emerald-500.text-zinc-950,
+:root .bg-emerald-500.text-white,
+:root .bg-emerald-500.text-emerald-950 {
+  background-image: none;
+  background-color: var(--ink);
+  color: var(--ink-fg);
   border-radius: 9999px;
-  filter: blur(80px);
-  opacity: 0.5;
-  will-change: transform;
+  box-shadow: none;
+  filter: none;
+  transition:
+    background-color 0.2s ease-in-out,
+    transform 0.2s ease-in-out;
 }
 
-:root[data-theme="light"] .aurora__blob {
-  opacity: 0.32;
-  filter: blur(90px);
-}
-
-.aurora__blob--1 {
-  top: -12%;
-  left: -8%;
-  width: 46vw;
-  height: 46vw;
-  min-width: 320px;
-  min-height: 320px;
-  background: radial-gradient(circle at 30% 30%, #10b981, transparent 68%);
-  animation: aurora-drift-1 26s ease-in-out infinite;
-}
-
-.aurora__blob--2 {
-  top: 18%;
-  right: -14%;
-  width: 40vw;
-  height: 40vw;
-  min-width: 280px;
-  min-height: 280px;
-  background: radial-gradient(circle at 60% 40%, #0ea5e9, transparent 68%);
-  animation: aurora-drift-2 32s ease-in-out infinite;
-}
-
-.aurora__blob--3 {
-  bottom: -18%;
-  left: 22%;
-  width: 44vw;
-  height: 44vw;
-  min-width: 300px;
-  min-height: 300px;
-  background: radial-gradient(circle at 40% 60%, #8b5cf6, transparent 70%);
-  animation: aurora-drift-3 38s ease-in-out infinite;
-}
-
-/* İnce ızgara: lekelere derinlik verir, tek başına neredeyse görünmez. */
-.aurora__grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
-}
-
-:root[data-theme="light"] .aurora__grid {
-  background-image:
-    linear-gradient(to right, rgba(9, 9, 11, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(9, 9, 11, 0.05) 1px, transparent 1px);
-}
-
-@keyframes aurora-drift-1 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  33% { transform: translate3d(8vw, 6vh, 0) scale(1.12); }
-  66% { transform: translate3d(-4vw, 10vh, 0) scale(0.94); }
-}
-
-@keyframes aurora-drift-2 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  40% { transform: translate3d(-10vw, 8vh, 0) scale(1.15); }
-  70% { transform: translate3d(-3vw, -6vh, 0) scale(0.92); }
-}
-
-@keyframes aurora-drift-3 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  35% { transform: translate3d(10vw, -8vh, 0) scale(0.9); }
-  70% { transform: translate3d(-8vw, -4vh, 0) scale(1.18); }
+@media (hover: hover) {
+  :root .bg-gradient-to-r.from-emerald-500:hover,
+  :root .bg-gradient-to-br.from-emerald-400:hover,
+  :root .bg-emerald-500.text-zinc-950:hover,
+  :root .bg-emerald-500.text-white:hover,
+  :root .bg-emerald-500.text-emerald-950:hover {
+    background-color: var(--ink-hover);
+  }
 }
 
 /* Sayfa geçişi: içerik alttan hafifçe yükselerek belirir. */

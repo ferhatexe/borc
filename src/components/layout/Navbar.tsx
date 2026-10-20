@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Coins, SignOut, ShieldCheck, User } from "@phosphor-icons/react";
+import { SignOut, ShieldCheck, User } from "@phosphor-icons/react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { haptics } from "@/lib/haptics";
 
@@ -26,27 +26,17 @@ export function Navbar({ userEmail }: NavbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-white/10 bg-background/80 px-4 backdrop-blur-xl md:px-8">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-white/10 bg-background/85 px-4 backdrop-blur-xl md:px-8">
       <div className="flex items-center gap-3">
         <Link
           href="/"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-90 touch-feedback"
           onClick={() => haptics.selection()}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-            <Coins size={22} weight="duotone" />
-          </div>
-          <div>
-            <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-              BORÇÖLÇME
-              <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
-                PRO
-              </span>
-            </span>
-            <span className="hidden text-[11px] text-zinc-400 sm:block">
-              Kişisel Borç & Finans Takip
-            </span>
-          </div>
+          {/* Küçük harf yazı logosu: ikon kutusu ve rozet yerine sade bir işaret. */}
+          <span className="text-[19px] font-medium tracking-[-0.03em] text-white">
+            borçölçme<sup className="ml-0.5 text-[9px] font-normal text-zinc-500">®</sup>
+          </span>
         </Link>
       </div>
 
@@ -54,13 +44,13 @@ export function Navbar({ userEmail }: NavbarProps) {
         <ThemeToggle />
         {userEmail ? (
           <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
-              <User size={14} className="text-emerald-400" />
+            <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-zinc-300">
+              <User size={14} className="text-zinc-400" />
               <span>{userEmail}</span>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 touch-feedback"
+              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3.5 py-1.5 text-xs font-medium text-zinc-300 transition-colors duration-200 ease-in-out hover:bg-white/10 hover:text-white touch-feedback"
               title="Güvenli Çıkış Yap"
             >
               <SignOut size={16} />

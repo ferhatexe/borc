@@ -105,6 +105,25 @@ export const EXPENSE_INCLUDE = {
 } satisfies Prisma.ExpenseInclude;
 export type ExpenseWithRelations = Prisma.ExpenseGetPayload<{ include: typeof EXPENSE_INCLUDE }>;
 
+/**
+ * Kredi kartı borcunun ödemesi mi?
+ *
+ * Kart ödemesi bir harcama değil, borcun kapatılmasıdır: alışverişler zaten
+ * harcandıkları gün kartla gider olarak yazıldı. Ödeme de harcama sayılırsa
+ * aynı alışveriş raporda iki kez görünür. Kasa için ise bu kayıt gerçek bir
+ * çıkıştır ve orada kalır (getCashBalance kartla yapılan alışverişi düşmüyor,
+ * kartın ödemesini düşüyor).
+ *
+ * Tanım: kart borcuna bağlı ama kartla yapılmamış gider - yani karta havale,
+ * nakit ya da otomatik ödeme.
+ */
+export function isCardSettlement(expense: {
+  paymentMethod: string;
+  relatedDebt?: { type: string } | null;
+}): boolean {
+  return expense.relatedDebt?.type === "KREDI_KARTI" && expense.paymentMethod !== "KREDI_KARTI";
+}
+
 export async function createExpense(
   userId: string,
   input: CreateExpenseInput

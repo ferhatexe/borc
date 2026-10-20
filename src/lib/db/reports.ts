@@ -9,7 +9,7 @@ import {
 import { tr } from "date-fns/locale";
 import { prisma } from "@/lib/prisma";
 import { getDebts } from "./debts";
-import { getIncomes, getExpenses } from "./transactions";
+import { getIncomes, getExpenses, isCardSettlement } from "./transactions";
 import { getCategories } from "./categories";
 import { getInstitutions } from "./institutions";
 import { getRawSettings, getSettings } from "./settings";
@@ -128,13 +128,15 @@ export async function getAnalyticsSummary(userId: string, now = new Date()): Pro
   const historyEnd = endOfMonth(now);
 
   let gold: GoldSyncResult | null = null;
-  const [debts, incomes, expenses, categories, settings] = await Promise.all([
+  const [debts, incomes, allExpenses, categories, settings] = await Promise.all([
     getDebts(userId),
     getIncomes(userId, { from: historyStart, to: historyEnd }),
     getExpenses(userId, { from: historyStart, to: historyEnd }),
     getCategories(userId),
     getSettings(userId),
   ]);
+  // Kart borcu ödemeleri harcama değil; alışverişler kartla zaten yazıldı.
+  const expenses = allExpenses.filter((e) => !isCardSettlement(e));
 
   try {
     gold = await getGoldPrices();

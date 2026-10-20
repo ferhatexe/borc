@@ -17,7 +17,7 @@ import { haptics } from "@/lib/haptics";
 import { useLiveData } from "@/components/live/LiveDataProvider";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: House },
+  { href: "/", label: "Özet", icon: House },
   { href: "/debts", label: "Borçlar", icon: CreditCard },
   // Gecikmis odemeler masaustunde yalnizca dashboard uzerinden ulasilabiliyordu.
   { href: "/overdue", label: "Geciken", icon: WarningOctagon, badge: "overdue" as const },
@@ -64,14 +64,14 @@ export function Sidebar() {
               onClick={() => haptics.selection()}
               className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors touch-feedback ${
                 isActive
-                  ? "bg-white/10 text-emerald-400 border border-white/10 shadow-sm"
+                  ? "bg-white/10 text-white border border-white/10"
                   : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
               }`}
             >
               <Icon
                 size={20}
                 weight={isActive ? "duotone" : "regular"}
-                className={isActive ? "text-emerald-400" : "text-zinc-400"}
+                className={isActive ? "text-white" : "text-zinc-400"}
               />
               <span className="flex-1">{item.label}</span>
               {item.badge === "overdue" && overdueCount > 0 && (

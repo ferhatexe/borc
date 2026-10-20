@@ -43,12 +43,9 @@ function Chip({
   /** Marj dahil edilmiş fiyatları görsel olarak ayırır. */
   hasMargin?: boolean;
 }) {
-  const ring =
-    accent === "gold"
-      ? "border-amber-500/25 bg-amber-500/[0.07]"
-      : accent === "usd"
-        ? "border-emerald-500/20 bg-emerald-500/[0.06]"
-        : "border-white/8 bg-white/[0.03]";
+  // Tek renkli: altın/kur ayrımı etiketle değil, sıralamayla yapılıyor.
+  void accent;
+  const ring = "border-white/10 bg-white/[0.03]";
 
   return (
     <div

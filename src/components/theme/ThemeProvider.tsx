@@ -43,7 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Tarayıcı arayüzü (adres çubuğu) de temaya uysun.
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", next === "light" ? "#f6f6f7" : "#0A0A0B");
+      ?.setAttribute("content", next === "light" ? "#fafafa" : "#0e0e0e");
     try {
       window.localStorage.setItem(THEME_STORAGE_KEY, next);
     } catch {

@@ -73,7 +73,7 @@ export function MobileNav() {
         aria-current={isActive ? "page" : undefined}
         onClick={() => haptics.selection()}
         className={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors active:bg-white/5 ${
-          isActive ? "text-emerald-400" : "text-zinc-500"
+          isActive ? "text-white" : "text-zinc-500"
         }`}
       >
         <span className="relative">
@@ -91,7 +91,7 @@ export function MobileNav() {
         {isActive && (
           <motion.span
             layoutId="mobil-sekme-cizgisi"
-            className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-emerald-400"
+            className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-white"
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
           />
         )}
@@ -174,7 +174,7 @@ export function MobileNav() {
             aria-label="Menüyü aç"
             aria-expanded={menuOpen}
             className={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors active:bg-white/5 ${
-              menuOpen ? "text-emerald-400" : "text-zinc-500"
+              menuOpen ? "text-white" : "text-zinc-500"
             }`}
           >
             <List size={20} weight={menuOpen ? "bold" : "regular"} />

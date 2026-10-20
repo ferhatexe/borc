@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { getCurrentSession } from "@/lib/auth";
 import { Navbar } from "@/components/layout/Navbar";
@@ -9,13 +9,20 @@ import { PwaRegister } from "@/components/shared/PwaRegister";
 import { LiveDataProvider } from "@/components/live/LiveDataProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemeScript } from "@/components/theme/ThemeScript";
-import { AuroraBackground } from "@/components/shared/AuroraBackground";
+import { DotField } from "@/components/shared/DotField";
 import { PageTransition } from "@/components/layout/PageTransition";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+// Geist: GT Standard'a görsel olarak en yakın ücretsiz grotesk. Mono, rakam
+// sütunlarının hizasını korumak için (font-mono / tabular-nums kullanan her yer).
+const geist = Geist({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-geist",
+  display: "swap",
+});
+const geistMono = Geist_Mono({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-geist-mono",
   display: "swap",
 });
 
@@ -41,7 +48,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f6f6f7",
+  themeColor: "#fafafa",
   width: "device-width",
   initialScale: 1,
   // Yakınlaştırma engellenmez (WCAG 2.1 - 1.4.4). Eski ayar
@@ -68,18 +75,18 @@ export default async function RootLayout({
         <ThemeScript />
       </head>
       <body
-        className={`${inter.className} min-h-[100dvh] bg-background text-foreground antialiased`}
+        className={`${geist.variable} ${geistMono.variable} font-sans min-h-[100dvh] bg-background text-foreground antialiased`}
       >
         {/* WCAG Erişilebilirlik: İçeriğe Atla Bağlantısı */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-emerald-600 focus:text-white focus:rounded-lg focus:font-semibold focus:shadow-xl focus:outline-none"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-foreground focus:text-background focus:rounded-full focus:font-semibold focus:shadow-xl focus:outline-none"
         >
           Ana İçeriğe Atla
         </a>
 
         <ThemeProvider>
-        <AuroraBackground />
+        <DotField />
         <LiveDataProvider isAuthenticated={Boolean(session)}>
           {/* Hareketli zemin arkada (z-0); arayüz onun üstünde durmalı. */}
           <div className="relative z-10 flex min-h-[100dvh] flex-col">
@@ -110,13 +117,14 @@ export default async function RootLayout({
         </ThemeProvider>
 
         <Toaster
-          theme="dark"
           position="top-right"
           toastOptions={{
+            // Temayla birlikte döner; eskiden açık temada da siyah kutuydu.
             style: {
-              background: "#18181B",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "#F4F4F5",
+              background: "var(--card)",
+              border: "1px solid var(--line)",
+              color: "var(--foreground)",
+              borderRadius: "16px",
             },
           }}
         />
