@@ -175,6 +175,36 @@ describe("Taksitli kredi değerlemesi", () => {
     });
     expect(valuateDebt(overdue, gold, DEFAULT_SETTINGS, NOW).isOverdue).toBe(true);
   });
+
+  describe("faizi taksiti aşan dönem (QNB biriken faiz)", () => {
+    // QNB planı: 108.208,11 anapara, %4,25, 22.09 -> 17.11 = 56 gün,
+    // devre faizi 8.584,51; taksit 10.427,36'nın tamamı faiz, 563,47 devreder.
+    const carried = debt({
+      type: "TAKSITLI_KREDI",
+      interestRateMonthly: 4.25 as never,
+      currentPrincipalOverride: 108208.11 as never,
+      principalOverrideAt: new Date(2026, 8, 22),
+      installmentSchedules: [
+        schedule(2, new Date(2026, 10, 17), "BEKLIYOR", 108208.11, 0, 10427.36),
+        schedule(3, new Date(2026, 11, 17), "BEKLIYOR", 104491.76, 3716.35, 10427.36),
+      ] as never,
+    });
+
+    it("taksitin faiz payında durmaz, bankanın devre faizini vade gününe kadar işletir", () => {
+      const v = valuateDebt(carried, gold, DEFAULT_SETTINGS, new Date(2026, 10, 15));
+      // 54 gün: 108.208,11 x 0,0425 x 54/30 x 1,30 = 10.761,30 (> 10.427,36)
+      expect(v.accruedInterestTL).toBeCloseTo(10761.3, 1);
+      expect(v.dailyAccrualTL).toBeGreaterThan(0);
+    });
+
+    it("vade gününde bankanın devre faizine eşit olur ve orada durur", () => {
+      const atDue = valuateDebt(carried, gold, DEFAULT_SETTINGS, new Date(2026, 10, 17));
+      expect(atDue.accruedInterestTL).toBeCloseTo(8584.51 * 1.3, 1);
+      const later = valuateDebt(carried, gold, DEFAULT_SETTINGS, new Date(2026, 10, 20));
+      expect(later.accruedInterestTL).toBeCloseTo(8584.51 * 1.3, 1);
+      expect(later.dailyAccrualTL).toBe(0);
+    });
+  });
 });
 
 describe("KMH değerlemesi", () => {

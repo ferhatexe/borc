@@ -289,6 +289,24 @@ export function valuateDebt(
 
         accrualDays = daysSinceLastCharge(accrualSince, now);
 
+        /*
+         * Faizi taksiti aşan dönem (ana para payı 0): banka taksitte
+         * tahsil edemediği faizi "biriken faiz" olarak sonraki taksite
+         * devreder, yani bu dönemin faizi taksitin faiz payından büyüktür.
+         * Burada tutar tavanı yanlış olur; faiz vade gününe kadar tam işler,
+         * vade gününde durur.
+         */
+        const nextRow = pending[0];
+        const carriesInterest = nextRow != null && num(nextRow.principalPart) <= 0;
+        let stoppedAtDue = false;
+        if (carriesInterest) {
+          const daysToDue = daysSinceLastCharge(accrualSince, new Date(nextRow.dueDate));
+          if (accrualDays >= daysToDue) {
+            accrualDays = daysToDue;
+            stoppedAtDue = true;
+          }
+        }
+
         const accrual = calculateOverdraftInterest({
           usedAmount: principalTL,
           monthlyInterestRatePercent: loanRatePercent,
@@ -300,7 +318,7 @@ export function valuateDebt(
         });
 
         accruedInterestTL = accrual.totalAccruedInterest.toNumber();
-        dailyAccrualTL = accrual.dailyAccrual.toNumber();
+        dailyAccrualTL = stoppedAtDue ? 0 : accrual.dailyAccrual.toNumber();
 
         /*
          * Tavan: bir dönemde işleyen faiz, o dönemin sonundaki taksitin faiz
@@ -308,7 +326,7 @@ export function valuateDebt(
          * fazlası çift sayım olurdu. Tavan aynı zamanda kredi başlangıcı ile
          * ilk taksit arasında uzun boşluk olan kayıtları da korur.
          */
-        const periodInterestCap = pending[0] ? num(pending[0].interestPart) : 0;
+        const periodInterestCap = nextRow && !carriesInterest ? num(nextRow.interestPart) : 0;
         if (periodInterestCap > 0 && accruedInterestTL >= periodInterestCap) {
           accruedInterestTL = periodInterestCap;
           dailyAccrualTL = 0; // taksit gününe kadar daha fazla faiz işlemez
