@@ -382,3 +382,45 @@ h3 {
 .page-enter {
   animation: page-enter 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/*
+ * Kaydırıcı (input[type=range]).
+ * Tailwind'in zinc tonları açık temada beyaza yakın eşleniyor; çubuk zeminde
+ * kayboluyordu. Çubuk ve tutamak tema token'larıyla çiziliyor, dolu kısım
+ * `--fill` (yüzde) ile mürekkep rengine boyanıyor.
+ */
+input[type="range"].range-ink {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--ink) 0%,
+    var(--ink) var(--fill, 0%),
+    var(--line-strong) var(--fill, 0%),
+    var(--line-strong) 100%
+  );
+  cursor: pointer;
+}
+input[type="range"].range-ink::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--ink);
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+input[type="range"].range-ink::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--ink);
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+input[type="range"].range-ink::-moz-range-track {
+  background: transparent;
+}

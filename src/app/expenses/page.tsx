@@ -76,6 +76,10 @@ export default function ExpensesPage() {
           (d: any) => d.type === "KREDI_KARTI" || d.type === "EK_HESAP_KMH"
         );
         setCreditCards(cards);
+        // Yöntem "Kredi Kartı" iken kart seçilmezse harcama ne kasadan düşer ne
+        // karta yazılır, kaybolur. Bu yüzden ilk kredi kartı önceden seçilir.
+        const firstCard = cards.find((d: any) => d.type === "KREDI_KARTI");
+        if (firstCard) setRelatedDebtId((prev) => prev || firstCard.id);
       }
     } catch (err) {
       console.error("Gider verileri yüklenemedi:", err);
@@ -137,7 +141,11 @@ export default function ExpensesPage() {
       setAmount("");
       setMerchant("");
       setNote("");
-      setRelatedDebtId("");
+      setRelatedDebtId(
+        paymentMethod === "KREDI_KARTI"
+          ? (creditCards.find((c: any) => c.type === "KREDI_KARTI")?.id ?? "")
+          : ""
+      );
       await fetchData();
     } catch (err: any) {
       triggerHaptic("error");
@@ -516,7 +524,17 @@ export default function ExpensesPage() {
                   </label>
                   <select
                     value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    onChange={(e) => {
+                      const method = e.target.value;
+                      setPaymentMethod(method);
+                      const card = creditCards.find((c: any) => c.type === "KREDI_KARTI");
+                      if (method === "KREDI_KARTI") {
+                        if (!relatedDebtId && card) setRelatedDebtId(card.id);
+                      } else if (creditCards.some((c: any) => c.id === relatedDebtId && c.type === "KREDI_KARTI")) {
+                        // Karttan olmayan harcama karta bağlı kalırsa kart ödemesi sanılır.
+                        setRelatedDebtId("");
+                      }
+                    }}
                     className="w-full h-11 px-3 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   >
                     <option value="KREDI_KARTI">Kredi Kartı</option>

@@ -147,7 +147,9 @@ export function ScenarioSimulatorCard({ loans }: ScenarioSimulatorCardProps) {
             step="500"
             value={monthlyExtra}
             onChange={(e) => setMonthlyExtra(Number(e.target.value))}
-            className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            aria-label="Aylık ekstra ödeme"
+            className="range-ink w-full"
+            style={{ "--fill": `${(monthlyExtra / 20000) * 100}%` } as React.CSSProperties}
           />
         </div>
 
