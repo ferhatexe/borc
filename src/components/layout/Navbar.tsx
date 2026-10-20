@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SignOut, ShieldCheck, User } from "@phosphor-icons/react";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { haptics } from "@/lib/haptics";
 
 interface NavbarProps {
@@ -41,7 +40,6 @@ export function Navbar({ userEmail }: NavbarProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <ThemeToggle />
         {userEmail ? (
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-zinc-300">

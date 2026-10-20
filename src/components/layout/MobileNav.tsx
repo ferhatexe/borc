@@ -3,20 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import {
   House,
   CreditCard,
   Plus,
   ChartBar,
   WarningOctagon,
-  Sun,
-  Moon,
+  CalendarBlank,
   List,
 } from "@phosphor-icons/react";
 import { haptics } from "@/lib/haptics";
 import { useLiveData } from "@/components/live/LiveDataProvider";
-import { useTheme } from "@/components/theme/ThemeProvider";
 import { MobileMenuSheet } from "./MobileMenuSheet";
 import { QuickAddSheet } from "./QuickAddSheet";
 
@@ -42,7 +40,6 @@ interface NavLink {
 export function MobileNav() {
   const pathname = usePathname();
   const live = useLiveData();
-  const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [ekleOpen, setEkleOpen] = useState(false);
   const overdueCount = live?.data?.totals.overdueCount ?? 0;
@@ -59,7 +56,11 @@ export function MobileNav() {
     },
   ];
 
-  const sagda: NavLink[] = [{ kind: "link", href: "/reports", label: "Rapor", icon: ChartBar }];
+  // Tema düğmesinin yeri: uygulama yalnız açık temada, yedi hücre korunuyor.
+  const sagda: NavLink[] = [
+    { kind: "link", href: "/reports", label: "Rapor", icon: ChartBar },
+    { kind: "link", href: "/calendar", label: "Takvim", icon: CalendarBlank },
+  ];
 
   const renderLink = (item: NavLink) => {
     const Icon = item.icon;
@@ -131,38 +132,6 @@ export function MobileNav() {
 
           {sagda.map(renderLink)}
 
-          {/* 6/7: koyu - açık tema */}
-          <button
-            type="button"
-            onClick={() => {
-              haptics.tap();
-              toggleTheme();
-            }}
-            aria-label={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
-            className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-zinc-500 transition-colors active:bg-white/5"
-          >
-            <span className="relative flex h-5 w-5 items-center justify-center">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key={theme}
-                  initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
-                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                  exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
-                  transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="absolute"
-                >
-                  {theme === "dark" ? (
-                    <Sun size={20} weight="fill" className="text-amber-400" />
-                  ) : (
-                    <Moon size={20} weight="fill" className="text-indigo-400" />
-                  )}
-                </motion.span>
-              </AnimatePresence>
-            </span>
-            <span className="text-[8.5px] font-medium leading-none">
-              {theme === "dark" ? "Açık" : "Koyu"}
-            </span>
-          </button>
 
           {/* 7/7: hamburger */}
           <button

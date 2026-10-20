@@ -5,7 +5,7 @@
  * kullanıcıya özel finansal veri taşıdığı için ASLA önbelleğe yazılmaz:
  * eski sürüm çıkıştan sonra bile cihazda kalabilir ve bayat bakiye gösterebilir.
  */
-const CACHE_NAME = "borcolcme-cache-v2";
+const CACHE_NAME = "borcolcme-cache-v3";
 const OFFLINE_URL = "/offline.html";
 
 const STATIC_ASSETS = ["/manifest.json", "/icons/icon.svg", OFFLINE_URL];

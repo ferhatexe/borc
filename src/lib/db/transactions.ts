@@ -238,6 +238,32 @@ export interface CashBalance {
 }
 
 /**
+ * Kasanın sıfırlandığı an. Bu andan önce GİRİLEN gelir ve giderler kasaya
+ * sayılmaz; kayıtlar silinmez, raporlarda durmaya devam eder. Kayıt tarihine
+ * değil giriş anına bakılır: sıfırlamadan sonra dünkü bir harcama girilirse
+ * o da kasadan düşer.
+ */
+export const CASH_RESET_KEY = "cash_reset_at";
+
+async function getCashResetAt(userId: string): Promise<Date | null> {
+  const row = await prisma.setting.findUnique({
+    where: { userId_key: { userId, key: CASH_RESET_KEY } },
+  });
+  const at = (row?.value as { at?: unknown } | null)?.at;
+  const date = typeof at === "string" ? new Date(at) : null;
+  return date && !Number.isNaN(date.getTime()) ? date : null;
+}
+
+/** Kasayı şu andan itibaren sıfırdan başlatır. */
+export async function resetCash(userId: string, at: Date = new Date()): Promise<void> {
+  await prisma.setting.upsert({
+    where: { userId_key: { userId, key: CASH_RESET_KEY } },
+    update: { value: { at: at.toISOString() } },
+    create: { userId, key: CASH_RESET_KEY, value: { at: at.toISOString() } },
+  });
+}
+
+/**
  * Kasadaki nakit.
  *
  * Gelir eklendiğinde artar, gider (borç ödemeleri dahil, çünkü ödeme aynı
@@ -250,13 +276,15 @@ export interface CashBalance {
  * kart borcu ödenirken - o ödeme de ayrı bir gider kaydı oluşturur.
  */
 export async function getCashBalance(userId: string): Promise<CashBalance> {
+  const resetAt = await getCashResetAt(userId);
+  const since = resetAt ? { createdAt: { gte: resetAt } } : {};
   const [income, expense] = await Promise.all([
     prisma.income.aggregate({
-      where: { userId, isArchived: false },
+      where: { userId, isArchived: false, ...since },
       _sum: { amount: true },
     }),
     prisma.expense.aggregate({
-      where: { userId, isArchived: false, paymentMethod: { not: "KREDI_KARTI" } },
+      where: { userId, isArchived: false, paymentMethod: { not: "KREDI_KARTI" }, ...since },
       _sum: { amount: true },
     }),
   ]);

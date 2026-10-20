@@ -8,7 +8,6 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { PwaRegister } from "@/components/shared/PwaRegister";
 import { LiveDataProvider } from "@/components/live/LiveDataProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { ThemeScript } from "@/components/theme/ThemeScript";
 import { DotField } from "@/components/shared/DotField";
 import { PageTransition } from "@/components/layout/PageTransition";
 import "./globals.css";
@@ -42,7 +41,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "BorçÖlçme",
   },
 };
@@ -65,15 +64,8 @@ export default async function RootLayout({
   const session = await getCurrentSession();
 
   return (
-    /*
-     * `suppressHydrationWarning`: ThemeScript `data-theme`i sunucu HTML'inde
-     * olmayan bir değere ayarlıyor. Kasıtlı - yoksa açık temayı seçen kullanıcı
-     * her yüklemede bir kare koyu ekran görür.
-     */
-    <html lang="tr" suppressHydrationWarning>
-      <head>
-        <ThemeScript />
-      </head>
+    /* Uygulama yalnız açık temada çalışır. */
+    <html lang="tr" data-theme="light">
       <body
         className={`${geist.variable} ${geistMono.variable} font-sans min-h-[100dvh] bg-background text-foreground antialiased`}
       >

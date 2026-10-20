@@ -9,6 +9,7 @@ import {
   User,
 } from "@phosphor-icons/react";
 import { triggerHaptic } from "@/lib/haptics";
+import { InstitutionLogo } from "@/components/shared/InstitutionLogo";
 
 export interface Institution {
   id: string;
@@ -255,12 +256,7 @@ export function InstitutionSelector({
                     : "bg-zinc-900/30 border-white/5 hover:bg-zinc-900/60 hover:border-white/10"
                 }`}
               >
-                <div
-                  className="h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-sm"
-                  style={{ backgroundColor: inst.color || "#059669" }}
-                >
-                  {inst.name.substring(0, 2).toUpperCase()}
-                </div>
+                <InstitutionLogo name={inst.name} color={inst.color} type={inst.type} size={32} />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-zinc-200 truncate">{inst.name}</p>
                   <p className="text-[10px] text-zinc-500 truncate">{inst.type}</p>

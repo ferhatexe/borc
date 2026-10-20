@@ -1,47 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Borç Ölçme">
-  <title>Borç Ölçme</title>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#101014"/>
-      <stop offset="55%" stop-color="#0A0A0B"/>
-      <stop offset="100%" stop-color="#06120E"/>
-    </linearGradient>
-    <linearGradient id="arc" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0%" stop-color="#059669"/>
-      <stop offset="55%" stop-color="#10B981"/>
-      <stop offset="100%" stop-color="#6EE7B7"/>
-    </linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#FCD34D"/>
-      <stop offset="100%" stop-color="#D97706"/>
-    </linearGradient>
-    <linearGradient id="debt" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#F87171"/>
-      <stop offset="100%" stop-color="#B91C1C"/>
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="borçölçme">
+  <title>borçölçme</title>
+  <!-- Tek renkli işaret: mürekkep zemin, beyaz ölçek yayı ve ibre (borcun eriyişini ölçen gösterge). -->
+  <rect width="512" height="512" rx="116" fill="#141414"/>
 
-  <!-- Zemin -->
-  <rect width="512" height="512" rx="114" fill="url(#bg)"/>
-  <rect x="4" y="4" width="504" height="504" rx="110" fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="8"/>
+  <!-- Ölçek: soluk tam yay, dolu kısım ödenen pay -->
+  <path d="M120 336a136 136 0 0 1 272 0" fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="40" stroke-linecap="round"/>
+  <path d="M120 336a136 136 0 0 1 184-127" fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round"/>
 
-  <!-- Ölçek yayı: borcun eriyişini ölçen gösterge -->
-  <path d="M126 340a130 130 0 0 1 260 0" fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="30" stroke-linecap="round"/>
-  <path d="M126 340a130 130 0 0 1 176-121" fill="none" stroke="url(#arc)" stroke-width="30" stroke-linecap="round"/>
-
-  <!-- Gösterge ibresi -->
-  <g transform="rotate(-34 256 340)">
-    <rect x="248" y="212" width="16" height="132" rx="8" fill="#F4F4F5"/>
+  <!-- İbre -->
+  <g transform="rotate(-34 256 336)">
+    <rect x="245" y="196" width="22" height="146" rx="11" fill="#ffffff"/>
   </g>
-  <circle cx="256" cy="340" r="26" fill="#0A0A0B" stroke="#F4F4F5" stroke-width="10"/>
-
-  <!-- Altın sikkesi: altın borcu -->
-  <circle cx="372" cy="163" r="45" fill="url(#gold)"/>
-  <circle cx="372" cy="163" r="45" fill="none" stroke="#0A0A0B" stroke-opacity="0.35" stroke-width="6"/>
-  <path d="M372 138v50M358 150h28M358 176h28" stroke="#0A0A0B" stroke-opacity="0.55" stroke-width="9" stroke-linecap="round"/>
-
-  <!-- Borç çubuğu: azalan yük -->
-  <rect x="112" y="128" width="118" height="26" rx="13" fill="url(#debt)"/>
-  <rect x="112" y="172" width="74" height="26" rx="13" fill="url(#debt)" opacity="0.6"/>
-  <rect x="112" y="216" width="40" height="26" rx="13" fill="url(#debt)" opacity="0.32"/>
+  <circle cx="256" cy="336" r="34" fill="#ffffff"/>
+  <circle cx="256" cy="336" r="13" fill="#141414"/>
 </svg>

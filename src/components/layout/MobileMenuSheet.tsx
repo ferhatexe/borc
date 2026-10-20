@@ -11,19 +11,16 @@ import {
   Gear,
   SignOut,
   X,
-  Sun,
-  Moon,
   Coins,
 } from "@phosphor-icons/react";
 import { haptics } from "@/lib/haptics";
-import { useTheme } from "@/components/theme/ThemeProvider";
 
 /** Alt çubuğa sığmayan, ama telefonda erişilebilir kalması gereken sayfalar. */
 const MENU_ITEMS = [
   { href: "/income", label: "Gelirler", desc: "Maaş, kira, ek gelir", icon: TrendUp },
   { href: "/expenses", label: "Giderler", desc: "Harcama kayıtları", icon: TrendDown },
   { href: "/calendar", label: "Takvim", desc: "Ödeme günleri", icon: CalendarBlank },
-  { href: "/settings", label: "Ayarlar", desc: "Marjlar, vergiler, tema", icon: Gear },
+  { href: "/settings", label: "Ayarlar", desc: "Marjlar, vergiler", icon: Gear },
 ];
 
 /**
@@ -45,7 +42,6 @@ export function MobileMenuSheet({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
 
   // Yol değişince panel kendiliğinden kapanır.
   useEffect(() => {
@@ -164,52 +160,6 @@ export function MobileMenuSheet({
                 );
               })}
             </nav>
-
-            {/* Tema seçici: alt çubuktaki düğmenin açık hâli. */}
-            <div className="mt-4 px-4">
-              <p className="mb-2 px-1 text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-                Görünüm
-              </p>
-              <div className="flex gap-1.5 rounded-2xl border border-white/10 bg-white/5 p-1.5">
-                {(
-                  [
-                    { value: "dark", label: "Koyu", icon: Moon },
-                    { value: "light", label: "Açık", icon: Sun },
-                  ] as const
-                ).map((option) => {
-                  const Icon = option.icon;
-                  const selected = theme === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => {
-                        haptics.tap();
-                        setTheme(option.value);
-                      }}
-                      aria-pressed={selected}
-                      className="relative flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold"
-                    >
-                      {selected && (
-                        <motion.span
-                          layoutId="tema-secimi"
-                          className="absolute inset-0 rounded-xl bg-emerald-500"
-                          transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                        />
-                      )}
-                      <span
-                        className={`relative flex items-center gap-2 ${
-                          selected ? "text-zinc-950" : "text-zinc-400"
-                        }`}
-                      >
-                        <Icon size={15} weight="fill" />
-                        {option.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
 
             <div className="mt-4 px-4">
               <button

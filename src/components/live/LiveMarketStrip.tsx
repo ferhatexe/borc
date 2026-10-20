@@ -9,7 +9,8 @@ interface LiveMarketStripProps {
   error: string | null;
   isRefreshing: boolean;
   onRefresh: () => void;
-  lastUpdatedAt: Date | null;
+  /** Artık gösterilmiyor: başlıkta fiyatın kendi saati yazar. */
+  lastUpdatedAt?: Date | null;
 }
 
 function Change({ value }: { value: number | null }) {
@@ -81,7 +82,6 @@ export function LiveMarketStrip({
   error,
   isRefreshing,
   onRefresh,
-  lastUpdatedAt,
 }: LiveMarketStripProps) {
   const usd = market?.currencies.find((c) => c.code === "USD");
   const eur = market?.currencies.find((c) => c.code === "EUR");
@@ -115,8 +115,8 @@ export function LiveMarketStrip({
           {market && (
             <span className="hidden truncate text-[10px] text-zinc-500 sm:inline">
               {market.source}
-              {lastUpdatedAt &&
-                ` · ${lastUpdatedAt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`}
+              {/* Yoklama saati değil, fiyatın kendi çekilme saati. */}
+              {` · ${new Date(market.fetchedAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Istanbul" })}`}
             </span>
           )}
         </div>

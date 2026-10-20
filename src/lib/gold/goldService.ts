@@ -24,7 +24,12 @@ import {
 } from "@/lib/settings/defaults";
 import { buildGoldRecords, CURRENCY_NAMES } from "./mapping";
 
-const CACHE_TTL_MS = 15 * 60 * 1000; // 15 dakika (sartname 7)
+/*
+ * Kisa tutuluyor: panel her 60 sn'de bir yokluyor. Uzun TTL'de (eskiden
+ * 15 dk) sayfa ilk acilista taze fiyati gosterip ilk yoklamada baska bir
+ * sunucu ornegindeki eski onbellege geri donuyordu.
+ */
+const CACHE_TTL_MS = 45 * 1000;
 /** Beyond this age a snapshot is shown with a warning band. */
 const SNAPSHOT_WARN_AFTER_MS = 60 * 60 * 1000;
 
@@ -317,7 +322,18 @@ function buildFromManual(manual: GoldManualPrices): CachedSnapshot | null {
  *   3. manual prices, even when not switched on
  * Nothing is ever invented; if every step fails the caller gets an error.
  */
+let inFlight: Promise<GoldSyncResult> | null = null;
+
 export async function getGoldPrices(forceRefresh = false): Promise<GoldSyncResult> {
+  // Ayni anda gelen istekler (sayfa + /api/live) saglayiciya tek cagri yapar.
+  if (inFlight) return inFlight;
+  inFlight = loadGoldPrices(forceRefresh).finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
+async function loadGoldPrices(forceRefresh: boolean): Promise<GoldSyncResult> {
   if (!forceRefresh && inMemoryCache) {
     const elapsed = Date.now() - inMemoryCache.fetchedAt.getTime();
     if (elapsed < CACHE_TTL_MS && inMemoryCache.sourceKind === "LIVE") {

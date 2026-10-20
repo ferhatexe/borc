@@ -1,4 +1,7 @@
-import { memo } from "react";
+"use client";
+
+import { memo, useState } from "react";
+import { brandFor, brandLogoUrl } from "@/lib/institutions/brand";
 
 /**
  * Original monogram badges for institutions.
@@ -12,6 +15,9 @@ import { memo } from "react";
  *
  * Everything is inline SVG: no network request, sharp at any size, and it
  * inherits the page's dark theme.
+ *
+ * Bilinen bankalarda önce bankanın kendi logosu (sitesinin favicon'u, çalışma
+ * anında çekilir) gösterilir; yüklenemezse bu rozet devreye girer.
  */
 
 export type InstitutionMotif =
@@ -180,9 +186,48 @@ export const InstitutionLogo = memo(function InstitutionLogo({
   motifOnly = false,
   className,
 }: InstitutionLogoProps) {
+  const [logoFailed, setLogoFailed] = useState(false);
+  const brand = brandFor(name);
+
+  if (brand?.domain && !logoFailed && !motifOnly) {
+    const inner = Math.round(size * 0.68);
+    return (
+      <span
+        className={className}
+        role="img"
+        aria-label={`${name} logosu`}
+        style={{
+          display: "flex",
+          flexShrink: 0,
+          alignItems: "center",
+          justifyContent: "center",
+          width: size,
+          height: size,
+          borderRadius: Math.round(size * 0.27),
+          background: "#ffffff",
+          border: "1px solid var(--line)",
+          overflow: "hidden",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- harici favicon, optimize edilecek bir şey yok */}
+        <img
+          src={brandLogoUrl(brand.domain)}
+          alt=""
+          width={inner}
+          height={inner}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setLogoFailed(true)}
+          style={{ width: inner, height: inner, objectFit: "contain" }}
+        />
+      </span>
+    );
+  }
+
   const tint = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#71717a";
   const motif = motifFor(name, type);
-  const initials = initialsFor(name);
+  const initials = brand?.short ?? initialsFor(name);
   const textOnLight = isLight(tint);
   const gradientId = `il-${hash(name + tint).toString(36)}`;
 
@@ -227,7 +272,7 @@ export const InstitutionLogo = memo(function InstitutionLogo({
             textAnchor="middle"
             dominantBaseline="central"
             fill="currentColor"
-            fontSize="21"
+            fontSize={initials.length > 2 ? 16 : 21}
             fontWeight="700"
             letterSpacing="0.5"
             fontFamily="var(--font-inter), system-ui, sans-serif"
