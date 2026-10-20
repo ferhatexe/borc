@@ -60,6 +60,8 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
   const [payAmount, setPayAmount] = useState<number>(0);
   const [payMethod, setPayMethod] = useState("HAVALE");
   const [payNote, setPayNote] = useState("");
+  // Kapalıyken ödeme borçtan düşer ama gider kaydı açılmaz, kasa değişmez.
+  const [payFromCash, setPayFromCash] = useState(true);
   const [isPaying, setIsPaying] = useState(false);
 
   // Silme Modalı State
@@ -121,6 +123,7 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
           amount: payAmount,
           method: payMethod,
           note: payNote,
+          createExpense: payFromCash,
         }),
       });
 
@@ -892,6 +895,21 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
                   className="w-full h-10 px-3 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
+
+              <label className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-zinc-900/40 p-3 text-xs text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={payFromCash}
+                  onChange={(e) => setPayFromCash(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-current"
+                />
+                <span>
+                  <span className="block font-medium text-zinc-200">Kasadan düş</span>
+                  <span className="block text-[11px] text-zinc-500">
+                    Gider kaydı açılır ve kasadaki nakit azalır. Kapatırsan ödeme yalnızca borçtan düşer.
+                  </span>
+                </span>
+              </label>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
                 <button

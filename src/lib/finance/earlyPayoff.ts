@@ -57,8 +57,16 @@ export function calculateEarlyPayoff(params: EarlyPayoffParams): EarlyPayoffResu
   );
 
   const penaltyFee = remainingPrincipal.times(penaltyRate);
-  // İşlemiş faiz zaten planın faizinin bir parçası; kapatınca kalanı kazanç.
-  const totalInterestSaved = remainingScheduledInterest
+  /*
+   * Kazanç = kalan taksitlerin toplamı - bugünkü kapama tutarı.
+   *
+   * Plan güncelken bu, "kalan faiz - işlemiş faiz" ile aynı şey. Erken ödemeden
+   * sonra ise banka satırların anapara/faiz dağılımını yeniden hesaplar ama
+   * taksit tutarlarını korur; eski faiz paylarını toplamak kazancı yanlış
+   * veriyordu (Garanti 24k, 20.10: 339,20 yerine gerçek kazanç 1.282,50).
+   */
+  const totalInterestSaved = remainingScheduledTotal
+    .minus(remainingPrincipal)
     .minus(accruedInterest)
     .minus(penaltyFee);
 

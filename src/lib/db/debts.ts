@@ -428,7 +428,17 @@ export async function payInstallment(
     if (!debt) throw new NotFoundError("Borç kaydı bulunamadı");
 
     let installment = null as Awaited<ReturnType<typeof tx.installmentSchedule.findFirst>> | null;
+
+    /*
+     * Ödeme anındaki kapama tutarı, taksit ÖDENMEDEN okunur (faiz tavanı
+     * bekleyen ilk taksite, yani bu taksite bakıyor). Kredide ve KMH'de ödeme
+     * önce işlemiş faize, kalanı anaparaya sayılır; bunun için şart.
+     */
     let payoffBefore: number | null = null;
+    if (debt.type === "TAKSITLI_KREDI" || debt.type === "EK_HESAP_KMH") {
+      const tam = await tx.debt.findFirst({ where: { id: debt.id }, include: DEBT_INCLUDE });
+      if (tam) payoffBefore = valuateDebt(tam, null, settings, paidAt).outstandingTL;
+    }
 
     if (input.installmentId) {
       installment = await tx.installmentSchedule.findFirst({
@@ -439,13 +449,6 @@ export async function payInstallment(
         throw new ConflictError(
           `${installment.installmentNo}. taksit zaten ödenmiş görünüyor.`
         );
-      }
-
-      // Kapama tutarı taksit ÖDENMEDEN okunur: faiz tavanı bekleyen ilk taksite,
-      // yani bu taksite bakıyor.
-      if (debt.type === "TAKSITLI_KREDI" && debt.currentPrincipalOverride != null) {
-        const tam = await tx.debt.findFirst({ where: { id: debt.id }, include: DEBT_INCLUDE });
-        if (tam) payoffBefore = valuateDebt(tam, null, settings, paidAt).outstandingTL;
       }
 
       await tx.installmentSchedule.update({
@@ -495,9 +498,15 @@ export async function payInstallment(
      * sürüm plandaki anapara payını düşüyordu ve erken ödemede 844,74 TL yanlış
      * çıktı (15.690,88; banka 14.846,14). Faiz saati ödeme anına çekilir.
      * Son taksit ödenince elle girilmiş değer tamamen kalkar.
+     *
+     * Bakiye elle girilmemiş kredide de aynı kural: önceden yalnız plan
+     * okunuyordu ve vadesinden önce ödenen taksitte kalan anapara planın
+     * rakamında kalıyordu (Garanti 43k'nın 19.11 taksiti 20.10'da ödense:
+     * plan 35.208,20, bankanın kuralıyla 32.565,81). Vadesinde tam tutar ödenince sonuç planla aynıdır. Taksit
+     * seçilmeden yapılan serbest ödeme de krediden düşer.
      */
-    if (debt.type === "TAKSITLI_KREDI" && installment && debt.currentPrincipalOverride != null) {
-      if (pendingCount === 0) {
+    if (debt.type === "TAKSITLI_KREDI") {
+      if (installment && pendingCount === 0) {
         debtUpdate.currentPrincipalOverride = null;
         debtUpdate.principalOverrideAt = null;
       } else if (payoffBefore !== null) {
@@ -508,7 +517,10 @@ export async function payInstallment(
       }
     }
     if (debt.type === "EK_HESAP_KMH") {
-      const newUsed = new Prisma.Decimal(debt.usedAmount ?? 0).minus(amount);
+      // Son tahakkuktan bu yana işlemiş faiz de borca dahil; yalnız kullanılan
+      // tutardan düşüp faiz saatini sıfırlamak o faizi sessizce siliyordu.
+      const base = payoffBefore ?? Number(debt.usedAmount ?? 0);
+      const newUsed = new Prisma.Decimal(base.toFixed(2)).minus(amount);
       debtUpdate.usedAmount = newUsed.isNegative() ? new Prisma.Decimal(0) : newUsed;
       debtUpdate.lastInterestChargeDate = paidAt;
     }

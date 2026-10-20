@@ -412,8 +412,10 @@ describe("Erken kapama simülatörü", () => {
   });
 
   it("faiz tasarrufu kalan faizden komisyonu düşer ve negatife inmez", () => {
+    // Kalan anapara planla tutarlı olmalı: kazanç artık "kalan taksitler -
+    // kapama" üzerinden hesaplanıyor.
     const res = calculateEarlyPayoff({
-      remainingPrincipal: 1000,
+      remainingPrincipal: schedule[11].principalPayment,
       amortizationSchedule: schedule,
       paidInstallmentCount: 11, // neredeyse bitmiş
       penaltyRate: 0.5, // aşırı yüksek komisyon

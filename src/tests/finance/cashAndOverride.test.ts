@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import Decimal from "decimal.js";
 import { DEFAULT_SETTINGS } from "@/lib/settings/defaults";
 import { calculateEarlyPayoff } from "@/lib/finance/earlyPayoff";
 import { calculateOverdraftInterest } from "@/lib/finance/overdraft";
@@ -94,6 +95,50 @@ describe("Taksit ödemesi (kaynak)", () => {
   it("son taksit ödenince elle girilmiş bakiye tamamen kalkar", () => {
     const g = govde("src/lib/db/debts.ts", "export async function payInstallment");
     expect(g).toMatch(/pendingCount === 0\)\s*\{\s*debtUpdate\.currentPrincipalOverride = null/);
+  });
+
+  it("REGRESYON: bakiye elle girilmemiş kredide de ödeme önce faize sayılır", () => {
+    // Kural yalnız override doluyken çalışıyordu; erken ödenen taksitte kalan
+    // anapara planın rakamında kalıyordu.
+    const g = govde("src/lib/db/debts.ts", "export async function payInstallment");
+    expect(g).not.toMatch(/TAKSITLI_KREDI" && debt\.currentPrincipalOverride != null/);
+    expect(g).not.toMatch(/installment && debt\.currentPrincipalOverride != null/);
+  });
+
+  it("Garanti 43k: 19.11 taksiti 20.10'da ödense kalan anapara 32.565,81", () => {
+    // 43.000 x %4,89, 19.09 -> 20.10 = 31 gün; ödeme önce faize sayılır.
+    const kapama = 43000 + islemisFaiz(43000, 4.89, 31);
+    expect(principalAfterPayment(kapama, 13258.82)).toBeCloseTo(32565.81, 2);
+  });
+
+  it("REGRESYON: KMH ödemesi işlemiş faizi silmez", () => {
+    const g = govde("src/lib/db/debts.ts", "export async function payInstallment");
+    expect(g).toMatch(/const base = payoffBefore \?\?/);
+  });
+});
+
+describe("Erken kapatma kazancı", () => {
+  it("REGRESYON: erken ödemeden sonra eski plan faiz paylarına değil taksit toplamına bakar", () => {
+    // Garanti 24k, 20.10.2026: kalan 4.741,17, tek taksit 6.023,67 (plandaki
+    // faiz payı 339,20 eski bakiyeye göre). Gerçek kazanç 6.023,67 - 4.741,17.
+    const res = calculateEarlyPayoff({
+      remainingPrincipal: 4741.17,
+      accruedInterest: 0,
+      amortizationSchedule: [
+        {
+          installmentNo: 5,
+          dueDate: new Date(2027, 2, 5),
+          totalPayment: new Decimal(6023.67),
+          principalPayment: new Decimal(5684.47),
+          interestPayment: new Decimal(339.2),
+          kkdfPayment: new Decimal(0),
+          bsmvPayment: new Decimal(0),
+          remainingPrincipal: new Decimal(0),
+        },
+      ],
+      paidInstallmentCount: 0,
+    });
+    expect(res.totalInterestSaved.toNumber()).toBeCloseTo(1282.5, 2);
   });
 });
 
