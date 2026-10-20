@@ -11,6 +11,8 @@ export interface LiveTotals {
   totalExpenseAllTimeTL: number;
   totalDebtTL: number;
   goldDebtTL: number;
+  /** Taksitli kredi, kart ve KMH toplamı (bugünkü kapama). */
+  bankDebtTL: number;
   accruedInterestTL: number;
   dailyAccrualTL: number;
   dueThisMonthTL: number;

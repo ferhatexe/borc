@@ -458,6 +458,20 @@ describe("Düzenli ödeme değerlemesi", () => {
 });
 
 describe("Portföy özeti", () => {
+  it("banka borcu toplamı yalnız kredi, kart ve KMH'yi sayar", () => {
+    const summary = buildPortfolioSummary(
+      [
+        debt({ id: "k", type: "TAKSITLI_KREDI", principal: 1000 as never }),
+        debt({ id: "p", type: "KISI_BORCU", amount: 500 as never }),
+      ],
+      gold,
+      DEFAULT_SETTINGS,
+      NOW
+    );
+    expect(summary.bankDebtTL).toBe(1000);
+    expect(summary.totalDebtTL).toBe(1500);
+  });
+
   it("KABUL KRİTERİ 1: aynı bankadaki farklı krediler ayrı ayrı listelenir", () => {
     const qnb = { id: "i1", name: "QNB Finansbank", color: "#8B0000" };
 

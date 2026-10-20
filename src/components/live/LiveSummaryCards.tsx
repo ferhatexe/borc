@@ -154,6 +154,12 @@ export function LiveSummaryCards({
         footer={
           <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span>{totals.debtCount} kayıt</span>
+            {totals.bankDebtTL > 0 && (
+              <span className="text-zinc-300">
+                {/* Saniyelik faiz yalnız banka borçlarında işler; toplamla birlikte ilerlesin. */}
+                banka {formatCurrency(totals.bankDebtTL + Math.max(0, liveTotalDebtTL - totals.totalDebtTL))}
+              </span>
+            )}
             {totals.goldDebtTL > 0 && (
               <span className="text-yellow-500/90">
                 altın {formatCurrency(totals.goldDebtTL)}

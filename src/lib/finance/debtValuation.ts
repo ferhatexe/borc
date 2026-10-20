@@ -134,6 +134,8 @@ export interface PortfolioSummary {
   totalDailyAccrualTL: number;
   /** Live TL value of every gold debt, so the UI can re-price it on a new rate. */
   goldDebtTL: number;
+  /** Banka ürünleri: taksitli kredi, kredi kartı, KMH (bugünkü kapama ile). */
+  bankDebtTL: number;
   dueThisMonthTL: number;
   overdueTL: number;
   institutionBreakdown: InstitutionBreakdown[];
@@ -616,6 +618,8 @@ export function valuateDebt(
   };
 }
 
+const BANK_DEBT_TYPES = new Set(["TAKSITLI_KREDI", "KREDI_KARTI", "EK_HESAP_KMH"]);
+
 /** Everything the dashboard needs, computed once from one debt list. */
 export function buildPortfolioSummary(
   debts: DebtWithRelations[],
@@ -630,6 +634,7 @@ export function buildPortfolioSummary(
   let totalDaily = new Decimal(0);
   let dueThisMonth = new Decimal(0);
   let goldDebtTL = new Decimal(0);
+  let bankDebtTL = new Decimal(0);
 
   const instMap = new Map<string, InstitutionBreakdown>();
 
@@ -639,6 +644,7 @@ export function buildPortfolioSummary(
     totalDaily = totalDaily.plus(v.dailyAccrualTL);
     dueThisMonth = dueThisMonth.plus(v.dueThisMonthTL);
     if (v.type === "ALTIN_BORCU") goldDebtTL = goldDebtTL.plus(v.outstandingTL);
+    if (BANK_DEBT_TYPES.has(v.type)) bankDebtTL = bankDebtTL.plus(v.outstandingTL);
 
     // Debts without an institution are grouped instead of being dropped.
     const key = v.institutionId ?? "__none__";
@@ -699,6 +705,7 @@ export function buildPortfolioSummary(
     totalAccruedInterestTL: totalAccrued.toDecimalPlaces(2).toNumber(),
     totalDailyAccrualTL: totalDaily.toNumber(),
     goldDebtTL: goldDebtTL.toDecimalPlaces(2).toNumber(),
+    bankDebtTL: bankDebtTL.toDecimalPlaces(2).toNumber(),
     dueThisMonthTL: dueThisMonth.toDecimalPlaces(2).toNumber(),
     overdueTL: overdueTL.toDecimalPlaces(2).toNumber(),
     institutionBreakdown: Array.from(instMap.values()).sort(

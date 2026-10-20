@@ -59,6 +59,7 @@ export async function GET() {
           totalExpenseAllTimeTL: cash.totalExpenseTL,
           totalDebtTL: portfolio.totalDebtTL,
           goldDebtTL: portfolio.goldDebtTL,
+          bankDebtTL: portfolio.bankDebtTL,
           accruedInterestTL: portfolio.totalAccruedInterestTL,
           // TL accruing per day across every revolving balance; the client
           // divides this down to seconds for the live counter.

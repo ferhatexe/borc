@@ -61,6 +61,7 @@ export default async function DashboardPage() {
       totalExpenseAllTimeTL: cash.totalExpenseTL,
       totalDebtTL: portfolio.totalDebtTL,
       goldDebtTL: portfolio.goldDebtTL,
+      bankDebtTL: portfolio.bankDebtTL,
       accruedInterestTL: portfolio.totalAccruedInterestTL,
       dailyAccrualTL: portfolio.totalDailyAccrualTL,
       dueThisMonthTL: portfolio.dueThisMonthTL,
