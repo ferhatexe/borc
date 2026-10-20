@@ -204,6 +204,23 @@ describe("Taksitli kredi değerlemesi", () => {
       expect(later.accruedInterestTL).toBeCloseTo(8584.51 * 1.3, 1);
       expect(later.dailyAccrualTL).toBe(0);
     });
+
+    it("erken ödemeden sonra plandaki eski faiz payında durmaz", () => {
+      // 20.10'da 2. taksit erken ödendi, banka bakiyesi 104.024,91. Sıradaki
+      // satırın plandaki faiz payı (6.711,01) eski bakiyeye göre; geçerli değil.
+      const afterEarly = debt({
+        ...carried,
+        currentPrincipalOverride: 104024.91 as never,
+        principalOverrideAt: new Date(2026, 9, 20),
+        installmentSchedules: [
+          schedule(3, new Date(2026, 11, 17), "BEKLIYOR", 104491.76, 3716.35, 10427.36),
+        ] as never,
+      });
+      // 41 gün: 104.024,91 x 0,0425 x 41/30 x 1,30
+      const v = valuateDebt(afterEarly, gold, DEFAULT_SETTINGS, new Date(2026, 10, 30));
+      expect(v.accruedInterestTL).toBeCloseTo(7854.75, 1);
+      expect(v.dailyAccrualTL).toBeGreaterThan(0);
+    });
   });
 });
 

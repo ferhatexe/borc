@@ -295,11 +295,16 @@ export function valuateDebt(
          * devreder, yani bu dönemin faizi taksitin faiz payından büyüktür.
          * Burada tutar tavanı yanlış olur; faiz vade gününe kadar tam işler,
          * vade gününde durur.
+         *
+         * Bakiye elle ya da bir ödemeyle güncellendiyse de aynısı geçerli:
+         * erken/kısmi ödemede banka planı yeniden hesaplar, plandaki satırın
+         * faiz payı artık bu bakiyeye ait değildir.
          */
         const nextRow = pending[0];
         const carriesInterest = nextRow != null && num(nextRow.principalPart) <= 0;
+        const capByDueDate = nextRow != null && (carriesInterest || hasOverride);
         let stoppedAtDue = false;
-        if (carriesInterest) {
+        if (capByDueDate) {
           const daysToDue = daysSinceLastCharge(accrualSince, new Date(nextRow.dueDate));
           if (accrualDays >= daysToDue) {
             accrualDays = daysToDue;
@@ -326,7 +331,7 @@ export function valuateDebt(
          * fazlası çift sayım olurdu. Tavan aynı zamanda kredi başlangıcı ile
          * ilk taksit arasında uzun boşluk olan kayıtları da korur.
          */
-        const periodInterestCap = nextRow && !carriesInterest ? num(nextRow.interestPart) : 0;
+        const periodInterestCap = nextRow && !capByDueDate ? num(nextRow.interestPart) : 0;
         if (periodInterestCap > 0 && accruedInterestTL >= periodInterestCap) {
           accruedInterestTL = periodInterestCap;
           dailyAccrualTL = 0; // taksit gününe kadar daha fazla faiz işlemez
