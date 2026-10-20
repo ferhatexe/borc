@@ -96,8 +96,10 @@ describe("Ortasından eklenen kredi", () => {
       paidInstallmentCount: 1,
       penaltyRate: 0.02,
     });
-    const kalanFaiz = PLAN.slice(1).reduce((s, r) => s + r.interestPayment.toNumber(), 0);
-    expect(payoff.remainingScheduledInterest.toNumber()).toBeCloseTo(kalanFaiz, 2);
+    // Kalan faiz = kalan taksitlerin toplamı - kalan anapara. Satırların faiz
+    // payları erken ödemeden sonra eskir; taksit tutarları ise bankada sabit.
+    const kalanTaksit = PLAN.slice(1).reduce((s, r) => s + r.totalPayment.toNumber(), 0);
+    expect(payoff.remainingScheduledInterest.toNumber()).toBeCloseTo(kalanTaksit - 32117.43, 2);
     expect(payoff.remainingInstallmentCount).toBe(4);
   });
 

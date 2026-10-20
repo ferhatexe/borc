@@ -47,26 +47,26 @@ export function calculateEarlyPayoff(params: EarlyPayoffParams): EarlyPayoffResu
   const paid = Math.max(0, params.paidInstallmentCount);
   const remainingRows = params.amortizationSchedule.slice(paid);
 
-  const remainingScheduledInterest = remainingRows.reduce(
-    (sum, row) => sum.plus(row.interestPayment).plus(row.kkdfPayment).plus(row.bsmvPayment),
-    new Decimal(0)
-  );
   const remainingScheduledTotal = remainingRows.reduce(
     (sum, row) => sum.plus(row.totalPayment),
     new Decimal(0)
   );
 
-  const penaltyFee = remainingPrincipal.times(penaltyRate);
   /*
-   * Kazanç = kalan taksitlerin toplamı - bugünkü kapama tutarı.
+   * Kalan faiz = kalan taksitlerin toplamı - kalan anapara.
    *
-   * Plan güncelken bu, "kalan faiz - işlemiş faiz" ile aynı şey. Erken ödemeden
-   * sonra ise banka satırların anapara/faiz dağılımını yeniden hesaplar ama
-   * taksit tutarlarını korur; eski faiz paylarını toplamak kazancı yanlış
-   * veriyordu (Garanti 24k, 20.10: 339,20 yerine gerçek kazanç 1.282,50).
+   * Plan güncelken bu, satırların faiz paylarının toplamıyla aynı şey. Erken
+   * ödemeden sonra ise banka satırların anapara/faiz dağılımını yeniden
+   * hesaplar ama taksit tutarlarını korur; eski faiz paylarını toplamak yanlış
+   * veriyordu (Garanti 24k, 20.10: 339,20 yerine gerçekte 1.282,50).
    */
-  const totalInterestSaved = remainingScheduledTotal
-    .minus(remainingPrincipal)
+  const fromTotals = remainingScheduledTotal.minus(remainingPrincipal);
+  const remainingScheduledInterest =
+    remainingRows.length > 0 && fromTotals.greaterThan(0) ? fromTotals : new Decimal(0);
+
+  const penaltyFee = remainingPrincipal.times(penaltyRate);
+  // İşlemiş faiz kalan faizin bir parçası; kapatınca geri kalanı kazanç.
+  const totalInterestSaved = remainingScheduledInterest
     .minus(accruedInterest)
     .minus(penaltyFee);
 
