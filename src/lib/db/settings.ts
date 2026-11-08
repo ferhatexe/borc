@@ -78,6 +78,34 @@ export async function getRawSettings(userId: string): Promise<Record<string, unk
   return byKey;
 }
 
+/**
+ * Ayarlar'daki altın marjı değişince, primi hâlâ eski marjda duran altın
+ * borçları da yeni marja geçer.
+ *
+ * Borç formu yeni altın borcuna o anki marjı prim olarak kopyalıyor ve
+ * değerleme borcun primini Ayarlar'ın önüne koyuyor. Kopya bir kez yazıldıktan
+ * sonra Ayarlar'daki değişiklik borca hiç ulaşmıyordu (21 ayarda marj 200'den
+ * 102'ye indi, borç 200'de kaldı). Elle farklı bir prim girilmiş borca
+ * dokunulmaz: yalnızca primi eski marjla aynı olanlar güncellenir.
+ */
+export async function syncGoldDebtPremiums(
+  userId: string,
+  oldMargins: Record<string, number>,
+  newMargins: Record<string, number>
+): Promise<number> {
+  let updated = 0;
+  for (const [goldType, next] of Object.entries(newMargins)) {
+    const prev = oldMargins[goldType] ?? 0;
+    if (next === prev) continue;
+    const res = await prisma.debt.updateMany({
+      where: { userId, type: "ALTIN_BORCU", goldType: goldType as never, premiumTL: prev },
+      data: { premiumTL: next },
+    });
+    updated += res.count;
+  }
+  return updated;
+}
+
 /** Replaces one setting key. The caller is responsible for validating `value`. */
 export async function updateSetting(userId: string, key: SettingKey, value: unknown) {
   const saved = await prisma.setting.upsert({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { getRawSettings, updateSetting } from "@/lib/db/settings";
+import { getRawSettings, getSettings, syncGoldDebtPremiums, updateSetting } from "@/lib/db/settings";
 import { resetGoldCache } from "@/lib/gold/goldService";
 import { updateSettingsSchema } from "@/lib/validation/settings";
 import { SETTING_KEYS, type SettingKey } from "@/lib/settings/defaults";
@@ -23,6 +23,10 @@ export async function PATCH(req: NextRequest) {
   try {
     const session = await requireSession();
     const input = await parseJsonBody(req, updateSettingsSchema);
+    // Eski marjlar, altın borçlarının primini taşımak için yazmadan önce okunur.
+    const oldMargins = input[SETTING_KEYS.GOLD_MARGINS]
+      ? { ...(await getSettings(session.userId)).goldMargins }
+      : null;
 
     const written: string[] = [];
     for (const [key, value] of Object.entries(input)) {
@@ -36,6 +40,14 @@ export async function PATCH(req: NextRequest) {
 
       await updateSetting(session.userId, key as SettingKey, payload);
       written.push(key);
+    }
+
+    if (oldMargins && input[SETTING_KEYS.GOLD_MARGINS]) {
+      await syncGoldDebtPremiums(
+        session.userId,
+        oldMargins as Record<string, number>,
+        { ...oldMargins, ...(input[SETTING_KEYS.GOLD_MARGINS] as Record<string, number>) }
+      );
     }
 
     // Margins, millesimals and manual prices all feed the gold catalogue.

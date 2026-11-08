@@ -9,6 +9,7 @@ import {
 import { getSettings } from "@/lib/db/settings";
 import { valuateDebt } from "@/lib/finance/debtValuation";
 import { principalAfterPayment } from "@/lib/finance/loanPayment";
+import { withAmountInTitle } from "@/lib/finance/goldTitle";
 import type { CreateDebtInput, PayInstallmentInput, UpdateDebtInput } from "@/lib/validation/debt";
 
 /**
@@ -551,6 +552,14 @@ export async function payInstallment(
       }
       // Altın miktarı verilmediyse yalnızca ödeme ve gider kaydı düşülür;
       // borcun kendisi bilerek değiştirilmez, uydurma bir gram hesaplanmaz.
+
+      // Başlıktaki miktar ("21 Ayar Zincir (44 gr)") ödemeden sonra eskide
+      // kalıyordu; varsa yeni miktarla değiştirilir.
+      const yeniMiktar = (debtUpdate.grams ?? debtUpdate.quantity) as Prisma.Decimal | undefined;
+      if (yeniMiktar !== undefined) {
+        const title = withAmountInTitle(debt.title, Number(yeniMiktar));
+        if (title !== debt.title) debtUpdate.title = title;
+      }
     }
 
     await tx.debt.update({ where: { id: debt.id }, data: debtUpdate });
