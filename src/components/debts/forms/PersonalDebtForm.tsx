@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { UsersThree, Phone } from "@phosphor-icons/react";
+import { NumberField } from "@/components/shared/NumberField";
 
 export interface PersonalDebtFormData {
   title: string;
@@ -91,10 +92,8 @@ export function PersonalDebtForm({ initialData, onChange }: PersonalDebtFormProp
         <div className="sm:col-span-2">
           <label className="block text-xs font-medium text-zinc-300 mb-1.5">Borç Tutarı *</label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="1"
-              step="100"
               required
               value={amount || ""}
               onChange={(e) => setAmount(Number(e.target.value))}

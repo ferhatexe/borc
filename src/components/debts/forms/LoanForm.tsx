@@ -17,6 +17,7 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 import { NotesField } from "./NotesField";
+import { NumberField } from "@/components/shared/NumberField";
 
 export interface LoanFormData {
   loanSubType: string;
@@ -352,10 +353,8 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
             Kredi Tutarı (Anapara) *
           </label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="100"
-              step="100"
               required
               value={principal || ""}
               onChange={(e) => setPrincipal(Number(e.target.value))}
@@ -375,9 +374,7 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
               Aylık Akdi Faiz Oranı (%) *
             </label>
             <div className="relative">
-              <input
-                type="number"
-                step="0.01"
+              <NumberField
                 min="0"
                 value={interestRateMonthly || ""}
                 onChange={(e) => setInterestRateMonthly(Number(e.target.value))}
@@ -393,9 +390,7 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
               Bankanın söylediği gerçek taksit (opsiyonel)
             </label>
             <div className="relative mt-1">
-              <input
-                type="number"
-                step="0.01"
+              <NumberField
                 min="0"
                 value={actualInstallment || ""}
                 onChange={(e) => setActualInstallment(Number(e.target.value))}
@@ -420,9 +415,7 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
               Ödenen Aylık Taksit Tutarı *
             </label>
             <div className="relative">
-              <input
-                type="number"
-                step="1"
+              <NumberField
                 min="1"
                 value={targetInstallmentAmount || ""}
                 onChange={(e) => setTargetInstallmentAmount(Number(e.target.value))}
@@ -460,8 +453,8 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
             </button>
           ))}
           <div className="w-24">
-            <input
-              type="number"
+            <NumberField
+              integer
               min="1"
               max="360"
               value={installmentCount || ""}
@@ -534,8 +527,8 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
           <label className="block text-xs font-medium text-zinc-300 mb-1.5">
             Şu Ana Kadar Ödenen Taksit Sayısı
           </label>
-          <input
-            type="number"
+          <NumberField
+            integer
             min="0"
             max={Math.max(0, installmentCount - 1)}
             value={paidInstallments}
@@ -554,10 +547,8 @@ export function LoanForm({ initialData, institutionName, onChange }: LoanFormPro
             Bankadaki Güncel Kalan Anapara (Opsiyonel)
           </label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="0"
-              step="0.01"
               value={currentPrincipalOverride || ""}
               onChange={(e) => setCurrentPrincipalOverride(Number(e.target.value))}
               placeholder="Örn: 32.195,95"

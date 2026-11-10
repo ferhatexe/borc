@@ -6,6 +6,7 @@ import { formatCurrency, toDateInputValue } from "@/lib/formatters";
 import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import { Vault, Lightning, CalendarBlank } from "@phosphor-icons/react";
 import { NotesField } from "./NotesField";
+import { NumberField } from "@/components/shared/NumberField";
 
 export interface OverdraftFormData {
   title: string;
@@ -125,10 +126,8 @@ export function OverdraftForm({ initialData, institutionName, onChange }: Overdr
             KMH / Ek Hesap Limiti *
           </label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="0"
-              step="500"
               required
               value={limit || ""}
               onChange={(e) => setLimit(Number(e.target.value))}
@@ -146,10 +145,8 @@ export function OverdraftForm({ initialData, institutionName, onChange }: Overdr
             Kullanılan Bakiye (Eksi Tutar) *
           </label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="0"
-              step="100"
               required
               value={usedAmount || ""}
               onChange={(e) => setUsedAmount(Number(e.target.value))}
@@ -169,9 +166,7 @@ export function OverdraftForm({ initialData, institutionName, onChange }: Overdr
           Aylık KMH Akdi Faiz Oranı (%) *
         </label>
         <div className="relative">
-          <input
-            type="number"
-            step="0.01"
+          <NumberField
             min="0"
             required
             value={interestRateMonthly || ""}

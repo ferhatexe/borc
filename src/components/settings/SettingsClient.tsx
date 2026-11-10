@@ -19,6 +19,7 @@ import { triggerHaptic } from "@/lib/haptics";
 import { formatDate } from "@/lib/formatters";
 import { GOLD_TYPE_VALUES } from "@/lib/validation/debt";
 import type { AppSettings } from "@/lib/settings/defaults";
+import { NumberField } from "@/components/shared/NumberField";
 
 const GOLD_LABELS: Record<string, string> = {
   GRAM_ALTIN: "Gram Altın",
@@ -243,9 +244,7 @@ export function SettingsClient({
           ).map(([key, label]) => (
             <label key={key} className="block">
               <span className="mb-1.5 block text-xs text-zinc-300">{label} (%)</span>
-              <input
-                type="number"
-                step="0.01"
+              <NumberField
                 min="0"
                 max="100"
                 value={Number((settings.taxRates[key] * 100).toFixed(4))}
@@ -292,9 +291,7 @@ export function SettingsClient({
                   ({PIECE_TYPES.includes(type) ? "adet" : "gram"})
                 </span>
               </span>
-              <input
-                type="number"
-                step="1"
+              <NumberField
                 min="0"
                 value={settings.goldMargins[type] ?? 0}
                 onChange={(e) =>
@@ -331,8 +328,7 @@ export function SettingsClient({
             {(["14", "18", "21", "22", "24"] as const).map((karat) => (
               <label key={karat} className="block">
                 <span className="mb-1 block text-[11px] text-zinc-300">{karat} ayar</span>
-                <input
-                  type="number"
+                <NumberField
                   min="1"
                   max="1000"
                   value={settings.goldMillesimal[karat] ?? 0}
@@ -364,9 +360,7 @@ export function SettingsClient({
             {Object.keys(settings.goldUnitGrams).map((key) => (
               <label key={key} className="block">
                 <span className="mb-1 block text-[11px] text-zinc-300">{GOLD_LABELS[key] ?? key}</span>
-                <input
-                  type="number"
-                  step="0.001"
+                <NumberField
                   min="0.001"
                   value={settings.goldUnitGrams[key] ?? 0}
                   onChange={(e) =>
@@ -431,9 +425,7 @@ export function SettingsClient({
 
         <label className="block max-w-xs">
           <span className="mb-1.5 block text-xs text-zinc-300">Gram has altın satış (₺)</span>
-          <input
-            type="number"
-            step="0.01"
+          <NumberField
             min="0"
             value={settings.goldManualPrices.pureGramSellTL || ""}
             placeholder={goldStatus ? String(goldStatus.pureGramSellTL) : "0"}
@@ -457,9 +449,7 @@ export function SettingsClient({
           {PIECE_TYPES.map((type) => (
             <label key={type} className="block">
               <span className="mb-1 block text-[11px] text-zinc-300">{GOLD_LABELS[type]} (₺)</span>
-              <input
-                type="number"
-                step="0.01"
+              <NumberField
                 min="0"
                 value={settings.goldManualPrices.prices?.[type] ?? ""}
                 onChange={(e) =>

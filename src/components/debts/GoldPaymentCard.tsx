@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Coins, HandCoins, ArrowRight } from "@phosphor-icons/react";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
+import { NumberField } from "@/components/shared/NumberField";
 
 interface GoldPaymentCardProps {
   debtId: string;
@@ -129,12 +130,10 @@ export function GoldPaymentCard({
           Ödenen miktar ({birim})
         </label>
         <div className="relative">
-          <input
+          <NumberField
+            integer={isPiece}
             id="altin-odeme-miktar"
-            type="number"
-            inputMode="decimal"
             min="0"
-            step={isPiece ? "1" : "0.01"}
             max={remaining}
             value={miktar}
             onChange={(e) => setMiktar(e.target.value)}

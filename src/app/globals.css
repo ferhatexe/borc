@@ -424,3 +424,16 @@ input[type="range"].range-ink::-moz-range-thumb {
 input[type="range"].range-ink::-moz-range-track {
   background: transparent;
 }
+
+/*
+ * iOS Safari, yazı boyutu 16 px'in altındaki bir alana dokunulunca sayfayı
+ * yakınlaştırır ve geri almaz. Formlardaki alanlar 12 px (text-xs) olduğu
+ * için her dokunuşta ekran kayıyordu. Dokunmatik cihazlarda alanlar 16 px.
+ */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

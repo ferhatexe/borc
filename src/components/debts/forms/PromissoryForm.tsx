@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Hash, Building } from "@phosphor-icons/react";
+import { NumberField } from "@/components/shared/NumberField";
 
 export interface PromissoryFormData {
   title: string;
@@ -113,10 +114,8 @@ export function PromissoryForm({ initialData, onChange }: PromissoryFormProps) {
         <div>
           <label className="block text-xs font-medium text-zinc-300 mb-1.5">Ödenecek Tutar *</label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="1"
-              step="100"
               required
               value={amount || ""}
               onChange={(e) => setAmount(Number(e.target.value))}

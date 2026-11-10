@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { DotsThreeCircle } from "@phosphor-icons/react";
+import { NumberField } from "@/components/shared/NumberField";
 
 export interface OtherDebtFormData {
   title: string;
@@ -61,10 +62,8 @@ export function OtherDebtForm({ initialData, institutionName, onChange }: OtherD
         <div>
           <label className="block text-xs font-medium text-zinc-300 mb-1.5">Toplam Tutar *</label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="1"
-              step="100"
               required
               value={amount || ""}
               onChange={(e) => setAmount(Number(e.target.value))}

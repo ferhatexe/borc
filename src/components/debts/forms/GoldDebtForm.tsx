@@ -9,6 +9,7 @@ import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import { isPieceGoldType } from "@/lib/gold/types";
 import { Coins, User, WarningCircle } from "@phosphor-icons/react";
 import { NotesField } from "./NotesField";
+import { NumberField } from "@/components/shared/NumberField";
 
 export interface GoldDebtFormData {
   title: string;
@@ -243,10 +244,9 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
               Adet / Tane Sayısı *
             </label>
             <div className="relative">
-              <input
-                type="number"
+              <NumberField
+                integer
                 min="1"
-                step="1"
                 required
                 value={quantity || ""}
                 onChange={(e) => setQuantity(Number(e.target.value))}
@@ -264,10 +264,8 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
               Toplam Gramaj (gr) *
             </label>
             <div className="relative">
-              <input
-                type="number"
+              <NumberField
                 min="0.1"
-                step="0.01"
                 required
                 value={grams || ""}
                 onChange={(e) => setGrams(Number(e.target.value))}
@@ -287,9 +285,7 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
             Birim Başına Marj / İşçilik Farkı (₺)
           </label>
           <div className="relative">
-            <input
-              type="number"
-              step="10"
+            <NumberField
               value={premiumTL}
               onChange={(e) => setPremiumTL(Number(e.target.value))}
               placeholder="0"
@@ -338,9 +334,7 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
             <label className="block text-xs font-medium text-zinc-400 mb-1">
               Özel Birim Alış / Geri Ödeme Fiyatı (₺)
             </label>
-            <input
-              type="number"
-              step="10"
+            <NumberField
               value={manualUnitPrice}
               onChange={(e) => setManualUnitPrice(Number(e.target.value))}
               placeholder="5.490"

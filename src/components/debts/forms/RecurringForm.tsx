@@ -5,6 +5,7 @@ import { toDateInputValue } from "@/lib/formatters";
 import { useState, useEffect } from "react";
 import { CalendarCheck, Repeat } from "@phosphor-icons/react";
 import { NotesField } from "./NotesField";
+import { NumberField } from "@/components/shared/NumberField";
 
 export interface RecurringFormData {
   title: string;
@@ -81,10 +82,8 @@ export function RecurringForm({ initialData, institutionName, onChange }: Recurr
         <div>
           <label className="block text-xs font-medium text-zinc-300 mb-1.5">Periyodik Tutar *</label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="1"
-              step="50"
               required
               value={amount || ""}
               onChange={(e) => setAmount(Number(e.target.value))}

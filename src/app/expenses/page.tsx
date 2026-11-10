@@ -12,6 +12,8 @@ import {
 } from "@phosphor-icons/react";
 import { formatCurrency, formatDateTR, toDateInputValue } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
+import { NumberField } from "@/components/shared/NumberField";
+import { toast } from "sonner";
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -149,7 +151,7 @@ export default function ExpensesPage() {
       await fetchData();
     } catch (err: any) {
       triggerHaptic("error");
-      alert(err.message || "Kayıt sırasında hata oluştu");
+      toast.error(err.message || "Kayıt sırasında hata oluştu");
     } finally {
       setIsSubmitting(false);
     }
@@ -446,7 +448,7 @@ export default function ExpensesPage() {
       {/* Yeni Harcama Ekleme Modalı */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <TrendDown size={22} className="text-rose-400" />
@@ -469,9 +471,7 @@ export default function ExpensesPage() {
                   Harcama Tutarı *
                 </label>
                 <div className="relative">
-                  <input
-                    type="number"
-                    step="1"
+                  <NumberField
                     min="1"
                     required
                     value={amount}

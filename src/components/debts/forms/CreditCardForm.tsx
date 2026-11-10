@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/formatters";
 import { CreditCard, CalendarBlank, Sparkle } from "@phosphor-icons/react";
 import { NotesField } from "./NotesField";
+import { NumberField } from "@/components/shared/NumberField";
 
 export interface CreditCardFormData {
   title: string;
@@ -144,10 +145,8 @@ export function CreditCardForm({ initialData, institutionName, onChange }: Credi
             Toplam Kart Limiti *
           </label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="0"
-              step="500"
               required
               value={creditLimit || ""}
               onChange={(e) => setCreditLimit(Number(e.target.value))}
@@ -165,10 +164,8 @@ export function CreditCardForm({ initialData, institutionName, onChange }: Credi
             Güncel Dönem Borcu *
           </label>
           <div className="relative">
-            <input
-              type="number"
+            <NumberField
               min="0"
-              step="100"
               required
               value={currentStatementBalance || ""}
               onChange={(e) => setCurrentStatementBalance(Number(e.target.value))}
@@ -196,10 +193,8 @@ export function CreditCardForm({ initialData, institutionName, onChange }: Credi
           </button>
         </div>
         <div className="relative">
-          <input
-            type="number"
+          <NumberField
             min="0"
-            step="50"
             value={minimumPayment || ""}
             onChange={(e) => setMinimumPayment(Number(e.target.value))}
             placeholder="3.000"
@@ -222,8 +217,8 @@ export function CreditCardForm({ initialData, institutionName, onChange }: Credi
               size={18}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400"
             />
-            <input
-              type="number"
+            <NumberField
+              integer
               min="1"
               max="31"
               required
@@ -245,8 +240,8 @@ export function CreditCardForm({ initialData, institutionName, onChange }: Credi
               size={18}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400"
             />
-            <input
-              type="number"
+            <NumberField
+              integer
               min="1"
               max="31"
               required
@@ -266,9 +261,7 @@ export function CreditCardForm({ initialData, institutionName, onChange }: Credi
           <label className="block text-xs font-medium text-zinc-300 mb-1">
             Aylık Akdi Faiz Oranı (%)
           </label>
-          <input
-            type="number"
-            step="0.01"
+          <NumberField
             value={contractualInterestMonthly}
             onChange={(e) => setContractualInterestMonthly(Number(e.target.value))}
             className="w-full h-9 px-3 text-xs bg-zinc-900 border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500 font-mono"
@@ -280,9 +273,7 @@ export function CreditCardForm({ initialData, institutionName, onChange }: Credi
           <label className="block text-xs font-medium text-zinc-300 mb-1">
             Gecikme Faizi Oranı (%)
           </label>
-          <input
-            type="number"
-            step="0.01"
+          <NumberField
             value={overdueInterestMonthly}
             onChange={(e) => setOverdueInterestMonthly(Number(e.target.value))}
             className="w-full h-9 px-3 text-xs bg-zinc-900 border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500 font-mono"

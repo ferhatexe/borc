@@ -35,6 +35,7 @@ import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import type { DebtValuation } from "@/lib/finance/debtValuation";
 import { useChartTheme } from "@/lib/hooks/useChartTheme";
 import { GoldPaymentCard } from "@/components/debts/GoldPaymentCard";
+import { NumberField } from "@/components/shared/NumberField";
 
 interface DebtDetailPageProps {
   params: Promise<{ id: string }>;
@@ -834,7 +835,7 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
       {/* Ödeme Modalı */}
       {selectedInstallment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <CurrencyCircleDollar size={24} className="text-emerald-400" />
@@ -858,9 +859,7 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
                 <label className="block text-xs font-medium text-zinc-300 mb-1.5">
                   Ödenecek Tutar (₺) *
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
+                <NumberField
                   required
                   value={payAmount}
                   onChange={(e) => setPayAmount(Number(e.target.value))}
@@ -935,7 +934,7 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
       {/* Silme Onay Modalı */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-rose-500/20 bg-zinc-950 p-6 shadow-2xl space-y-4 text-center">
+          <div className="w-full max-w-sm rounded-2xl border border-rose-500/20 bg-zinc-950 p-6 shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain text-center">
             <div className="h-12 w-12 rounded-2xl bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto">
               <Trash size={24} />
             </div>
