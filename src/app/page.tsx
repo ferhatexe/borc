@@ -6,7 +6,10 @@ import { getIncomes, getExpenses, getCashBalance } from "@/lib/db/transactions";
 import { getSettings } from "@/lib/db/settings";
 import { getGoldPrices } from "@/lib/gold/goldService";
 import { getAnalyticsSummary } from "@/lib/db/reports";
-import { buildPortfolioSummary } from "@/lib/finance/debtValuation";
+import { buildPortfolioSummary, buildUpcomingPayments } from "@/lib/finance/debtValuation";
+import { getCoachState } from "@/lib/db/coach";
+import { buildStreakView, istanbulDay } from "@/lib/coach/streak";
+import { buildInsights } from "@/lib/coach/insights";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import type { GoldSyncResult } from "@/lib/gold/types";
 import type { LivePayload } from "@/lib/hooks/useLivePortfolio";
@@ -21,12 +24,13 @@ export default async function DashboardPage() {
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
-  const [debts, incomes, expenses, settings, cash] = await Promise.all([
+  const [debts, incomes, expenses, settings, cash, coachState] = await Promise.all([
     getDebts(session.userId),
     getIncomes(session.userId, { from: monthStart, to: monthEnd }),
     getExpenses(session.userId, { from: monthStart, to: monthEnd }),
     getSettings(session.userId),
     getCashBalance(session.userId),
+    getCoachState(session.userId),
   ]);
 
   // Gold prices may be unavailable; the UI shows a warning band rather than
@@ -96,6 +100,19 @@ export default async function DashboardPage() {
     upcomingPayments: portfolio.upcomingPayments.slice(0, 12),
   };
 
+  const streak = buildStreakView(coachState, istanbulDay(now));
+  const insights = buildInsights({
+    valuations: portfolio.valuations,
+    upcoming: buildUpcomingPayments(debts, portfolio.valuations, now, 60),
+    cashTL: cash.balanceTL,
+    totalDebtTL: portfolio.totalDebtTL,
+    bankDebtTL: portfolio.bankDebtTL,
+    goldDebtTL: portfolio.goldDebtTL,
+    dailyAccrualTL: portfolio.totalDailyAccrualTL,
+    accruedInterestTL: portfolio.totalAccruedInterestTL,
+    streak,
+  });
+
   const kmhDebts = portfolio.valuations
     .filter((v) => v.type === "EK_HESAP_KMH" && (v.overdraftDetail?.usedAmount ?? 0) > 0)
     .map((v) => ({
@@ -141,6 +158,8 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       initialLive={initialLive}
+      streak={streak}
+      insights={insights}
       institutionBreakdown={portfolio.institutionBreakdown}
       kmhDebts={kmhDebts}
       goldDebts={goldDebts}

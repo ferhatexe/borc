@@ -6,6 +6,7 @@ import { Coins, HandCoins, ArrowRight } from "@phosphor-icons/react";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 import { NumberField } from "@/components/shared/NumberField";
+import { celebrate } from "@/lib/celebrate";
 
 interface GoldPaymentCardProps {
   debtId: string;
@@ -66,7 +67,7 @@ export function GoldPaymentCard({
         throw new Error(err.error || "Ödeme kaydedilemedi");
       }
 
-      triggerHaptic("success");
+      celebrate();
       toast.success(
         kalanSonra <= 0
           ? "Borç kapandı. Ödeme ve gider kaydı oluşturuldu."

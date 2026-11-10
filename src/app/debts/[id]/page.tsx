@@ -28,6 +28,7 @@ import {
 } from "recharts";
 import Decimal from "decimal.js";
 import { toast } from "sonner";
+import { celebrate } from "@/lib/celebrate";
 import { formatCurrency, formatDateTR } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 import { calculateEarlyPayoff } from "@/lib/finance/earlyPayoff";
@@ -134,7 +135,7 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
       }
 
       const result = await res.json();
-      triggerHaptic("success");
+      celebrate();
       toast.success(
         result.expense
           ? "Ödeme kaydedildi ve gider kaydı oluşturuldu."

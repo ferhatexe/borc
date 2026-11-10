@@ -21,6 +21,10 @@ import { UpcomingList } from "@/components/live/UpcomingList";
 import { InstitutionLogo } from "@/components/shared/InstitutionLogo";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 import { useLiveData } from "@/components/live/LiveDataProvider";
+import { CoachCard } from "@/components/coach/CoachCard";
+import { InsightCards } from "@/components/coach/InsightCards";
+import type { StreakView } from "@/lib/coach/streak";
+import type { Insight } from "@/lib/coach/insights";
 import type { LivePayload } from "@/lib/hooks/useLivePortfolio";
 import type { InstitutionBreakdown } from "@/lib/finance/debtValuation";
 import type { AnalyticsSummary } from "@/lib/db/reports";
@@ -28,6 +32,8 @@ import type { LoanProjectionInput } from "@/lib/finance/scenarioProjection";
 
 interface DashboardClientProps {
   initialLive: LivePayload;
+  streak: StreakView;
+  insights: Insight[];
   institutionBreakdown: InstitutionBreakdown[];
   kmhDebts?: OverdraftDebtSummary[];
   goldDebts?: GoldDebtSummary[];
@@ -49,6 +55,8 @@ const DEBT_TYPE_LABELS: Record<string, string> = {
 
 export function DashboardClient({
   initialLive,
+  streak,
+  insights,
   institutionBreakdown,
   kmhDebts = [],
   goldDebts = [],
@@ -102,6 +110,12 @@ export function DashboardClient({
           <span>Borç Ekle</span>
         </Link>
       </header>
+
+      {/* Günlük adım: kumarsız gün serisi */}
+      <CoachCard initial={streak} dailyInterestTL={totals.dailyAccrualTL} />
+
+      {/* Rakamlardan çıkan bilgi kartları */}
+      <InsightCards insights={insights} />
 
       {/* Canlı kur / altın / ONS şeridi */}
       <LiveMarketStrip

@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 import { InstitutionLogo } from "@/components/shared/InstitutionLogo";
 import type { UpcomingPayment } from "@/lib/finance/debtValuation";
+import { celebrate } from "@/lib/celebrate";
 
 const KIND_LABELS: Record<UpcomingPayment["kind"], string> = {
   TAKSIT: "Kredi taksiti",
@@ -63,7 +64,7 @@ export function OverdueList({ payments, compact = false, limit, onPaid }: Overdu
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Ödeme kaydedilemedi");
 
-      triggerHaptic("success");
+      celebrate();
       toast.success(
         data.expense
           ? `${payment.title}: ödeme ve gider kaydı oluşturuldu.`
