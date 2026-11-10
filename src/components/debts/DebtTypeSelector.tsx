@@ -62,7 +62,7 @@ export const DEBT_TYPES: DebtTypeOption[] = [
     id: "ALTIN_BORCU",
     title: "Altın Borcu",
     subtitle: "Gram, Çeyrek, 21k Halep, 22k",
-    description: "Canlı serbest piyasa kuru ve ayar marjı (+200 TL/gr) ile dinamik takip.",
+    description: "Canlı serbest piyasa kuru ve ayar marjı ile dinamik takip.",
     icon: Coins,
     color: "text-yellow-400",
     bgColor: "bg-yellow-500/10",

@@ -53,3 +53,17 @@ describe("Kurum rozeti motifi", () => {
     expect(motifFor("Bir Kurum", null)).toBeTruthy();
   });
 });
+
+describe("Banka logosu kaynağı", () => {
+  it("QNB için sitedeki yatay logo kullanılır, favicon'u olan bankada alan adı", async () => {
+    const { brandFor } = await import("@/lib/institutions/brand");
+    const qnb = brandFor("QNB Finansbank");
+    expect(qnb?.wideLogo?.url).toContain("qnb.com.tr");
+    expect(qnb?.wideLogo?.aspect).toBeGreaterThan(3);
+    expect(brandFor("Garanti BBVA")?.domain).toBe("garantibbva.com.tr");
+    expect(brandFor("Garanti BBVA")?.wideLogo).toBeNull();
+    // Türkçe küçültme: "ING" -> "ıng"
+    expect(brandFor("ING")?.domain).toBe("ing.com.tr");
+    expect(brandFor("Bilinmeyen Kurum")).toBeNull();
+  });
+});

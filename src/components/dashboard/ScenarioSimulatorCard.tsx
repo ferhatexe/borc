@@ -89,7 +89,7 @@ export function ScenarioSimulatorCard({ loans }: ScenarioSimulatorCardProps) {
   };
 
   return (
-    <div className="glass-card p-6 border-emerald-500/20 space-y-6">
+    <div className="glass-card p-4 sm:p-6 border-emerald-500/20 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div className="flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30">

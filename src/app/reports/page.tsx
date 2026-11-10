@@ -19,7 +19,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  Legend,
   ReferenceLine,
 } from "recharts";
 import { formatCurrency } from "@/lib/formatters";
@@ -239,22 +238,22 @@ export default function ReportsPage() {
       </div>
 
       {/* 4 Özet Kart */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card p-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="glass-card min-w-0 p-3.5 sm:p-5">
           <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block mb-1">
-            Toplam Borç Portföyü
+            Toplam Borç
           </span>
-          <p className="text-2xl font-extrabold text-white font-mono">
+          <p className="text-[17px] sm:text-2xl font-extrabold text-white font-mono tabular-nums whitespace-nowrap">
             {formatCurrency(analytics?.totalDebtTL || 0)}
           </p>
           <span className="text-[10px] text-zinc-500 mt-1 block">Kredi, kart, altın ve KMH</span>
         </div>
 
-        <div className="glass-card p-5">
+        <div className="glass-card min-w-0 p-3.5 sm:p-5">
           <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block mb-1">
-            Bu Ay Toplam Gelir
+            Bu Ay Gelir
           </span>
-          <p className="text-2xl font-extrabold text-emerald-400 font-mono">
+          <p className="text-[17px] sm:text-2xl font-extrabold text-emerald-400 font-mono tabular-nums whitespace-nowrap">
             +{formatCurrency(analytics?.totalMonthlyIncomeTL || 0)}
           </p>
           <MonthComparison
@@ -264,11 +263,11 @@ export default function ReportsPage() {
           />
         </div>
 
-        <div className="glass-card p-5">
+        <div className="glass-card min-w-0 p-3.5 sm:p-5">
           <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block mb-1">
-            Bu Ay Toplam Gider
+            Bu Ay Gider
           </span>
-          <p className="text-2xl font-extrabold text-rose-400 font-mono">
+          <p className="text-[17px] sm:text-2xl font-extrabold text-rose-400 font-mono tabular-nums whitespace-nowrap">
             -{formatCurrency(analytics?.totalMonthlyExpenseTL || 0)}
           </p>
           <MonthComparison
@@ -277,12 +276,12 @@ export default function ReportsPage() {
           />
         </div>
 
-        <div className="glass-card p-5">
+        <div className="glass-card min-w-0 p-3.5 sm:p-5">
           <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block mb-1">
-            Aylık Net Tasarruf
+            Aylık Net
           </span>
           <p
-            className={`text-2xl font-extrabold font-mono ${
+            className={`text-[17px] sm:text-2xl font-extrabold font-mono tabular-nums whitespace-nowrap ${
               netMonthly >= 0 ? "text-cyan-400" : "text-rose-400"
             }`}
           >
@@ -305,7 +304,7 @@ export default function ReportsPage() {
         <div className="space-y-6">
           {/* Nakit akisi: ilk hareketten bugune, ve bilinen taksitlerle ileri */}
           {analytics?.cashFlowSeries && analytics.cashFlowSeries.length > 0 && (
-            <div className="glass-card p-6 border-white/10 space-y-4">
+            <div className="glass-card p-4 sm:p-6 border-white/10 space-y-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2.5">
                   <div className="h-9 w-9 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
@@ -347,16 +346,6 @@ export default function ReportsPage() {
                           formatCurrency(Number(val)),
                           name === "incomeTL" ? "Gelir" : name === "expenseTL" ? "Gider" : "Net",
                         ]}
-                      />
-                      <Legend
-                        wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
-                        formatter={(value) =>
-                          value === "incomeTL"
-                            ? "Gelir"
-                            : value === "expenseTL"
-                              ? "Gider / planlı taksit"
-                              : "Net"
-                        }
                       />
                       {/* Sifir cizgisi: net cizgi altina dustugunde acik ay demektir. */}
                       <ReferenceLine y={0} stroke={chart.axis} strokeDasharray="2 2" />
@@ -413,6 +402,20 @@ export default function ReportsPage() {
                 </div>
               </div>
 
+              {/* Açıklama grafiğin DIŞINDA: grafik yatay kayınca açıklama da
+                  kayıp sağdan kesiliyordu. */}
+              <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-zinc-400">
+                <li className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-[#10b981]" /> Gelir
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-[#f43f5e]" /> Gider / planlı taksit
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="h-0.5 w-3.5 rounded bg-[#22d3ee]" /> Net
+                </li>
+              </ul>
+
               <p className="px-1 text-[11px] leading-relaxed text-zinc-500">
                 Kesikli çizginin solu gerçekleşen gelir ve giderleriniz, sağı ise
                 taksit planlarınızdan bilinen ödemeler. Gelecek için gelir tahmini
@@ -444,7 +447,7 @@ export default function ReportsPage() {
           {/* Borç türleri kırılımı */}
           <div className="grid grid-cols-1 gap-6">
             {/* Borç Türleri Kırılımı */}
-            <div className="glass-card p-6 space-y-4">
+            <div className="glass-card p-4 sm:p-6 space-y-4">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <CreditCard size={20} className="text-emerald-400" />
                 <span>Borç Türlerine Göre Dağılım</span>
@@ -499,7 +502,7 @@ export default function ReportsPage() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 1. Borçlar Listesi CSV */}
-            <div className="glass-card p-6 space-y-4 border-emerald-500/20 flex flex-col justify-between">
+            <div className="glass-card p-4 sm:p-6 space-y-4 border-emerald-500/20 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
@@ -526,7 +529,7 @@ export default function ReportsPage() {
             </div>
 
             {/* 2. Gelir & Gider Kayıtları CSV */}
-            <div className="glass-card p-6 space-y-4 border-rose-500/20 flex flex-col justify-between">
+            <div className="glass-card p-4 sm:p-6 space-y-4 border-rose-500/20 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20">
@@ -553,7 +556,7 @@ export default function ReportsPage() {
             </div>
 
             {/* 3. Finansal Özet Bilanço CSV */}
-            <div className="glass-card p-6 space-y-4 border-purple-500/20 flex flex-col justify-between">
+            <div className="glass-card p-4 sm:p-6 space-y-4 border-purple-500/20 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
@@ -580,7 +583,7 @@ export default function ReportsPage() {
             </div>
 
             {/* 4. Tam Veritabanı JSON Yedeği */}
-            <div className="glass-card p-6 space-y-4 border-cyan-500/20 flex flex-col justify-between">
+            <div className="glass-card p-4 sm:p-6 space-y-4 border-cyan-500/20 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">

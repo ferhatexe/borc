@@ -189,6 +189,48 @@ export const InstitutionLogo = memo(function InstitutionLogo({
   const [logoFailed, setLogoFailed] = useState(false);
   const brand = brandFor(name);
 
+  if (brand?.wideLogo && !logoFailed && !motifOnly) {
+    const inner = Math.round(size * 0.7);
+    return (
+      <span
+        className={className}
+        role="img"
+        aria-label={`${name} logosu`}
+        style={{
+          display: "flex",
+          flexShrink: 0,
+          alignItems: "center",
+          justifyContent: "center",
+          width: size,
+          height: size,
+          borderRadius: Math.round(size * 0.27),
+          background: "#ffffff",
+          border: "1px solid var(--line)",
+          overflow: "hidden",
+        }}
+      >
+        {/* Yatay logonun yalnızca soldaki kare amblemi görünür. */}
+        <span style={{ display: "block", width: inner, height: inner, overflow: "hidden" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- harici logo, optimize edilecek bir şey yok */}
+          <img
+            src={brand.wideLogo.url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onError={() => setLogoFailed(true)}
+            style={{
+              display: "block",
+              height: inner,
+              width: Math.round(inner * brand.wideLogo.aspect),
+              maxWidth: "none",
+            }}
+          />
+        </span>
+      </span>
+    );
+  }
+
   if (brand?.domain && !logoFailed && !motifOnly) {
     const inner = Math.round(size * 0.68);
     return (

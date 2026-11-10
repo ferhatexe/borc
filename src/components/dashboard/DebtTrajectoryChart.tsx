@@ -42,8 +42,8 @@ export function DebtTrajectoryChart({ data, projectedDebtFreeDate }: DebtTraject
   const dissolvedDebt = Math.max(0, initialDebt - finalDebt);
 
   return (
-    <div className="glass-card p-6 border-white/10 space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+    <div className="glass-card p-4 sm:p-6 border-white/10 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <ChartLineUp size={20} weight="duotone" />
@@ -56,11 +56,14 @@ export function DebtTrajectoryChart({ data, projectedDebtFreeDate }: DebtTraject
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-mono">
-          <div className="text-right">
-            <span className="text-[10px] text-zinc-500 block uppercase">12 Ayda Eriyip Bitecek</span>
-            <span className="text-emerald-400 font-bold">{formatCurrency(dissolvedDebt)}</span>
-          </div>
+        {/* Telefonda etiket solda, tutar sağda tek satır; masaüstünde sağa yaslı blok. */}
+        <div className="flex items-baseline justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 sm:block sm:bg-transparent sm:p-0 sm:text-right">
+          <span className="text-[10px] uppercase tracking-wide text-zinc-500 sm:block">
+            12 ayda eriyecek
+          </span>
+          <span className="font-mono text-sm font-bold tabular-nums text-emerald-400 whitespace-nowrap">
+            {formatCurrency(dissolvedDebt)}
+          </span>
         </div>
       </div>
 
@@ -86,7 +89,8 @@ export function DebtTrajectoryChart({ data, projectedDebtFreeDate }: DebtTraject
               stroke={chart.axis}
               fontSize={10}
               tickLine={false}
-              tickFormatter={(val) => `${(val / 1000).toFixed(0)}k ₺`}
+              width={48}
+              tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
             />
             <Tooltip
               contentStyle={chart.tooltipStyle}

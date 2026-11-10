@@ -223,7 +223,7 @@ export function SettingsClient({
       </div>
 
       {/* --------------------------- Vergi oranları --------------------------- */}
-      <section className="glass-card p-5 space-y-4">
+      <section className="glass-card p-4 sm:p-5 space-y-4">
         <header className="flex items-center gap-2 text-emerald-400">
           <CurrencyDollar size={20} />
           <h2 className="text-sm font-semibold text-white">Vergi ve Oranlar</h2>
@@ -272,14 +272,14 @@ export function SettingsClient({
       </section>
 
       {/* --------------------------- Altın marjları --------------------------- */}
-      <section className="glass-card p-5 space-y-4">
+      <section className="glass-card p-4 sm:p-5 space-y-4">
         <header className="flex items-center gap-2 text-amber-400">
           <Coins size={20} />
           <h2 className="text-sm font-semibold text-white">Altın Marjları (TL)</h2>
         </header>
         <p className="text-[11px] text-zinc-500">
-          Adet bazlı ürünlerde birim başına, gram bazlı ürünlerde gram başına eklenir. 21 ayar için
-          varsayılan +200 ₺, 22 ayar bilezikte 0 ₺.
+          Adet bazlı ürünlerde birim başına, gram bazlı ürünlerde gram başına eklenir. Burada
+          değiştirdiğin marj, o türdeki altın borçlarına da yansır.
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -319,7 +319,7 @@ export function SettingsClient({
 
       {/* ------------------- Milyem ve gram ağırlık tabloları ------------------ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="glass-card p-5 space-y-4">
+        <section className="glass-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">Milyem Tablosu</h2>
           <p className="text-[11px] text-zinc-500">
             Gram bazlı hesapta kullanılır: (gram × milyem × has altın) / 1000
@@ -353,7 +353,7 @@ export function SettingsClient({
           </button>
         </section>
 
-        <section className="glass-card p-5 space-y-4">
+        <section className="glass-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">Ürün Gram Ağırlıkları</h2>
           <p className="text-[11px] text-zinc-500">Adet bazlı ürünlerin gram karşılıkları.</p>
           <div className="grid grid-cols-3 gap-2">
@@ -386,7 +386,7 @@ export function SettingsClient({
       </div>
 
       {/* ----------------------- Manuel altın fiyatları ----------------------- */}
-      <section className="glass-card p-5 space-y-4">
+      <section className="glass-card p-4 sm:p-5 space-y-4">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sky-400">
             <Coins size={20} />
@@ -479,7 +479,7 @@ export function SettingsClient({
       </section>
 
       {/* ------------------------------ Kategoriler ---------------------------- */}
-      <section className="glass-card p-5 space-y-4">
+      <section className="glass-card p-4 sm:p-5 space-y-4">
         <header className="flex items-center gap-2 text-violet-400">
           <Tag size={20} />
           <h2 className="text-sm font-semibold text-white">Kategoriler</h2>
@@ -567,7 +567,7 @@ export function SettingsClient({
       </section>
 
       {/* ------------------------------- Kurumlar ------------------------------ */}
-      <section className="glass-card p-5 space-y-4">
+      <section className="glass-card p-4 sm:p-5 space-y-4">
         <header className="flex items-center gap-2 text-cyan-400">
           <Bank size={20} />
           <h2 className="text-sm font-semibold text-white">Kurumlar ({institutions.length})</h2>
@@ -634,7 +634,7 @@ export function SettingsClient({
       </section>
 
       {/* ------------------------------ Yedekleme ------------------------------ */}
-      <section className="glass-card p-5 space-y-4">
+      <section className="glass-card p-4 sm:p-5 space-y-4">
         <h2 className="text-sm font-semibold text-white">Yedek Al / Geri Yükle</h2>
         <p className="text-[11px] text-zinc-500">
           Tüm borçlarınız, taksit planları, ödemeler, gelir/gider kayıtları, kategoriler ve

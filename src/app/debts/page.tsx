@@ -185,27 +185,28 @@ export default function DebtsPage() {
       </div>
 
       {/* Üst Metrikler */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
-          <p className="text-[11px] text-zinc-400">Toplam Kalan Borç Yükü</p>
-          <p className="text-2xl font-bold text-white font-mono">
+      {/* Telefonda toplam tam genişlikte, diğer ikisi yan yana: üç kart alt alta
+          dizilince ilk ekranın tamamını kaplıyordu. */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+        <div className="col-span-2 sm:col-span-1 p-3.5 sm:p-4 rounded-2xl bg-zinc-900/80 border border-white/10">
+          <p className="text-[11px] text-zinc-400">Toplam kalan borç</p>
+          <p className="mt-0.5 text-2xl font-bold text-white font-mono tabular-nums">
             {formatCurrency(metrics.totalRemaining)}
           </p>
-          <p className="text-[10px] text-zinc-500">Tüm aktif borç ve krediler</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
-          <p className="text-[11px] text-zinc-400">Bu Ay Ödenecek Taksit & Yükümlülük</p>
-          <p className="text-2xl font-bold text-emerald-400 font-mono">
+        <div className="min-w-0 p-3.5 sm:p-4 rounded-2xl bg-zinc-900/80 border border-white/10">
+          <p className="text-[11px] text-zinc-400">Bu ay ödenecek</p>
+          <p className="mt-0.5 text-lg sm:text-2xl font-bold text-emerald-400 font-mono tabular-nums">
             {formatCurrency(metrics.monthlyObligation)}
           </p>
-          <p className="text-[10px] text-zinc-500">Kredi taksitleri + vadesi bu ay gelen kart borcu</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
-          <p className="text-[11px] text-zinc-400">Aktif Kayıt Sayısı</p>
-          <p className="text-2xl font-bold text-teal-400 font-mono">{metrics.activeCount} Adet</p>
-          <p className="text-[10px] text-zinc-500">Farklı borç kalemi</p>
+        <div className="min-w-0 p-3.5 sm:p-4 rounded-2xl bg-zinc-900/80 border border-white/10">
+          <p className="text-[11px] text-zinc-400">Aktif kayıt</p>
+          <p className="mt-0.5 text-lg sm:text-2xl font-bold text-white font-mono tabular-nums">
+            {metrics.activeCount}
+          </p>
         </div>
       </div>
 
@@ -220,10 +221,10 @@ export default function DebtsPage() {
       )}
 
       {/* Arama & Filtreleme Çubuğu */}
-      <div className="p-4 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-3">
+      <div className="p-3 sm:p-4 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-2.5">
         <div className="flex flex-wrap gap-2.5">
           {/* Arama */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative w-full sm:w-auto sm:flex-1 sm:min-w-[200px]">
             <MagnifyingGlass
               size={18}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400"
@@ -242,7 +243,8 @@ export default function DebtsPage() {
             <select
               value={selectedInstId}
               onChange={(e) => setSelectedInstId(e.target.value)}
-              className="h-10 px-3 text-xs bg-zinc-900 border border-white/10 rounded-xl text-zinc-300 focus:outline-none focus:border-emerald-500"
+              aria-label="Kuruma göre filtrele"
+              className="h-10 min-w-0 flex-1 basis-[calc(50%-0.3125rem)] sm:flex-none sm:basis-auto px-3 text-xs bg-zinc-900 border border-white/10 rounded-xl text-zinc-300 focus:outline-none focus:border-emerald-500"
             >
               <option value="ALL">Tüm Kurumlar</option>
               {institutions.map((inst) => (
@@ -257,11 +259,12 @@ export default function DebtsPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="h-10 px-3 text-xs bg-zinc-900 border border-white/10 rounded-xl text-zinc-300 focus:outline-none focus:border-emerald-500"
+            aria-label="Sıralama"
+            className="h-10 min-w-0 flex-1 basis-[calc(50%-0.3125rem)] sm:flex-none sm:basis-auto px-3 text-xs bg-zinc-900 border border-white/10 rounded-xl text-zinc-300 focus:outline-none focus:border-emerald-500"
           >
-            <option value="AMOUNT_DESC">Tutar: Yüksekten Düşüğe</option>
-            <option value="AMOUNT_ASC">Tutar: Düşükten Yükseğe</option>
-            <option value="DATE_ASC">Vade / Kayıt Tarihine Göre</option>
+            <option value="AMOUNT_DESC">En yüksek tutar</option>
+            <option value="AMOUNT_ASC">En düşük tutar</option>
+            <option value="DATE_ASC">Tarihe göre</option>
           </select>
         </div>
 
@@ -408,14 +411,22 @@ export default function DebtsPage() {
                   <div>
                     {/* Kart Üst Başlık */}
                     <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-start gap-3 min-w-0">
                         <div className="relative shrink-0">
-                          <InstitutionLogo
-                            name={debt.institution?.name ?? debt.title}
-                            color={debt.institution?.color ?? debt.color ?? null}
-                            type={debt.institution?.type ?? "DIGER"}
-                            size={42}
-                          />
+                          {debt.type === "ALTIN_BORCU" ? (
+                            // Kişiye olan altın borcunda kurum yok; "Dİ", "2A" gibi
+                            // anlamsız harf rozeti yerine altın simgesi.
+                            <span className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-yellow-500/30 bg-yellow-500/15 text-yellow-400">
+                              <Coins size={22} weight="duotone" />
+                            </span>
+                          ) : (
+                            <InstitutionLogo
+                              name={debt.institution?.name ?? debt.title}
+                              color={debt.institution?.color ?? debt.color ?? null}
+                              type={debt.institution?.type ?? "DIGER"}
+                              size={42}
+                            />
+                          )}
                           {valuations[debt.id]?.isOverdue && (
                             <span
                               aria-label="Gecikmiş"
@@ -425,31 +436,38 @@ export default function DebtsPage() {
                             </span>
                           )}
                         </div>
+                        {/* Ad önce ve tam: tek satıra sıkıştırılınca "QNB İhtiyaç
+                            Kredisi (1…" diye kesiliyor, krediler ayırt edilemiyordu. */}
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-zinc-300">
+                          <h3 className="text-sm font-bold leading-snug text-white line-clamp-3 break-words">
+                            {debt.title}
+                          </h3>
+                          <div className="mt-1 flex min-w-0 items-center gap-1.5">
+                            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-zinc-300">
                               <Icon size={11} weight="duotone" />
                               {TUR_ETIKETLERI[debt.type] ?? debt.type}
                             </span>
                             {debt.institution?.name && (
-                              <span className="text-xs text-zinc-400 truncate">
+                              <span className="min-w-0 truncate text-[11px] text-zinc-400">
                                 {debt.institution.name}
                               </span>
                             )}
                           </div>
-                          <h3 className="text-sm font-bold text-white truncate mt-0.5 group-hover:text-emerald-400 transition-colors">
-                            {debt.title}
-                          </h3>
                         </div>
                       </div>
 
+                      {/* Altın borcunda da TL karşılığı; miktar alt satırda. */}
                       <div className="text-right shrink-0">
-                        <span className="text-base font-bold text-white font-mono block">
-                          {debt.type === "ALTIN_BORCU"
-                            ? `${debt.quantity ? `${debt.quantity} Adet` : `${debt.grams} gr`}`
-                            : formatCurrency(amount)}
+                        <span className="text-[15px] font-bold text-white font-mono tabular-nums block whitespace-nowrap">
+                          {formatCurrency(valuations[debt.id]?.outstandingTL ?? amount)}
                         </span>
-                        <span className="text-[10px] text-zinc-500">Kalan Borç</span>
+                        <span className="text-[10px] text-zinc-500">
+                          {debt.type === "ALTIN_BORCU"
+                            ? debt.quantity
+                              ? `${Number(debt.quantity)} adet`
+                              : `${Number(debt.grams)} gr`
+                            : "Kalan borç"}
+                        </span>
                       </div>
                     </div>
 
@@ -482,11 +500,15 @@ export default function DebtsPage() {
                     )}
 
                     {/* Altın Özel Marj Bildirimi */}
-                    {debt.type === "ALTIN_BORCU" && debt.goldType === "ZINCIR_21_HALEP" && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-[11px] my-2">
-                        <Coins size={14} weight="fill" />
-                        <span>21 Ayar Halep zinciri (+200 TL/gr çarşı marjı dahil)</span>
-                      </div>
+                    {/* Sabit "+200" yazıyordu; marj değişince yanlış kalıyordu. */}
+                    {debt.type === "ALTIN_BORCU" && Number(debt.premiumTL) > 0 && (
+                      <p className="my-2 flex items-center gap-1.5 text-[11px] text-yellow-300">
+                        <Coins size={13} weight="fill" className="shrink-0" />
+                        <span>
+                          Fiyata {debt.quantity ? "adet" : "gram"} başına{" "}
+                          {formatCurrency(Number(debt.premiumTL))} marj dahil
+                        </span>
+                      </p>
                     )}
                   </div>
 

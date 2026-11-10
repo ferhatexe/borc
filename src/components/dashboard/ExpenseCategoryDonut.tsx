@@ -86,7 +86,7 @@ export function ExpenseCategoryDonut({
 
   if (!categories || categories.length === 0 || totalExpenseTL === 0) {
     return (
-      <div className="glass-card flex min-h-[320px] flex-col items-center justify-center space-y-3 p-6 text-center">
+      <div className="glass-card flex min-h-[180px] flex-col items-center justify-center space-y-2.5 p-5 text-center sm:min-h-[320px] sm:p-6">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-500">
           <ChartPieSlice size={24} weight="duotone" />
         </div>

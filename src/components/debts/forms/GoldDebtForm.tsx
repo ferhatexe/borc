@@ -44,11 +44,11 @@ const GOLD_TYPE_OPTIONS = [
   { id: "YARIM", name: "Yarım Altın", desc: "Adet bazlı (3.50 gr)", isPiece: true },
   { id: "TAM", name: "Tam Altın", desc: "Adet bazlı (7.00 gr)", isPiece: true },
   { id: "ATA", name: "Ata Lira / Cumhuriyet", desc: "Adet bazlı (7.216 gr)", isPiece: true },
-  { id: "BILEZIK_22", name: "22 Ayar Bilezik", desc: "Gram bazlı (Marj: 0 ₺/gr)", isPiece: false },
+  { id: "BILEZIK_22", name: "22 Ayar Bilezik", desc: "Gram bazlı", isPiece: false },
   {
     id: "ZINCIR_21_HALEP",
     name: "21 Ayar Halep Zinciri",
-    desc: "Gram bazlı (+200 ₺/gr Marj)",
+    desc: "Gram bazlı, marjlı",
     isPiece: false,
     highlight: true,
   },
@@ -72,7 +72,7 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
     initialData?.karat || defaultKaratForGoldType(goldType)
   );
 
-  // Marj Ayarlar'dan gelir (21 ayar varsayılanı +200 TL/gr).
+  // Marj Ayarlar'dan gelir.
   const [premiumTL, setPremiumTL] = useState<number>(initialData?.premiumTL ?? 0);
   const [premiumTouched, setPremiumTouched] = useState(initialData?.premiumTL !== undefined);
 
@@ -227,7 +227,7 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
                 <p className="text-[10px] text-zinc-500 truncate mt-0.5">{opt.desc}</p>
                 {opt.highlight && (
                   <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded bg-amber-500 text-zinc-950 text-[9px] font-bold">
-                    +200₺ Marj
+                    Marjlı
                   </span>
                 )}
               </button>
@@ -297,7 +297,7 @@ export function GoldDebtForm({ initialData, onChange }: GoldDebtFormProps) {
           </div>
           {goldType === "ZINCIR_21_HALEP" && (
             <p className="text-[10px] text-amber-400 mt-1">
-              * 21 ayar Halep zinciri için kural gereği +200 TL/gr çarşı marjı uygulandı.
+              * 21 ayar Halep zinciri için Ayarlar'daki çarşı marjı önerildi; değiştirebilirsin.
             </p>
           )}
         </div>

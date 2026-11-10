@@ -44,12 +44,15 @@ function BorcSatiri({ debt }: { debt: InstitutionBreakdown["debts"][number] }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-start gap-2">
             <span
-              className="h-2 w-2 shrink-0 rounded-full"
+              className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: tur.color }}
             />
-            <span className="truncate text-sm font-semibold text-white">{debt.title}</span>
+            {/* İki satıra kadar tam ad: tek satırda "21 Ayar Halep Zin…" diye kesiliyordu. */}
+            <span className="line-clamp-2 break-words text-sm font-semibold leading-snug text-white">
+              {debt.title}
+            </span>
             <ArrowSquareOut
               size={12}
               className="shrink-0 text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100"

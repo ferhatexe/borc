@@ -10,9 +10,20 @@ export interface InstitutionBrand {
   domain: string | null;
   /** Rozette baş harf yerine yazılacak kısa ad. */
   short: string | null;
+  /**
+   * Favicon'u bulanık olan banka için kendi sitesindeki logo görseli. Görsel
+   * "amblem + yazı" biçiminde yataydır; rozet yalnızca soldaki kare amblemi
+   * gösterir. `aspect` görselin genişlik/yükseklik oranıdır.
+   */
+  wideLogo: { url: string; aspect: number } | null;
 }
 
-const BRANDS: Array<{ match: RegExp; domain?: string; short?: string }> = [
+const BRANDS: Array<{
+  match: RegExp;
+  domain?: string;
+  short?: string;
+  wideLogo?: { url: string; aspect: number };
+}> = [
   // Sıra önemli: "Ziraat Katılım" "Ziraat"ten, "Vakıf Katılım" "VakıfBank"tan önce.
   { match: /ziraat\s*katılım/, domain: "ziraatkatilim.com.tr" },
   { match: /vakıf\s*katılım/, domain: "vakifkatilim.com.tr" },
@@ -31,7 +42,12 @@ const BRANDS: Array<{ match: RegExp; domain?: string; short?: string }> = [
   { match: /kuveyt/, domain: "kuveytturk.com.tr" },
   { match: /papara/, domain: "papara.com" },
   { match: /getir/, domain: "getirfinans.com" },
-  { match: /qnb|finansbank/, short: "QNB" },
+  // Sitedeki logo 280x82; amblem soldaki 83 px'lik kare.
+  {
+    match: /qnb|finansbank/,
+    short: "QNB",
+    wideLogo: { url: "https://www.qnb.com.tr/_assets/img/logo.png", aspect: 280 / 82 },
+  },
   { match: /(^|[^\p{L}])teb([^\p{L}]|$)/u, short: "TEB" },
   { match: /vakıf\s*bank/, short: "VB" },
   { match: /şeker\s*bank/, short: "ŞB" },
@@ -40,7 +56,9 @@ const BRANDS: Array<{ match: RegExp; domain?: string; short?: string }> = [
 export function brandFor(name: string): InstitutionBrand | null {
   const key = name.toLocaleLowerCase("tr");
   const hit = BRANDS.find((b) => b.match.test(key));
-  return hit ? { domain: hit.domain ?? null, short: hit.short ?? null } : null;
+  return hit
+    ? { domain: hit.domain ?? null, short: hit.short ?? null, wideLogo: hit.wideLogo ?? null }
+    : null;
 }
 
 export function brandLogoUrl(domain: string): string {

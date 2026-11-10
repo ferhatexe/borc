@@ -138,31 +138,31 @@ export default function CalendarPage() {
 
       {/* Aylık Özet Şeridi */}
       {calendarData && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+          <div className="min-w-0 p-3.5 sm:p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
             <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-              <TrendUp size={14} className="text-emerald-400" />
-              <span>Bu Ay Beklenen Gelir</span>
+              <TrendUp size={14} className="shrink-0 text-emerald-400" />
+              <span>Beklenen gelir</span>
             </div>
-            <p className="text-xl font-bold text-emerald-400 font-mono">
+            <p className="text-base sm:text-xl font-bold text-emerald-400 font-mono tabular-nums whitespace-nowrap">
               +{formatCurrency(calendarData.totalInflow)}
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
+          <div className="min-w-0 p-3.5 sm:p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
             <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-              <TrendDown size={14} className="text-rose-400" />
-              <span>Toplam Borç / Harcama Yükü</span>
+              <TrendDown size={14} className="shrink-0 text-rose-400" />
+              <span>Ödeme ve harcama</span>
             </div>
-            <p className="text-xl font-bold text-rose-400 font-mono">
+            <p className="text-base sm:text-xl font-bold text-rose-400 font-mono tabular-nums whitespace-nowrap">
               -{formatCurrency(calendarData.totalOutflow)}
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1">
-            <span className="text-[11px] text-zinc-400">Ay Sonu Net Nakit Dengesi</span>
+          <div className="col-span-2 sm:col-span-1 flex items-center justify-between gap-3 sm:block p-3.5 sm:p-4 rounded-2xl bg-zinc-900/80 border border-white/10 sm:space-y-1">
+            <span className="text-[11px] text-zinc-400">Ay sonu net nakit</span>
             <p
-              className={`text-xl font-bold font-mono ${
+              className={`text-base sm:text-xl font-bold font-mono tabular-nums whitespace-nowrap ${
                 calendarData.netCashFlow >= 0 ? "text-teal-400" : "text-amber-400"
               }`}
             >

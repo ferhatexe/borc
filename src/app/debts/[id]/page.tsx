@@ -29,11 +29,23 @@ import {
 import Decimal from "decimal.js";
 import { toast } from "sonner";
 import { celebrate } from "@/lib/celebrate";
-import { formatCurrency, formatDateTR } from "@/lib/formatters";
+import { InstitutionLogo } from "@/components/shared/InstitutionLogo";
+import { formatCurrency, formatDateTR, formatNumber } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 import { calculateEarlyPayoff } from "@/lib/finance/earlyPayoff";
 import { useAppSettings } from "@/lib/hooks/useAppSettings";
 import type { DebtValuation } from "@/lib/finance/debtValuation";
+
+const DEBT_TYPE_LABELS: Record<string, string> = {
+  TAKSITLI_KREDI: "Taksitli Kredi",
+  KREDI_KARTI: "Kredi Kartı",
+  EK_HESAP_KMH: "KMH / Ek Hesap",
+  ALTIN_BORCU: "Altın Borcu",
+  KISI_BORCU: "Kişi Borcu",
+  SENET_CEK: "Senet / Çek",
+  DUZENLI_ODEME: "Düzenli Ödeme",
+  DIGER: "Diğer",
+};
 import { useChartTheme } from "@/lib/hooks/useChartTheme";
 import { GoldPaymentCard } from "@/components/debts/GoldPaymentCard";
 import { NumberField } from "@/components/shared/NumberField";
@@ -327,44 +339,52 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16">
       {/* Üst Başlık & Eylemler */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        {/*
+          Başlık önce, etiketler altında ve sarabilir: tek satıra dizilince
+          dar ekranda "AKTİF" etiketi kenardan taşıp kesiliyordu. Logo, liste
+          sayfasıyla aynı bileşen (eskiden burada ayrı, harfli bir kutu vardı).
+        */}
+        <div className="flex min-w-0 flex-1 items-start gap-3">
           <Link
             href="/debts"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 hover:text-white transition-colors"
+            aria-label="Borçlara dön"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 hover:text-white transition-colors"
           >
             <ArrowLeft size={18} />
           </Link>
-          <div className="flex items-center gap-3">
-            <div
-              className="h-11 w-11 rounded-xl flex items-center justify-center font-bold text-white shadow-md text-sm"
-              style={{ backgroundColor: debt.institution?.color || debt.color || "#10b981" }}
-            >
-              {debt.institution?.name
-                ? debt.institution.name.substring(0, 2).toUpperCase()
-                : debt.type.substring(0, 2)}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/20">
-                  {debt.type.replace(/_/g, " ")}
-                </span>
-                {debt.institution?.name && (
-                  <span className="text-xs text-zinc-400 font-medium">
-                    {debt.institution.name}
-                  </span>
-                )}
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                    debt.status === "KAPANDI"
-                      ? "bg-zinc-800 text-zinc-400"
-                      : "bg-emerald-500/20 text-emerald-300"
-                  }`}
-                >
-                  {debt.status || "AKTIF"}
-                </span>
-              </div>
-              <h1 className="text-xl font-bold tracking-tight text-white mt-0.5">{debt.title}</h1>
+          {debt.type === "ALTIN_BORCU" ? (
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-yellow-500/30 bg-yellow-500/15 text-yellow-400">
+              <Coins size={21} weight="duotone" />
+            </span>
+          ) : (
+            <InstitutionLogo
+              name={debt.institution?.name ?? debt.title}
+              color={debt.institution?.color ?? debt.color ?? null}
+              type={debt.institution?.type ?? "DIGER"}
+              size={40}
+            />
+          )}
+          <div className="min-w-0">
+            <h1 className="break-words text-lg font-bold leading-snug tracking-tight text-white sm:text-xl">
+              {debt.title}
+            </h1>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="whitespace-nowrap rounded-full border border-emerald-500/20 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                {DEBT_TYPE_LABELS[debt.type] ?? debt.type.replace(/_/g, " ")}
+              </span>
+              {debt.institution?.name && (
+                <span className="text-xs font-medium text-zinc-400">{debt.institution.name}</span>
+              )}
+              <span
+                className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  debt.status === "KAPANDI"
+                    ? "bg-zinc-800 text-zinc-400"
+                    : "bg-emerald-500/20 text-emerald-300"
+                }`}
+              >
+                {debt.status === "KAPANDI" ? "Kapandı" : "Aktif"}
+              </span>
             </div>
           </div>
         </div>
@@ -373,10 +393,12 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
           <button
             type="button"
             onClick={() => setShowDeleteModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-semibold transition-colors"
+            aria-label="Arşivle veya sil"
+            className="flex h-10 shrink-0 items-center gap-1.5 px-3 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-semibold transition-colors"
           >
             <Trash size={16} />
-            <span>Arşivle / Sil</span>
+            {/* Telefonda yalnız simge: yazı başlığı üç satıra sıkıştırıyordu. */}
+            <span className="hidden sm:inline">Arşivle / Sil</span>
           </button>
         </div>
       </div>
@@ -649,11 +671,9 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
                 {formatCurrency(goldValuation.unitPriceWithPremiumTL)}
               </p>
               <p className="text-[10px] text-zinc-500">
-                {debt.goldType === "ZINCIR_21_HALEP"
-                  ? "+200 TL/gr çarşı marjı dahil"
-                  : debt.premiumTL
-                  ? `+${debt.premiumTL} TL marj dahil`
-                  : "Borsa/piyasa kuru"}
+                {Number(debt.premiumTL) > 0
+                  ? `+${formatCurrency(Number(debt.premiumTL))} marj dahil`
+                  : "Piyasa fiyatı, marj yok"}
               </p>
             </div>
 
@@ -746,8 +766,61 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
                 Taksit Ödeme Takvimi ({debt.installmentSchedules.length} Taksit)
               </h3>
             </div>
-            <span className="text-[11px] text-zinc-500">Tıklayarak Taksit Ödeyin</span>
+            <span className="hidden text-[11px] text-zinc-500 sm:inline">
+              Ödemek için satırdaki düğmeyi kullanın
+            </span>
           </div>
+
+          {/*
+            Telefonda liste: sekiz sütunlu tablo yana kayıyor, "Öde" düğmesi
+            ekranın dışında kalıyordu. Burada her taksit tek satır; tutar ve
+            düğme hep görünür, ayrıntı alt satırda.
+          */}
+          <ul className="divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/80 sm:hidden">
+            {debt.installmentSchedules.map((s: any) => {
+              const isPaid = s.status === "ODENDI";
+              return (
+                <li
+                  key={s.id}
+                  className={`flex items-center gap-3 px-3.5 py-3 ${isPaid ? "opacity-60" : ""}`}
+                >
+                  <span className="w-7 shrink-0 font-mono text-[11px] font-bold text-zinc-500">
+                    #{s.installmentNo}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[13px] font-medium text-zinc-200">
+                        {formatDateTR(s.dueDate)}
+                      </span>
+                      <span className="whitespace-nowrap font-mono text-[13px] font-bold tabular-nums text-white">
+                        {formatCurrency(s.totalAmount)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 font-mono text-[10px] tabular-nums text-zinc-500">
+                      anapara {formatNumber(s.principalPart, 2)} · faiz{" "}
+                      {formatNumber(s.interestPart, 2)}
+                    </p>
+                  </div>
+                  {isPaid ? (
+                    <span className="flex w-14 shrink-0 flex-col items-center text-emerald-400">
+                      <CheckCircle size={16} weight="fill" />
+                      <span className="mt-0.5 text-[9px] text-zinc-500">
+                        {s.paidAt ? formatDateTR(s.paidAt).slice(0, 5) : "ödendi"}
+                      </span>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenPayModal(s)}
+                      className="h-9 w-14 shrink-0 rounded-xl bg-emerald-500 text-xs font-bold text-zinc-950 active:scale-95"
+                    >
+                      Öde
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
 
             {/*
               Kaydirma kutusu tek basina yetmiyor: `w-full` tabloyu kapsayicinin
@@ -755,7 +828,7 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
               biniyordu. Asgari genislik verilince tablo sikismak yerine yatay
               kayiyor ve sutunlar hizasini koruyor.
             */}
-          <div className="overflow-x-auto rounded-2xl border border-white/10 bg-zinc-900/80">
+          <div className="hidden overflow-x-auto rounded-2xl border border-white/10 bg-zinc-900/80 sm:block">
             <table className="w-full min-w-[52rem] text-left text-xs border-collapse whitespace-nowrap">
               <thead>
                 <tr className="border-b border-white/10 bg-white/5 text-[11px] text-zinc-400 font-medium">

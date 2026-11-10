@@ -29,6 +29,7 @@ function Card({
   children,
   footer,
   href,
+  className = "",
 }: {
   label: string;
   icon: React.ReactNode;
@@ -36,6 +37,8 @@ function Card({
   children: React.ReactNode;
   footer?: React.ReactNode;
   href?: string;
+  /** Izgaradaki yeri (sütun genişliği, sıra). */
+  className?: string;
 }) {
   // İkon kutuları renksiz; anlam taşıyan renk yalnızca rakamda.
   const neutral = "text-zinc-400 bg-white/5 border-white/10";
@@ -51,8 +54,14 @@ function Card({
   const body = (
     <div className="glass-card flex h-full min-w-0 flex-col overflow-hidden p-3.5 sm:p-4">
       <div className="mb-1.5 flex items-center justify-between gap-2 text-zinc-400">
-        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
-        <span className={`rounded-lg border p-1.5 ${tones[tone]}`}>{icon}</span>
+        {/* Etiket tek satır: yarım genişlikte "Bu Ay / Ödenecek" diye bölünüp
+            yandaki kartla hizayı bozuyordu. Simge dar ekranda yer açmak için gizli. */}
+        <span className="min-w-0 truncate text-[11px] font-medium uppercase tracking-wide">
+          {label}
+        </span>
+        <span className={`hidden shrink-0 rounded-lg border p-1.5 min-[400px]:block ${tones[tone]}`}>
+          {icon}
+        </span>
       </div>
       {children}
       {footer && <div className="mt-2 text-[10px] text-zinc-500">{footer}</div>}
@@ -60,11 +69,11 @@ function Card({
   );
 
   return href ? (
-    <Link href={href} className="block active:scale-[0.99] transition-transform">
+    <Link href={href} className={`block min-w-0 active:scale-[0.99] transition-transform ${className}`}>
       {body}
     </Link>
   ) : (
-    body
+    <div className={`min-w-0 ${className}`}>{body}</div>
   );
 }
 
@@ -116,11 +125,16 @@ export function LiveSummaryCards({
   const cashFlowPositive = totals.cashFlowTL >= 0;
 
   return (
-    <div className="space-y-3">
-      {/* En üstte iki başlık rakamı: elde ne var, ne borç var. */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    /*
+     * Tek ızgara. Telefonda toplam borç tam genişlikte, altında 2x2 (kasa,
+     * bu ay ödenecek, bu ay net, nakit akışı); eskiden iki kart tam genişlikte
+     * alt alta, üç kart da biri yalnız kalacak şekilde diziliyordu.
+     * Masaüstünde üst satırda kasa + toplam borç, alt satırda üç kart.
+     */
+    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-6">
         <Card
-          label="Kasa · Nakit Bakiye"
+          className="order-2 lg:order-1 lg:col-span-3"
+          label="Kasa"
           tone="cash"
           icon={<Vault size={17} weight="duotone" />}
           href="/income"
@@ -147,6 +161,7 @@ export function LiveSummaryCards({
         </Card>
 
         <Card
+          className="order-1 col-span-2 lg:order-2 lg:col-span-3"
           label="Toplam Borç"
           tone="debt"
         icon={<CreditCard size={17} weight="duotone" />}
@@ -183,10 +198,8 @@ export function LiveSummaryCards({
             </span>
           )}
         </Card>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
       <Card
+        className="order-3 lg:col-span-2"
         label={totals.overdueCount > 0 ? "Ödemesi Geçti" : "Bu Ay Ödenecek"}
         tone={totals.overdueCount > 0 ? "warn" : "cyan"}
         icon={
@@ -219,6 +232,7 @@ export function LiveSummaryCards({
       </Card>
 
       <Card
+        className="order-4 lg:col-span-2"
         label="Bu Ay Net"
         tone="income"
         icon={<TrendUp size={17} weight="duotone" />}
@@ -234,6 +248,7 @@ export function LiveSummaryCards({
       </Card>
 
       <Card
+        className="order-5 lg:col-span-2"
         label="Nakit Akışı"
         tone={cashFlowPositive ? "cyan" : "warn"}
         icon={
@@ -254,7 +269,6 @@ export function LiveSummaryCards({
           {cashFlowPositive ? "Pozitif denge" : "Açık var"}
         </span>
       </Card>
-      </div>
     </div>
   );
 }
