@@ -113,7 +113,7 @@ export function MobileMenuSheet({
                   type="button"
                   onClick={onClose}
                   aria-label="Kapat"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-400 active:scale-95"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-400 active:scale-95 shrink-0"
                 >
                   <X size={16} weight="bold" />
                 </button>

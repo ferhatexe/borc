@@ -240,7 +240,7 @@ export default function ExpensesPage() {
         <button
           type="button"
           onClick={handlePrevMonth}
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-colors shrink-0"
         >
           <CaretLeft size={18} />
         </button>
@@ -255,7 +255,7 @@ export default function ExpensesPage() {
         <button
           type="button"
           onClick={handleNextMonth}
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-colors shrink-0"
         >
           <CaretRight size={18} />
         </button>

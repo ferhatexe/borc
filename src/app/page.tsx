@@ -66,6 +66,8 @@ export default async function DashboardPage() {
       totalDebtTL: portfolio.totalDebtTL,
       goldDebtTL: portfolio.goldDebtTL,
       bankDebtTL: portfolio.bankDebtTL,
+      loanOriginalPrincipalTL: portfolio.loanOriginalPrincipalTL,
+      loanRemainingPrincipalTL: portfolio.loanRemainingPrincipalTL,
       accruedInterestTL: portfolio.totalAccruedInterestTL,
       dailyAccrualTL: portfolio.totalDailyAccrualTL,
       dueThisMonthTL: portfolio.dueThisMonthTL,
@@ -111,6 +113,9 @@ export default async function DashboardPage() {
     dailyAccrualTL: portfolio.totalDailyAccrualTL,
     accruedInterestTL: portfolio.totalAccruedInterestTL,
     streak,
+    loanOriginalPrincipalTL: portfolio.loanOriginalPrincipalTL,
+    loanRemainingPrincipalTL: portfolio.loanRemainingPrincipalTL,
+    daySeed: Math.floor(now.getTime() / 86_400_000),
   });
 
   const kmhDebts = portfolio.valuations

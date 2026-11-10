@@ -125,7 +125,7 @@ export function InstitutionSelector({
         <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-900 border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
           <div className="flex items-center gap-3">
             <div
-              className="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm"
+              className="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm shrink-0"
               style={{ backgroundColor: selectedInst.color || "#059669" }}
             >
               {selectedInst.name.substring(0, 2).toUpperCase()}

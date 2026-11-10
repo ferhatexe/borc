@@ -188,7 +188,7 @@ export function LiveDebtBreakdown({
     <div className="glass-card space-y-4 p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-400 shrink-0">
             <Bank size={20} weight="duotone" />
           </div>
           <div>

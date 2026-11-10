@@ -45,7 +45,7 @@ export function DebtTrajectoryChart({ data, projectedDebtFreeDate }: DebtTraject
     <div className="glass-card p-4 sm:p-6 border-white/10 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
             <ChartLineUp size={20} weight="duotone" />
           </div>
           <div>

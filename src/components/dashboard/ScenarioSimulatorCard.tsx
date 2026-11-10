@@ -91,21 +91,21 @@ export function ScenarioSimulatorCard({ loans }: ScenarioSimulatorCardProps) {
   return (
     <div className="glass-card p-4 sm:p-6 border-emerald-500/20 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30">
+        {/* Simge üstte sabit, başlık ile etiket sarabilir: dar ekranda etiket üç
+            satıra bölünüp başlığı sıkıştırıyordu. */}
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">
             <Sparkle size={22} weight="fill" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-white">
-                Borç Erken Bitirme & Tasarruf Simülatörü
-              </h3>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-medium">
-                Çığ / Avalanche Metodu
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h3 className="text-base font-bold leading-snug text-white">Erken Bitirme Simülatörü</h3>
+              <span className="whitespace-nowrap rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+                Çığ yöntemi
               </span>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Aylık bütçenize ek ödeme veya toplu para ekleyerek borcun ne kadar erken biteceğini görün
+            <p className="mt-0.5 text-xs text-zinc-400">
+              Ek ödeme ya da toplu para eklersen borç ne kadar erken biter?
             </p>
           </div>
         </div>

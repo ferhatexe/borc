@@ -95,6 +95,31 @@ function Amount({ value, tone }: { value: number; tone: "debt" | "income" | "neu
   );
 }
 
+/** Kredi anaparasının yüzde kaçı ödendi, kaçı kaldı. */
+function PaidProgress({ original, remaining }: { original: number; remaining: number }) {
+  const paid = Math.max(0, Math.min(100, ((original - remaining) / original) * 100));
+  return (
+    <div className="mt-2">
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(paid)}
+        aria-label="Kredi anaparasının ödenen kısmı"
+        className="h-1.5 overflow-hidden rounded-full bg-white/10"
+      >
+        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${paid}%` }} />
+      </div>
+      <p className="mt-1 flex justify-between text-[10px] text-zinc-400">
+        <span>
+          Kredi anaparasının <b className="text-emerald-400">%{formatNumber(paid, 1)}</b>'i ödendi
+        </span>
+        <span>%{formatNumber(100 - paid, 1)} kaldı</span>
+      </p>
+    </div>
+  );
+}
+
 function Skeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -184,6 +209,12 @@ export function LiveSummaryCards({
         }
       >
           <Amount value={liveTotalDebtTL} tone="debt" />
+          {totals.loanOriginalPrincipalTL > 0 && (
+            <PaidProgress
+              original={totals.loanOriginalPrincipalTL}
+              remaining={totals.loanRemainingPrincipalTL}
+            />
+          )}
           {(liveAccruedInterestTL > 0 || totals.dailyAccrualTL > 0) && (
             <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-amber-400">
               <Lightning size={11} weight="fill" />

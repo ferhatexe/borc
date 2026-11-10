@@ -13,6 +13,9 @@ export interface LiveTotals {
   goldDebtTL: number;
   /** Taksitli kredi, kart ve KMH toplamı (bugünkü kapama). */
   bankDebtTL: number;
+  /** Aktif kredilerin ilk ve kalan anaparası (ödenen yüzde için). */
+  loanOriginalPrincipalTL: number;
+  loanRemainingPrincipalTL: number;
   accruedInterestTL: number;
   dailyAccrualTL: number;
   dueThisMonthTL: number;

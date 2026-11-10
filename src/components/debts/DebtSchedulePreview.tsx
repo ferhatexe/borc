@@ -70,7 +70,7 @@ export function DebtSchedulePreview({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div
-              className="h-12 w-12 rounded-xl flex items-center justify-center font-bold text-white shadow-md text-sm"
+              className="h-12 w-12 rounded-xl flex items-center justify-center font-bold text-white shadow-md text-sm shrink-0"
               style={{ backgroundColor: institution?.color || "#10b981" }}
             >
               {institution?.name ? institution.name.substring(0, 2).toUpperCase() : "BR"}

@@ -136,6 +136,13 @@ export interface PortfolioSummary {
   goldDebtTL: number;
   /** Banka ürünleri: taksitli kredi, kredi kartı, KMH (bugünkü kapama ile). */
   bankDebtTL: number;
+  /**
+   * Aktif taksitli kredilerin çekildikleri andaki toplam anaparası ve bugün
+   * kalan anaparası; "anaparanın yüzde kaçı ödendi" için. Altın borçlarının
+   * ilk miktarı kayıtlı olmadığı için bu orana girmez.
+   */
+  loanOriginalPrincipalTL: number;
+  loanRemainingPrincipalTL: number;
   dueThisMonthTL: number;
   overdueTL: number;
   institutionBreakdown: InstitutionBreakdown[];
@@ -635,6 +642,9 @@ export function buildPortfolioSummary(
   let dueThisMonth = new Decimal(0);
   let goldDebtTL = new Decimal(0);
   let bankDebtTL = new Decimal(0);
+  let loanOriginal = new Decimal(0);
+  let loanRemaining = new Decimal(0);
+  const principalById = new Map(debts.map((d) => [d.id, Number(d.principal ?? 0)]));
 
   const instMap = new Map<string, InstitutionBreakdown>();
 
@@ -645,6 +655,12 @@ export function buildPortfolioSummary(
     dueThisMonth = dueThisMonth.plus(v.dueThisMonthTL);
     if (v.type === "ALTIN_BORCU") goldDebtTL = goldDebtTL.plus(v.outstandingTL);
     if (BANK_DEBT_TYPES.has(v.type)) bankDebtTL = bankDebtTL.plus(v.outstandingTL);
+    const original = principalById.get(v.id) ?? 0;
+    if (v.type === "TAKSITLI_KREDI" && original > 0 && v.principalTL > 0) {
+      loanOriginal = loanOriginal.plus(original);
+      // Devreden faiz bakiyeyi ilk anaparanın üstüne çıkarabilir; oran eksiye inmesin.
+      loanRemaining = loanRemaining.plus(Math.min(v.principalTL, original));
+    }
 
     // Debts without an institution are grouped instead of being dropped.
     const key = v.institutionId ?? "__none__";
@@ -706,6 +722,8 @@ export function buildPortfolioSummary(
     totalDailyAccrualTL: totalDaily.toNumber(),
     goldDebtTL: goldDebtTL.toDecimalPlaces(2).toNumber(),
     bankDebtTL: bankDebtTL.toDecimalPlaces(2).toNumber(),
+    loanOriginalPrincipalTL: loanOriginal.toDecimalPlaces(2).toNumber(),
+    loanRemainingPrincipalTL: loanRemaining.toDecimalPlaces(2).toNumber(),
     dueThisMonthTL: dueThisMonth.toDecimalPlaces(2).toNumber(),
     overdueTL: overdueTL.toDecimalPlaces(2).toNumber(),
     institutionBreakdown: Array.from(instMap.values()).sort(

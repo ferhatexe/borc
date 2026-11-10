@@ -89,7 +89,7 @@ export function GoldPaymentCard({
   return (
     <div className="glass-card space-y-4 border-emerald-500/25 p-5">
       <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 shrink-0">
           <HandCoins size={20} weight="duotone" />
         </div>
         <div>

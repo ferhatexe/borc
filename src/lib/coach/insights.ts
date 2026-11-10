@@ -33,6 +33,15 @@ export interface InsightInput {
   dailyAccrualTL: number;
   accruedInterestTL: number;
   streak: StreakView | null;
+  /** Aktif kredilerin ilk ve kalan anaparası. */
+  loanOriginalPrincipalTL?: number;
+  loanRemainingPrincipalTL?: number;
+  /**
+   * Bilgi kartlarının sırasını döndüren sayı (gün sayısı). Acil ve yaklaşan
+   * kartlar hep başta kalır; gerisi her gün bir kaydırılır ki ekran hep aynı
+   * altı kartı göstermesin.
+   */
+  daySeed?: number;
 }
 
 const BANK_TYPES = new Set(["TAKSITLI_KREDI", "KREDI_KARTI", "EK_HESAP_KMH"]);
@@ -170,5 +179,71 @@ export function buildInsights(input: InsightInput): Insight[] {
     });
   }
 
-  return out;
+  // 9) Ödenen anapara
+  const original = input.loanOriginalPrincipalTL ?? 0;
+  const left = input.loanRemainingPrincipalTL ?? 0;
+  if (original > 0) {
+    const paidPct = Math.max(0, ((original - left) / original) * 100);
+    out.push({
+      id: "paid-progress",
+      tone: "good",
+      title: "Kredi anaparasının ödenen kısmı",
+      figure: `%${formatNumber(paidPct, 1)}`,
+      body: `${tl(original)} anaparanın ${tl(original - left)} kadarı ödendi, ${tl(left)} kaldı (%${formatNumber(100 - paidPct, 1)}).`,
+      href: "/debts",
+      linkLabel: "Borçları aç",
+    });
+  }
+
+  // 10) En çok faiz biriktiren borç
+  const mostAccrued = [...bank].sort((a, b) => b.accruedInterestTL - a.accruedInterestTL)[0];
+  if (mostAccrued && mostAccrued.accruedInterestTL > 0 && bank.length > 1) {
+    out.push({
+      id: "most-accrued",
+      tone: "info",
+      title: `En çok faiz biriktiren: ${mostAccrued.title}`,
+      figure: tl(mostAccrued.accruedInterestTL),
+      body: `Son ödemeden bu yana ${mostAccrued.accrualDays} günde birikti; bir sonraki taksitte tahsil edilecek.`,
+      href: `/debts/${mostAccrued.id}`,
+      linkLabel: "Borcu aç",
+    });
+  }
+
+  // 11) En büyük borç
+  const biggest = [...input.valuations].sort((a, b) => b.outstandingTL - a.outstandingTL)[0];
+  if (biggest && input.totalDebtTL > 0 && input.valuations.length > 1) {
+    out.push({
+      id: "biggest",
+      tone: "info",
+      title: `En büyük borç: ${biggest.title}`,
+      figure: tl(biggest.outstandingTL),
+      body: `Toplam borcun %${formatNumber((biggest.outstandingTL / input.totalDebtTL) * 100, 0)}'i.`,
+      href: `/debts/${biggest.id}`,
+      linkLabel: "Borcu aç",
+    });
+  }
+
+  // 12) En yakın bitecek kredi
+  const soonest = bank
+    .filter((v) => (v.remainingInstallments ?? 0) > 0)
+    .sort((a, b) => (a.remainingInstallments ?? 0) - (b.remainingInstallments ?? 0))[0];
+  if (soonest && bank.length > 1) {
+    out.push({
+      id: "ends-soonest",
+      tone: "good",
+      title: `İlk bitecek kredi: ${soonest.title}`,
+      figure: `${soonest.remainingInstallments} taksit`,
+      body: soonest.installmentAmountTL
+        ? `Bitince aylık ${tl(soonest.installmentAmountTL)} taksit yükü kalkar.`
+        : "Kalan taksit sayısı en az olan kredi bu.",
+      href: `/debts/${soonest.id}`,
+      linkLabel: "Borcu aç",
+    });
+  }
+
+  // Acil ve yaklaşanlar başta sabit; bilgi kartları her gün bir kaydırılır.
+  const pinned = out.filter((i) => i.tone === "urgent" || i.tone === "warn");
+  const rest = out.filter((i) => i.tone !== "urgent" && i.tone !== "warn");
+  const k = rest.length > 0 ? (input.daySeed ?? 0) % rest.length : 0;
+  return [...pinned, ...rest.slice(k), ...rest.slice(0, k)];
 }

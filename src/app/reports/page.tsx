@@ -307,7 +307,7 @@ export default function ReportsPage() {
             <div className="glass-card p-4 sm:p-6 border-white/10 space-y-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0">
                     <ChartBar size={20} weight="duotone" />
                   </div>
                   <div>
@@ -505,7 +505,7 @@ export default function ReportsPage() {
             <div className="glass-card p-4 sm:p-6 space-y-4 border-emerald-500/20 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
                     <FileCsv size={24} weight="duotone" />
                   </div>
                   <div>
@@ -532,7 +532,7 @@ export default function ReportsPage() {
             <div className="glass-card p-4 sm:p-6 space-y-4 border-rose-500/20 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20">
+                  <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20 shrink-0">
                     <FileCsv size={24} weight="duotone" />
                   </div>
                   <div>
@@ -559,7 +559,7 @@ export default function ReportsPage() {
             <div className="glass-card p-4 sm:p-6 space-y-4 border-purple-500/20 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
+                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20 shrink-0">
                     <ChartBar size={24} weight="duotone" />
                   </div>
                   <div>
@@ -586,7 +586,7 @@ export default function ReportsPage() {
             <div className="glass-card p-4 sm:p-6 space-y-4 border-cyan-500/20 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
+                  <div className="h-10 w-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20 shrink-0">
                     <FileCode size={24} weight="duotone" />
                   </div>
                   <div>
