@@ -5,9 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Calendar,
-  CheckCircle,
-  Clock,
   Coins,
   CurrencyCircleDollar,
   Lightning,
@@ -30,7 +27,8 @@ import Decimal from "decimal.js";
 import { toast } from "sonner";
 import { celebrate } from "@/lib/celebrate";
 import { InstitutionLogo } from "@/components/shared/InstitutionLogo";
-import { formatCurrency, formatDateTR, formatNumber } from "@/lib/formatters";
+import { InstallmentSchedule } from "@/components/debts/InstallmentSchedule";
+import { formatCurrency, formatDateTR } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
 import { calculateEarlyPayoff } from "@/lib/finance/earlyPayoff";
 import { useAppSettings } from "@/lib/hooks/useAppSettings";
@@ -756,154 +754,9 @@ export default function DebtDetailPage({ params }: DebtDetailPageProps) {
         </div>
       )}
 
-      {/* Amortisman Taksit Tablosu */}
+      {/* Taksit takvimi: sıradaki taksit önde, gerisi sade liste */}
       {debt.installmentSchedules && debt.installmentSchedules.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-emerald-400" />
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                Taksit Ödeme Takvimi ({debt.installmentSchedules.length} Taksit)
-              </h3>
-            </div>
-            <span className="hidden text-[11px] text-zinc-500 sm:inline">
-              Ödemek için satırdaki düğmeyi kullanın
-            </span>
-          </div>
-
-          {/*
-            Telefonda liste: sekiz sütunlu tablo yana kayıyor, "Öde" düğmesi
-            ekranın dışında kalıyordu. Burada her taksit tek satır; tutar ve
-            düğme hep görünür, ayrıntı alt satırda.
-          */}
-          <ul className="divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/80 sm:hidden">
-            {debt.installmentSchedules.map((s: any) => {
-              const isPaid = s.status === "ODENDI";
-              return (
-                <li
-                  key={s.id}
-                  className={`flex items-center gap-3 px-3.5 py-3 ${isPaid ? "opacity-60" : ""}`}
-                >
-                  <span className="w-7 shrink-0 font-mono text-[11px] font-bold text-zinc-500">
-                    #{s.installmentNo}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[13px] font-medium text-zinc-200">
-                        {formatDateTR(s.dueDate)}
-                      </span>
-                      <span className="whitespace-nowrap font-mono text-[13px] font-bold tabular-nums text-white">
-                        {formatCurrency(s.totalAmount)}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 font-mono text-[10px] tabular-nums text-zinc-500">
-                      anapara {formatNumber(s.principalPart, 2)} · faiz{" "}
-                      {formatNumber(s.interestPart, 2)}
-                    </p>
-                  </div>
-                  {isPaid ? (
-                    <span className="flex w-14 shrink-0 flex-col items-center text-emerald-400">
-                      <CheckCircle size={16} weight="fill" />
-                      <span className="mt-0.5 text-[9px] text-zinc-500">
-                        {s.paidAt ? formatDateTR(s.paidAt).slice(0, 5) : "ödendi"}
-                      </span>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleOpenPayModal(s)}
-                      className="h-9 w-14 shrink-0 rounded-xl bg-emerald-500 text-xs font-bold text-zinc-950 active:scale-95"
-                    >
-                      Öde
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-
-            {/*
-              Kaydirma kutusu tek basina yetmiyor: `w-full` tabloyu kapsayicinin
-              genisligine sikistirdigi icin sutunlar dar telefonda ust uste
-              biniyordu. Asgari genislik verilince tablo sikismak yerine yatay
-              kayiyor ve sutunlar hizasini koruyor.
-            */}
-          <div className="hidden overflow-x-auto rounded-2xl border border-white/10 bg-zinc-900/80 sm:block">
-            <table className="w-full min-w-[52rem] text-left text-xs border-collapse whitespace-nowrap">
-              <thead>
-                <tr className="border-b border-white/10 bg-white/5 text-[11px] text-zinc-400 font-medium">
-                  <th className="py-3 px-3">No</th>
-                  <th className="py-3 px-3">Vade Tarihi</th>
-                  <th className="py-3 px-3 text-right">Taksit Tutarı</th>
-                  <th className="py-3 px-3 text-right">Anapara</th>
-                  <th className="py-3 px-3 text-right">Faiz + Vergi</th>
-                  <th className="py-3 px-3 text-right">Kalan Anapara</th>
-                  <th className="py-3 px-3 text-center">Durum</th>
-                  <th className="py-3 px-3 text-right">İşlem</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5 font-mono">
-                {debt.installmentSchedules.map((s: any) => {
-                  const isPaid = s.status === "ODENDI";
-                  return (
-                    <tr
-                      key={s.id}
-                      className={`hover:bg-white/[0.02] transition-colors ${
-                        isPaid ? "opacity-60 bg-emerald-950/10" : ""
-                      }`}
-                    >
-                      <td className="py-3 px-3 text-zinc-400 font-bold">#{s.installmentNo}</td>
-                      <td className="py-3 px-3 text-zinc-200 font-sans">
-                        {formatDateTR(s.dueDate)}
-                      </td>
-                      <td className="py-3 px-3 text-right font-bold text-emerald-400">
-                        {formatCurrency(s.totalAmount)}
-                      </td>
-                      <td className="py-3 px-3 text-right text-zinc-300">
-                        {formatCurrency(s.principalPart)}
-                      </td>
-                      <td className="py-3 px-3 text-right text-rose-400">
-                        {formatCurrency(s.interestPart)}
-                      </td>
-                      <td className="py-3 px-3 text-right text-zinc-400">
-                        {formatCurrency(s.remainingPrincipal)}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        {isPaid ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                            <CheckCircle size={12} weight="bold" />
-                            <span>Ödendi</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
-                            <Clock size={12} />
-                            <span>Bekliyor</span>
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        {!isPaid && (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPayModal(s)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-zinc-950 transition-colors shadow-sm cursor-pointer"
-                          >
-                            Öde
-                          </button>
-                        )}
-                        {isPaid && (
-                          <span className="text-[10px] text-zinc-500 font-sans">
-                            {s.paidAt ? formatDateTR(s.paidAt) : "Ödendi"}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <InstallmentSchedule rows={debt.installmentSchedules} onPay={handleOpenPayModal} />
       )}
 
       {/* Ödeme Modalı */}
