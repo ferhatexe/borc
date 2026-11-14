@@ -50,6 +50,8 @@ export interface AppPreferences {
   currency: "TRY" | "USD" | "EUR";
   theme: "dark" | "light";
   locale: string;
+  /** Ana sayfadaki kumarsız gün serisi kartı (hesap bazında). */
+  gamblingCoach: boolean;
 }
 
 export const DEFAULT_TAX_RATES: TaxRates = {
@@ -104,6 +106,7 @@ export const DEFAULT_APP_PREFERENCES: AppPreferences = {
   currency: "TRY",
   theme: "dark",
   locale: "tr-TR",
+  gamblingCoach: true,
 };
 
 export interface AppSettings {

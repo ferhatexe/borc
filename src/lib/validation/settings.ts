@@ -37,6 +37,7 @@ export const appPreferencesSchema = z.object({
   currency: z.enum(["TRY", "USD", "EUR"]),
   theme: z.enum(["dark", "light"]),
   locale: z.string().trim().min(2).max(10),
+  gamblingCoach: z.boolean().default(true),
 });
 
 /** Maps a setting key to the schema that guards it. */

@@ -32,7 +32,8 @@ import type { LoanProjectionInput } from "@/lib/finance/scenarioProjection";
 
 interface DashboardClientProps {
   initialLive: LivePayload;
-  streak: StreakView;
+  /** Kumarsız gün serisi; hesapta kapalıysa null. */
+  streak: StreakView | null;
   insights: Insight[];
   institutionBreakdown: InstitutionBreakdown[];
   kmhDebts?: OverdraftDebtSummary[];
@@ -112,7 +113,7 @@ export function DashboardClient({
       </header>
 
       {/* Günlük adım: kumarsız gün serisi */}
-      <CoachCard initial={streak} dailyInterestTL={totals.dailyAccrualTL} />
+      {streak && <CoachCard initial={streak} dailyInterestTL={totals.dailyAccrualTL} />}
 
       {/* Rakamlardan çıkan bilgi kartları */}
       <InsightCards insights={insights} />

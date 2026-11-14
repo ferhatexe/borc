@@ -8,6 +8,9 @@ const PUBLIC_PATHS = new Set([
   "/login",
   "/api/auth/login",
   "/api/auth/logout",
+  // Hesap kurulumu: belirteci kendisi doğrular, oturum gerektirmez.
+  "/hesap-kur",
+  "/api/auth/setup",
   "/api/health",
   "/manifest.json",
   "/sw.js",

@@ -20,6 +20,7 @@ import { formatDate } from "@/lib/formatters";
 import { GOLD_TYPE_VALUES } from "@/lib/validation/debt";
 import type { AppSettings } from "@/lib/settings/defaults";
 import { NumberField } from "@/components/shared/NumberField";
+import { AccountSection } from "./AccountSection";
 
 const GOLD_LABELS: Record<string, string> = {
   GRAM_ALTIN: "Gram Altın",
@@ -221,6 +222,9 @@ export function SettingsClient({
           Vergi oranları, altın marjları, kategoriler, kurumlar ve yedekleme
         </p>
       </div>
+
+      {/* Hesap: kumarsız gün serisi ve şifre */}
+      <AccountSection preferences={settings.appPreferences} />
 
       {/* --------------------------- Vergi oranları --------------------------- */}
       <section className="glass-card p-4 sm:p-5 space-y-4">

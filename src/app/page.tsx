@@ -102,7 +102,9 @@ export default async function DashboardPage() {
     upcomingPayments: portfolio.upcomingPayments.slice(0, 12),
   };
 
-  const streak = buildStreakView(coachState, istanbulDay(now));
+  // Kumarsız gün serisi hesap bazında açılıp kapanır (Ayarlar > Hesap).
+  const coachOn = settings.appPreferences.gamblingCoach !== false;
+  const streak = coachOn ? buildStreakView(coachState, istanbulDay(now)) : null;
   const insights = buildInsights({
     valuations: portfolio.valuations,
     upcoming: buildUpcomingPayments(debts, portfolio.valuations, now, 60),

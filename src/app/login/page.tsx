@@ -126,7 +126,7 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-white/5 text-center text-[11px] text-zinc-500">
-            Tek kullanıcılı özel kasa · Veriler PostgreSQL üzerinde şifreli saklanır
+            Her hesabın verisi yalnızca kendisine görünür
           </div>
         </div>
       </div>
