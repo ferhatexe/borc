@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
 import { getDebts } from "@/lib/db/debts";
-import { getIncomes, getExpenses, getCashBalance, isCardSettlement } from "@/lib/db/transactions";
+import { getIncomes, getExpenses, getCashBalance, monthlyTotals } from "@/lib/db/transactions";
 import { getSettings } from "@/lib/db/settings";
 import { getGoldPrices } from "@/lib/gold/goldService";
 import { buildPortfolioSummary } from "@/lib/finance/debtValuation";
@@ -44,11 +44,7 @@ export async function GET() {
 
     const portfolio = buildPortfolioSummary(debts, gold, settings, now);
 
-    const incomeTL = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
-    // Kart borcu ödemesi ayın giderine girmez (bkz. isCardSettlement); kasada ise kalır.
-    const expenseTL = expenses
-      .filter((e) => !isCardSettlement(e))
-      .reduce((sum, e) => sum + Number(e.amount), 0);
+    const month = monthlyTotals(incomes, expenses, portfolio.dueThisMonthTL);
 
     return NextResponse.json(
       {
@@ -71,10 +67,10 @@ export async function GET() {
           overdueCount: portfolio.overdueCount,
           worstOverdueDays: portfolio.worstOverdueDays,
           debtCount: debts.length,
-          incomeTL,
-          expenseTL,
-          netTL: incomeTL - expenseTL,
-          cashFlowTL: incomeTL - expenseTL - portfolio.dueThisMonthTL,
+          incomeTL: month.incomeTL,
+          expenseTL: month.expenseTL,
+          netTL: month.netTL,
+          cashFlowTL: month.cashFlowTL,
         },
         market: gold
           ? {

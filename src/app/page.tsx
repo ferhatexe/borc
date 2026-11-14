@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { endOfMonth, startOfMonth } from "date-fns";
 import { getCurrentSession } from "@/lib/auth";
 import { getDebts } from "@/lib/db/debts";
-import { getIncomes, getExpenses, getCashBalance } from "@/lib/db/transactions";
+import { getIncomes, getExpenses, getCashBalance, monthlyTotals } from "@/lib/db/transactions";
 import { getSettings } from "@/lib/db/settings";
 import { getGoldPrices } from "@/lib/gold/goldService";
 import { getAnalyticsSummary } from "@/lib/db/reports";
@@ -52,8 +52,8 @@ export default async function DashboardPage() {
     console.error("Analitik özet hesaplanamadı:", error);
   }
 
-  const incomeTL = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
-  const expenseTL = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  // /api/live ile aynı kural (kart ödemesi harcama değil, kart alışverişi kasadan çıkmaz).
+  const month = monthlyTotals(incomes, expenses, portfolio.dueThisMonthTL);
 
   // Same shape /api/live returns, so the first paint is already correct and the
   // client hook just keeps it fresh from there.
@@ -75,10 +75,10 @@ export default async function DashboardPage() {
       overdueCount: portfolio.overdueCount,
       worstOverdueDays: portfolio.worstOverdueDays,
       debtCount: debts.length,
-      incomeTL,
-      expenseTL,
-      netTL: incomeTL - expenseTL,
-      cashFlowTL: incomeTL - expenseTL - portfolio.dueThisMonthTL,
+      incomeTL: month.incomeTL,
+      expenseTL: month.expenseTL,
+      netTL: month.netTL,
+      cashFlowTL: month.cashFlowTL,
     },
     market: gold
       ? {

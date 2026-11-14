@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { NotFoundError } from "./debts";
+import { ConflictError, NotFoundError } from "./debts";
 import type {
   CreateExpenseInput,
   CreateIncomeInput,
@@ -124,6 +124,31 @@ export function isCardSettlement(expense: {
   return expense.relatedDebt?.type === "KREDI_KARTI" && expense.paymentMethod !== "KREDI_KARTI";
 }
 
+/**
+ * Ayın gelir/gider özeti, ana sayfa ve /api/live aynı kuralı kullansın diye.
+ *
+ *  - net: gelir - harcama. Karta yazılan alışveriş de harcamadır; kart borcunun
+ *    ödenmesi ise harcama değildir (aynı alışveriş iki kez sayılmasın).
+ *  - nakit akışı: gelir - kasadan çıkan - bu ay vadesi gelen borç. Kartla
+ *    yapılan alışveriş bu ay kasadan çıkmaz; kartın vadesi bu aya düşüyorsa
+ *    borç tarafında zaten sayılıyor. Eskiden ikisi birden düşülüyordu.
+ */
+export function monthlyTotals(
+  incomes: Array<{ amount: unknown }>,
+  expenses: Array<{ amount: unknown; paymentMethod: string; relatedDebt?: { type: string } | null }>,
+  dueThisMonthTL: number
+) {
+  const incomeTL = incomes.reduce((s, i) => s + Number(i.amount), 0);
+  const expenseTL = expenses.filter((e) => !isCardSettlement(e)).reduce((s, e) => s + Number(e.amount), 0);
+  const cashOutTL = expenses.filter((e) => e.paymentMethod !== "KREDI_KARTI").reduce((s, e) => s + Number(e.amount), 0);
+  return {
+    incomeTL,
+    expenseTL,
+    netTL: incomeTL - expenseTL,
+    cashFlowTL: incomeTL - cashOutTL - dueThisMonthTL,
+  };
+}
+
 export async function createExpense(
   userId: string,
   input: CreateExpenseInput
@@ -150,6 +175,30 @@ export async function createExpense(
     if (!debt) throw new NotFoundError("Harcamanın bağlanacağı borç kaydı bulunamadı");
   }
 
+  /*
+   * Kredi kartıyla harcama mutlaka bir karta yazılır.
+   *
+   * Kart seçilmeden kaydedilen kart harcaması kasadan düşmüyor (kart
+   * harcaması nakit değil) ama hiçbir kartın borcuna da eklenmiyordu: para
+   * hiçbir yerde görünmüyordu. Kart arşive kalkınca form karta bağlayacak kart
+   * bulamadı ve 2.275,70 TL böyle kayboldu. Tek aktif kart varsa ona bağlanır;
+   * hiç kart yoksa kayıt reddedilir ki sessizce kaybolmasın.
+   */
+  let relatedDebtId = input.relatedDebtId ?? null;
+  if (input.paymentMethod === "KREDI_KARTI" && !relatedDebtId) {
+    const cards = await prisma.debt.findMany({
+      where: { userId, type: "KREDI_KARTI", isArchived: false, status: "AKTIF" },
+      select: { id: true },
+      take: 2,
+    });
+    if (cards.length === 0) {
+      throw new ConflictError(
+        "Kredi kartı kaydı yok. Harcamanın borca yazılması için önce kartı ekleyin ya da başka bir ödeme yöntemi seçin."
+      );
+    }
+    if (cards.length === 1) relatedDebtId = cards[0].id;
+  }
+
   const amount = new Prisma.Decimal(input.amount.toString());
 
   return prisma.$transaction(async (tx) => {
@@ -163,16 +212,16 @@ export async function createExpense(
         date: input.date,
         merchant: input.merchant ?? null,
         paymentMethod: input.paymentMethod,
-        relatedDebtId: input.relatedDebtId ?? null,
+        relatedDebtId,
         note: input.note ?? null,
       },
       include: EXPENSE_INCLUDE,
     });
 
     // A card purchase raises that card's statement balance.
-    if (input.relatedDebtId && input.paymentMethod === "KREDI_KARTI") {
+    if (relatedDebtId && input.paymentMethod === "KREDI_KARTI") {
       await tx.debt.updateMany({
-        where: { id: input.relatedDebtId, userId, type: "KREDI_KARTI" },
+        where: { id: relatedDebtId, userId, type: "KREDI_KARTI" },
         data: { currentStatementBalance: { increment: amount } },
       });
     }
