@@ -224,6 +224,7 @@ export const InstitutionLogo = memo(function InstitutionLogo({
               height: inner,
               width: Math.round(inner * brand.wideLogo.aspect),
               maxWidth: "none",
+              marginLeft: -Math.round(inner * brand.wideLogo.aspect * (brand.wideLogo.offset ?? 0)),
             }}
           />
         </span>
