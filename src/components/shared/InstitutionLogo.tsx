@@ -16,8 +16,9 @@ import { brandFor, brandLogoUrl } from "@/lib/institutions/brand";
  * Everything is inline SVG: no network request, sharp at any size, and it
  * inherits the page's dark theme.
  *
- * Bilinen bankalarda önce bankanın kendi logosu (sitesinin favicon'u, çalışma
- * anında çekilir) gösterilir; yüklenemezse bu rozet devreye girer.
+ * Bilinen bankalarda önce bankanın resmî uygulamasının simgesi, o yüklenemezse
+ * sitesindeki logo ya da favicon (çalışma anında çekilir) gösterilir; hiçbiri
+ * yüklenemezse bu rozet devreye girer.
  */
 
 export type InstitutionMotif =
@@ -186,8 +187,45 @@ export const InstitutionLogo = memo(function InstitutionLogo({
   motifOnly = false,
   className,
 }: InstitutionLogoProps) {
-  const [logoFailed, setLogoFailed] = useState(false);
+  // Sırayla: uygulama simgesi -> sitedeki logo / favicon -> baş harfler.
+  const [failures, setFailures] = useState(0);
   const brand = brandFor(name);
+  const hasAppIcon = Boolean(brand?.appIconUrl);
+  const appIconFailed = !hasAppIcon || failures >= 1;
+  const logoFailed = failures >= (hasAppIcon ? 2 : 1);
+  const onLogoError = () => setFailures((n) => n + 1);
+
+  if (brand?.appIconUrl && !appIconFailed && !motifOnly) {
+    return (
+      <span
+        className={className}
+        role="img"
+        aria-label={`${name} logosu`}
+        style={{
+          display: "block",
+          flexShrink: 0,
+          width: size,
+          height: size,
+          borderRadius: Math.round(size * 0.27),
+          border: "1px solid var(--line)",
+          overflow: "hidden",
+          background: "#ffffff",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- harici simge, optimize edilecek bir şey yok */}
+        <img
+          src={brand.appIconUrl}
+          alt=""
+          width={size}
+          height={size}
+          loading="lazy"
+          decoding="async"
+          onError={onLogoError}
+          style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </span>
+    );
+  }
 
   if (brand?.wideLogo && !logoFailed && !motifOnly) {
     const inner = Math.round(size * 0.7);
@@ -218,7 +256,7 @@ export const InstitutionLogo = memo(function InstitutionLogo({
             loading="lazy"
             decoding="async"
             referrerPolicy="no-referrer"
-            onError={() => setLogoFailed(true)}
+            onError={onLogoError}
             style={{
               display: "block",
               height: inner,
@@ -261,7 +299,7 @@ export const InstitutionLogo = memo(function InstitutionLogo({
           loading="lazy"
           decoding="async"
           referrerPolicy="no-referrer"
-          onError={() => setLogoFailed(true)}
+          onError={onLogoError}
           style={{ width: inner, height: inner, objectFit: "contain" }}
         />
       </span>

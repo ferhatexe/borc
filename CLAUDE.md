@@ -37,6 +37,9 @@ hesaplama kuralı öğrenildiğinde).
 - Bash aracının PATH'inde node olmayabilir: PowerShell'de tam yol kullan:
   `& "C:\Program Files\nodejs\node.exe"`, `npx.cmd`, `npm.cmd`.
 - PowerShell boş `""` bağımsız değişkeni yutar; betiğe boş değer geçme.
+- Kaynak dosyayı PowerShell `Get-Content`/`Set-Content` ile düzenleme: 5.1 BOM'suz
+  UTF-8'i ANSI okuyup Türkçe harfleri bozar ve BOM ekler. Edit aracını kullan.
+- Python yok; küçük yardımcı işler için `scripts/tmp/*.ts` + `npx.cmd tsx`.
 - Commit mesajını dosyaya yaz, `git commit -F <dosya>` ile ver.
 - **Push:** araç kabuğundaki `gh` başka bir GitHub hesabında olabilir. Push'u
   kullanıcının terminal sekmesinden yap (`git push origin main`); orada
