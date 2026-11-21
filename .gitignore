@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude: makineye özel durum dosyası ve yerel önizleme ayarı (kişisel veri içerir)
+CLAUDE.local.md
+.claude/launch.json
