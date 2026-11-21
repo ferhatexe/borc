@@ -12,6 +12,7 @@ import {
   Gear,
   PlusCircle,
   WarningOctagon,
+  Wallet,
 } from "@phosphor-icons/react";
 import { haptics } from "@/lib/haptics";
 import { useLiveData } from "@/components/live/LiveDataProvider";
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/debts", label: "Borçlar", icon: CreditCard },
   // Gecikmis odemeler masaustunde yalnizca dashboard uzerinden ulasilabiliyordu.
   { href: "/overdue", label: "Geciken", icon: WarningOctagon, badge: "overdue" as const },
+  { href: "/plan", label: "Ödeme planı", icon: Wallet },
   { href: "/income", label: "Gelirler", icon: TrendUp },
   { href: "/expenses", label: "Giderler", icon: TrendDown },
   { href: "/calendar", label: "Takvim", icon: CalendarBlank },

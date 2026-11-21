@@ -12,11 +12,13 @@ import {
   SignOut,
   X,
   Coins,
+  Wallet,
 } from "@phosphor-icons/react";
 import { haptics } from "@/lib/haptics";
 
 /** Alt çubuğa sığmayan, ama telefonda erişilebilir kalması gereken sayfalar. */
 const MENU_ITEMS = [
+  { href: "/plan", label: "Ödeme planı", desc: "Para nereye kadar yeter", icon: Wallet },
   { href: "/income", label: "Gelirler", desc: "Maaş, kira, ek gelir", icon: TrendUp },
   { href: "/expenses", label: "Giderler", desc: "Harcama kayıtları", icon: TrendDown },
   { href: "/calendar", label: "Takvim", desc: "Ödeme günleri", icon: CalendarBlank },
