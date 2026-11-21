@@ -14,6 +14,7 @@ import { formatCurrency, formatDateTR, toDateInputValue } from "@/lib/formatters
 import { triggerHaptic } from "@/lib/haptics";
 import { NumberField } from "@/components/shared/NumberField";
 import { toast } from "sonner";
+import { suggestCategory, type CategoryHint } from "@/lib/finance/categorize";
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -53,6 +54,34 @@ export default function ExpensesPage() {
   const [date, setDate] = useState(toDateInputValue());
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /*
+   * Akıllı kategori: tanım yazıldıkça kategori kendiliğinden seçilir (önce
+   * kullanıcının geçmişi, sonra sözlük). Kullanıcı kategoriyi elle değiştirirse
+   * o kayıt boyunca bir daha dokunulmaz.
+   */
+  const [categoryHints, setCategoryHints] = useState<CategoryHint[]>([]);
+  const [categoryTouched, setCategoryTouched] = useState(false);
+  const [autoCategory, setAutoCategory] = useState<{ id: string; source: "gecmis" | "kelime" } | null>(null);
+
+  useEffect(() => {
+    if (showAddModal) setCategoryTouched(false);
+  }, [showAddModal]);
+
+  useEffect(() => {
+    if (!showAddModal || categoryHints.length > 0) return;
+    fetch("/api/expenses/hints")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: CategoryHint[]) => setCategoryHints(rows))
+      .catch(() => {});
+  }, [showAddModal, categoryHints.length]);
+
+  useEffect(() => {
+    if (categoryTouched || categories.length === 0) return;
+    const hit = suggestCategory(merchant, categories, categoryHints);
+    setAutoCategory(hit ? { id: hit.categoryId, source: hit.source } : null);
+    if (hit) setCategoryId(hit.categoryId);
+  }, [merchant, categories, categoryHints, categoryTouched]);
 
   // Veri Çekme
   const fetchData = async () => {
@@ -143,6 +172,10 @@ export default function ExpensesPage() {
       setAmount("");
       setMerchant("");
       setNote("");
+      setCategoryTouched(false);
+      setAutoCategory(null);
+      // Yeni kayıt bir sonraki öneride hemen kullanılsın.
+      setCategoryHints((prev) => [{ merchant: merchant.trim(), categoryId }, ...prev]);
       setRelatedDebtId(
         paymentMethod === "KREDI_KARTI"
           ? (creditCards.find((c: any) => c.type === "KREDI_KARTI")?.id ?? "")
@@ -494,9 +527,17 @@ export default function ExpensesPage() {
                   required
                   value={merchant}
                   onChange={(e) => setMerchant(e.target.value)}
-                  placeholder="Örn: Migros Market, Shell Akaryakıt, Restoran"
+                  placeholder="Ne aldın? Örn: Migros, döner, benzin, eczane"
                   className="w-full h-11 px-3.5 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-rose-500"
                 />
+                {autoCategory && !categoryTouched && (
+                  <p className="mt-1.5 text-[11px] text-emerald-300">
+                    Kategori seçildi: {categories.find((c) => c.id === autoCategory.id)?.name}
+                    <span className="text-zinc-500">
+                      {autoCategory.source === "gecmis" ? " · önceki harcamalarına göre" : " · tanımdan"}
+                    </span>
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -507,7 +548,10 @@ export default function ExpensesPage() {
                   <select
                     required
                     value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
+                    onChange={(e) => {
+                      setCategoryId(e.target.value);
+                      setCategoryTouched(true);
+                    }}
                     className="w-full h-11 px-3 text-xs bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   >
                     {categories.map((cat) => (
