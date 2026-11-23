@@ -16,6 +16,26 @@ import { NumberField } from "@/components/shared/NumberField";
 import { toast } from "sonner";
 import { suggestCategory, type CategoryHint } from "@/lib/finance/categorize";
 
+const METHOD_LABELS: Record<string, string> = {
+  NAKIT: "Nakit",
+  HAVALE: "Havale",
+  KART: "Kart",
+  BANKA_KARTI: "Banka kartı",
+  KREDI_KARTI: "Kredi kartı",
+  OTOMATIK_ODEME: "Otomatik",
+  DIGER: "Diğer",
+};
+
+/** "Yapı Kredi Kredi Kartı (*6150)" -> "Yapı Kredi *6150": etiket tek satıra sığsın. */
+function shortCardName(title: string): string {
+  const short = title
+    .replace(/\s*kredi\s*kart[ıi]\s*/i, " ")
+    .replace(/[()]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return short || title;
+}
+
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -426,53 +446,55 @@ export default function ExpensesPage() {
           {filteredExpenses.map((exp) => (
             <div
               key={exp.id}
-              className="flex items-center justify-between p-4 rounded-2xl bg-zinc-900/70 hover:bg-zinc-900 border border-white/10 transition-colors"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-zinc-900/70 hover:bg-zinc-900 border border-white/10 transition-colors"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-white shrink-0 text-sm shadow-sm"
-                  style={{ backgroundColor: exp.category?.color || "#f43f5e" }}
-                >
-                  <TrendDown size={20} weight="bold" />
+              <div
+                className="h-9 w-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
+                style={{ backgroundColor: exp.category?.color || "#f43f5e" }}
+              >
+                <TrendDown size={18} weight="bold" />
+              </div>
+
+              {/* Tek satır başlık + tek satır ayrıntı: telefonda kırılıp kaymasın. */}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="min-w-0 truncate text-sm font-bold text-white">{exp.merchant}</p>
+                  <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-rose-400">
+                    -{formatCurrency(exp.amount)}
+                  </span>
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-white truncate">{exp.merchant}</p>
-                    {exp.relatedDebt && (
-                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/20">
-                        <CreditCard size={11} />
-                        <span>{exp.relatedDebt.title}</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
-                    <span>{exp.category?.name || "Gider"}</span>
-                    <span>•</span>
-                    <span>{formatDateTR(exp.date)}</span>
-                    <span>•</span>
-                    <span className="text-zinc-500">{exp.paymentMethod}</span>
-                    {exp.note && (
-                      <>
-                        <span>•</span>
-                        <span className="text-zinc-500 truncate max-w-xs">{exp.note}</span>
-                      </>
-                    )}
-                  </div>
+                <div className="mt-0.5 flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[11px] text-zinc-400">
+                  <span className="min-w-0 truncate">{exp.category?.name || "Gider"}</span>
+                  <span className="shrink-0">·</span>
+                  <span className="shrink-0">{formatDateTR(exp.date)}</span>
+                  {exp.relatedDebt ? (
+                    <span className="flex min-w-0 shrink items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/15 px-1.5 py-px font-semibold text-blue-400">
+                      <CreditCard size={10} className="shrink-0" />
+                      <span className="truncate">{shortCardName(exp.relatedDebt.title)}</span>
+                    </span>
+                  ) : (
+                    <>
+                      <span className="shrink-0">·</span>
+                      <span className="shrink-0 text-zinc-500">{METHOD_LABELS[exp.paymentMethod] ?? exp.paymentMethod}</span>
+                    </>
+                  )}
+                  {exp.note && (
+                    <>
+                      <span className="shrink-0">·</span>
+                      <span className="min-w-0 truncate text-zinc-500">{exp.note}</span>
+                    </>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-base font-bold text-rose-400 font-mono">
-                  -{formatCurrency(exp.amount)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteExpense(exp.id)}
-                  className="text-zinc-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                >
-                  <Trash size={16} />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => handleDeleteExpense(exp.id)}
+                aria-label="Harcamayı sil"
+                className="shrink-0 rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/5 hover:text-rose-400"
+              >
+                <Trash size={16} />
+              </button>
             </div>
           ))}
         </div>
