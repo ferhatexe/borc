@@ -149,7 +149,19 @@ export function buildPayoffOptions(
       }
     } else if (debt.type === "KREDI_KARTI") {
       futurePaymentsTL = v.outstandingTL;
-      if (v.nextDueDate) reliefByMonth[monthKey(v.nextDueDate)] = v.outstandingTL;
+      const c = v.cardDetail;
+      if (!v.isOverdue && c?.nextStatementDueDate) {
+        // Ekstre ve kesimden sonraki harcamalar ayrı aylarda istenir.
+        const add = (due: string | null, amt: number) => {
+          if (!due || amt <= 0) return;
+          const key = monthKey(due);
+          reliefByMonth[key] = round2((reliefByMonth[key] ?? 0) + amt);
+        };
+        add(c.statementDueDate, c.statementTL);
+        add(c.nextStatementDueDate, c.nextStatementTL);
+      } else if (v.nextDueDate) {
+        reliefByMonth[monthKey(v.nextDueDate)] = v.outstandingTL;
+      }
     } else if (debt.type === "EK_HESAP_KMH") {
       futurePaymentsTL = v.outstandingTL;
       monthlyInterestTL = round2(v.dailyAccrualTL * 30);

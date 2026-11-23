@@ -47,6 +47,12 @@ export const DEBT_INCLUDE = {
   institution: true,
   installmentSchedules: { orderBy: { installmentNo: "asc" } },
   payments: { orderBy: { paidAt: "desc" } },
+  // Kredi kartı bakiyesini kesim gününe göre bölmek için kartla yapılan
+  // harcamaların yalnız tarihi ve tutarı (bkz. finance/cardStatement.ts).
+  relatedExpenses: {
+    where: { isArchived: false, paymentMethod: "KREDI_KARTI" },
+    select: { date: true, amount: true },
+  },
 } satisfies Prisma.DebtInclude;
 
 export type DebtWithRelations = Prisma.DebtGetPayload<{ include: typeof DEBT_INCLUDE }>;

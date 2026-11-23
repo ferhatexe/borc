@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
-import { addDays, endOfMonth, startOfMonth } from "date-fns";
+import { addDays, endOfMonth, startOfDay, startOfMonth } from "date-fns";
+import { splitCardBalance, type CardSplit } from "./cardStatement";
 import type { DebtWithRelations } from "@/lib/db/debts";
 import type { AppSettings } from "@/lib/settings/defaults";
 import type { GoldSyncResult } from "@/lib/gold/types";
@@ -73,6 +74,12 @@ export interface DebtValuation {
   } | null;
 
   cardDetail: {
+    /** Son ekstreden kalan ve `statementDueDate`'te istenecek tutar. */
+    statementTL: number;
+    statementDueDate: string | null;
+    /** Kesimden sonraki harcamalar; bir sonraki ekstrenin son ödeme gününde istenir. */
+    nextStatementTL: number;
+    nextStatementDueDate: string | null;
     creditLimit: number;
     statementBalance: number;
     minimumPayment: number;
@@ -461,7 +468,44 @@ export function valuateDebt(
       dueThisMonthTL = balance > 0 && (isOverdue || vadesiBuAy) ? balance : 0;
       nextDueDate = dueDate;
 
+      /*
+       * Kesim günü biliniyorsa bakiye ekstreye ve kesimden sonraki kısma
+       * bölünür; ikisi kendi son ödeme gününde istenir. Gecikmiş kartta eski
+       * kural geçerli (tamamı gecikmiş).
+       *
+       * Son ekstrenin son ödeme günü geçmiş ama kart gecikmiş sayılmamışsa
+       * (o günden sonra dokunulmuş), kalan ekstre bir sonraki vadeye eklenir:
+       * eski kuralla aynı, uydurma gecikme gösterilmez.
+       */
+      let split: CardSplit | null = null;
+      if (!isOverdue && debt.statementDay && debt.dueDay && balance > 0) {
+        const s = splitCardBalance({
+          balance,
+          statementDay: debt.statementDay,
+          dueDay: debt.dueDay,
+          purchases: (debt.relatedExpenses ?? []).map((e) => ({ date: e.date, amount: num(e.amount) })),
+          now,
+        });
+        split =
+          s.statementTL > 0 && s.statementDue < now
+            ? { ...s, statementTL: 0, nextTL: balance }
+            : s;
+
+        const parts: Array<[number, Date]> = [
+          [split.statementTL, split.statementDue],
+          [split.nextTL, split.nextDue],
+        ];
+        dueThisMonthTL = parts
+          .filter(([amt, due]) => amt > 0 && due >= monthStart && due <= monthEnd)
+          .reduce((sum, [amt]) => sum + amt, 0);
+        nextDueDate = parts.find(([amt, due]) => amt > 0 && due >= startOfDay(now))?.[1] ?? nextDueDate;
+      }
+
       cardDetail = {
+        statementTL: split ? split.statementTL : balance,
+        statementDueDate: split ? split.statementDue.toISOString() : (nextDueDate?.toISOString() ?? null),
+        nextStatementTL: split ? split.nextTL : 0,
+        nextStatementDueDate: split ? split.nextDue.toISOString() : null,
         creditLimit: limit,
         statementBalance: balance,
         minimumPayment: minimum,
@@ -783,6 +827,11 @@ export function buildUpcomingPayments(
         if (row.status === "ODENDI") continue;
         push(debt, new Date(row.dueDate), num(row.totalAmount), "TAKSIT", row.id);
       }
+    } else if (debt.type === "KREDI_KARTI" && !v.isOverdue && v.cardDetail?.nextStatementDueDate) {
+      // Ekstre ve kesimden sonraki harcamalar kendi son ödeme günlerinde.
+      const c = v.cardDetail;
+      if (c.statementDueDate) push(debt, new Date(c.statementDueDate), c.statementTL, "KART");
+      push(debt, new Date(c.nextStatementDueDate!), c.nextStatementTL, "KART");
     } else if (v.nextDueDate) {
       const kind: UpcomingPayment["kind"] =
         debt.type === "KREDI_KARTI"

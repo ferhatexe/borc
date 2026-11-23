@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildPortfolioSummary, valuateDebt } from "@/lib/finance/debtValuation";
+import { buildPortfolioSummary, buildUpcomingPayments, valuateDebt } from "@/lib/finance/debtValuation";
 import { DEFAULT_SETTINGS } from "@/lib/settings/defaults";
 import type { DebtWithRelations } from "@/lib/db/debts";
 import type { GoldSyncResult } from "@/lib/gold/types";
@@ -303,9 +303,39 @@ describe("Kredi kartı değerlemesi", () => {
     expect(v.isOverdue).toBe(false);
     expect(v.accruedInterestTL).toBe(0);
     expect(v.outstandingTL).toBe(7949.3);
-    expect(v.nextDueDate).toBe(new Date(2026, 9, 4).toISOString());
+    // Kesim günü bilinen kartta vade UTC öğlen üretilir; gün aynı: 4 Ekim.
+    expect(v.nextDueDate?.slice(0, 10)).toBe("2026-10-04");
     // Vade Ekim'de: Eylül'ün yükümlülüğüne girmez.
     expect(v.dueThisMonthTL).toBe(0);
+  });
+
+  it("kesimden sonraki kart harcaması bir sonraki ekstrenin vadesine kalır", () => {
+    // Kesim 10'u, son ödeme 20'si; bugün 15 Eylül. 12 Eylül'deki 500 TL Ekim'de istenir.
+    const card = debt({
+      type: "KREDI_KARTI",
+      creditLimit: 15000 as never,
+      currentStatementBalance: 3000 as never,
+      statementDay: 10,
+      dueDay: 20,
+      relatedExpenses: [
+        { date: new Date(Date.UTC(2026, 8, 5, 12)), amount: 1000 as never },
+        { date: new Date(Date.UTC(2026, 8, 12, 12)), amount: 500 as never },
+      ] as never,
+    });
+    const v = valuateDebt(card, gold, DEFAULT_SETTINGS, NOW);
+    expect(v.outstandingTL).toBe(3000);
+    expect(v.cardDetail?.statementTL).toBe(2500);
+    expect(v.cardDetail?.statementDueDate?.slice(0, 10)).toBe("2026-09-20");
+    expect(v.cardDetail?.nextStatementTL).toBe(500);
+    expect(v.cardDetail?.nextStatementDueDate?.slice(0, 10)).toBe("2026-10-20");
+    expect(v.dueThisMonthTL).toBe(2500);
+    expect(v.nextDueDate?.slice(0, 10)).toBe("2026-09-20");
+
+    const up = buildUpcomingPayments([card], [v], NOW, 60).map((p) => [p.dueDate.slice(0, 10), p.amountTL]);
+    expect(up).toEqual([
+      ["2026-09-20", 2500],
+      ["2026-10-20", 500],
+    ]);
   });
 
   it("son ödeme günü geçtiği hâlde kart o günden beri hiç güncellenmediyse gecikme faizi işletir", () => {
