@@ -73,6 +73,16 @@ hesaplama kuralı öğrenildiğinde).
 - İş Bankası (taksitli ek hesap): planın faiz payları aylık sabit; ilk dönem gerçek gün.
 - Ödeme sonrası kalan = ödeme anındaki kapama − ödenen (önce faize, sonra anaparaya).
 - Erken/ara ödeme yapılmış krediyi bankanın güncel planından yeniden kur.
+- **Erken ödenen taksitte banka taksitin tamamını çekmez**, o güne kadarki faiz +
+  plandaki anaparayı çeker (QNB ve Garanti). Kullanıcı "taksiti ödedim" derse tutarı
+  bankanın güncel planından al; plan gelmeden taksit tutarıyla işlersen teyit gerekir.
+- QNB: erken ödemeden sonraki dönemi gerçek günden 1 eksik sayar (ödemenin ertesi
+  gününden). Elle bakiyeyi o güne (`principalOverrideAt = ödeme + 1 gün`) koy ki vade
+  günü tutarı planla birebir tutsun.
+- İş Bankası taksitli ek hesap: erken ödenen taksiti plandaki gibi (tam taksit) sayar,
+  sonraki dönemin faizi asıl vadeden başlar. Elle bakiye = plandaki kalan, tarih = vade + 1 gün.
+- Garanti: erken ödemeden sonra planı yeniden kurar ("Ödeme Tarihi" sütunlu satır);
+  elle bakiye gerekmez, planı yaz, son ödeme gününden faiz işler.
 
 ## Altın
 
