@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useState } from "react";
+import { Bank, Buildings, Coins, DotsThreeOutline, User, type Icon } from "@phosphor-icons/react";
 import { brandFor, brandLogoUrl } from "@/lib/institutions/brand";
 
 /**
@@ -93,74 +94,6 @@ function isLight(hex: string): boolean {
   const b = parseInt(clean.slice(4, 6), 16);
   // Perceived luminance (ITU-R BT.601)
   return (r * 299 + g * 587 + b * 114) / 1000 > 150;
-}
-
-function Motif({ motif, opacity }: { motif: InstitutionMotif; opacity: number }) {
-  const stroke = { stroke: "currentColor", fill: "none", strokeWidth: 3, strokeLinecap: "round" as const };
-
-  switch (motif) {
-    case "arch":
-      return (
-        <g opacity={opacity}>
-          <path d="M14 44V27a14 14 0 0 1 28 0v17" {...stroke} />
-          <path d="M22 44V28a6 6 0 0 1 12 0v16" {...stroke} strokeWidth={2} />
-        </g>
-      );
-    case "columns":
-      return (
-        <g opacity={opacity}>
-          <path d="M11 24 28 13l17 11" {...stroke} />
-          <path d="M17 27v15M28 27v15M39 27v15" {...stroke} strokeWidth={2.5} />
-          <path d="M12 45h32" {...stroke} />
-        </g>
-      );
-    case "chevron":
-      return (
-        <g opacity={opacity}>
-          <path d="M12 38l10-11 8 8 14-16" {...stroke} strokeLinejoin="round" />
-          <path d="M36 19h9v9" {...stroke} strokeLinejoin="round" />
-        </g>
-      );
-    case "orbit":
-      return (
-        <g opacity={opacity}>
-          <circle cx="28" cy="28" r="8" {...stroke} strokeWidth={2.5} />
-          <ellipse cx="28" cy="28" rx="18" ry="8" transform="rotate(-28 28 28)" {...stroke} strokeWidth={2} />
-        </g>
-      );
-    case "vault":
-      return (
-        <g opacity={opacity}>
-          <rect x="12" y="14" width="32" height="28" rx="5" {...stroke} strokeWidth={2.5} />
-          <circle cx="28" cy="28" r="7" {...stroke} strokeWidth={2.5} />
-          <path d="M28 17v4M28 35v4M17 28h4M35 28h4" {...stroke} strokeWidth={2} />
-        </g>
-      );
-    case "wave":
-      return (
-        <g opacity={opacity}>
-          <path d="M10 32c6-9 12-9 18 0s12 9 18 0" {...stroke} />
-          <path d="M10 41c6-9 12-9 18 0s12 9 18 0" {...stroke} strokeWidth={2} opacity={0.7} />
-        </g>
-      );
-    case "diamond":
-      return (
-        <g opacity={opacity}>
-          <path d="M28 11 45 28 28 45 11 28z" {...stroke} strokeLinejoin="round" />
-          <path d="M28 20 36 28l-8 8-8-8z" {...stroke} strokeWidth={2} strokeLinejoin="round" />
-        </g>
-      );
-    case "grid":
-    default:
-      return (
-        <g opacity={opacity}>
-          <rect x="12" y="12" width="14" height="14" rx="3" {...stroke} strokeWidth={2.5} />
-          <rect x="30" y="12" width="14" height="14" rx="3" {...stroke} strokeWidth={2.5} />
-          <rect x="12" y="30" width="14" height="14" rx="3" {...stroke} strokeWidth={2.5} />
-          <circle cx="37" cy="37" r="7" {...stroke} strokeWidth={2.5} />
-        </g>
-      );
-  }
 }
 
 export interface InstitutionLogoProps {
@@ -306,62 +239,67 @@ export const InstitutionLogo = memo(function InstitutionLogo({
     );
   }
 
+  // Logosu olmayan kurum ya da kişi: yumuşak renkli kare üstünde sade simge.
   const tint = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#71717a";
-  const motif = motifFor(name, type);
+  const kind = fallbackKind(name, type);
+  const Icon = kind ? FALLBACK_ICONS[kind] : null;
   const initials = brand?.short ?? initialsFor(name);
-  const textOnLight = isLight(tint);
-  const gradientId = `il-${hash(name + tint).toString(36)}`;
 
   return (
-    <svg
-      viewBox="0 0 56 56"
-      width={size}
-      height={size}
+    <span
       className={className}
       role="img"
-      aria-label={`${name} rozeti`}
-      style={{ display: "block", flexShrink: 0 }}
+      aria-label={`${name} simgesi`}
+      style={{
+        display: "flex",
+        flexShrink: 0,
+        alignItems: "center",
+        justifyContent: "center",
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.27),
+        background: `${tint}1f`,
+        border: `1px solid ${tint}33`,
+        color: isLight(tint) ? "#3f3f46" : tint,
+      }}
     >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={tint} stopOpacity="0.95" />
-          <stop offset="100%" stopColor={tint} stopOpacity="0.55" />
-        </linearGradient>
-      </defs>
-
-      <rect x="0" y="0" width="56" height="56" rx="15" fill={`url(#${gradientId})`} />
-      {/* Üstten gelen ince ışık: koyu temada rozeti zeminden ayırır. */}
-      <rect
-        x="0.75"
-        y="0.75"
-        width="54.5"
-        height="54.5"
-        rx="14.25"
-        fill="none"
-        stroke="#ffffff"
-        strokeOpacity="0.22"
-        strokeWidth="1.5"
-      />
-
-      <g color={textOnLight ? "#09090b" : "#ffffff"}>
-        <Motif motif={motif} opacity={motifOnly ? 0.9 : 0.28} />
-
-        {!motifOnly && (
-          <text
-            x="28"
-            y="29"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="currentColor"
-            fontSize={initials.length > 2 ? 16 : 21}
-            fontWeight="700"
-            letterSpacing="0.5"
-            fontFamily="var(--font-inter), system-ui, sans-serif"
-          >
-            {initials}
-          </text>
-        )}
-      </g>
-    </svg>
+      {Icon ? (
+        <Icon size={Math.round(size * 0.52)} weight="duotone" />
+      ) : (
+        <span
+          style={{
+            fontSize: Math.round(size * (initials.length > 2 ? 0.3 : 0.36)),
+            fontWeight: 700,
+            letterSpacing: "0.02em",
+            lineHeight: 1,
+          }}
+        >
+          {initials}
+        </span>
+      )}
+    </span>
   );
 });
+
+type FallbackKind = "person" | "other" | "gold" | "company" | "bank";
+
+const FALLBACK_ICONS: Record<FallbackKind, Icon> = {
+  person: User,
+  other: DotsThreeOutline,
+  gold: Coins,
+  company: Buildings,
+  bank: Bank,
+};
+
+/** Adı ve türü hangi sade simgeyi alacağını söyler; bilinmeyen banka baş harfle kalır. */
+export function fallbackKind(name: string, type?: string | null): FallbackKind | null {
+  const n = name.toLocaleLowerCase("tr");
+  if (/^di[gğ]er(\s|$)/.test(n)) return "other";
+  if (/ki[sş]i|kurumsuz|şah[iı]s|sahis/.test(n)) return "person";
+  if (/alt[iı]n|kuyumcu|ayar|bilezik|zincir/.test(n)) return "gold";
+  if (type === "KISI") return "person";
+  if (type === "DIGER") return "other";
+  if (type === "ALTIN") return "gold";
+  if (type === "KURUM") return "company";
+  return null;
+}

@@ -15,7 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/formatters";
 import { triggerHaptic } from "@/lib/haptics";
-import { DayActivity, MonthCalendarData } from "@/lib/db/calendar";
+import type { CalendarDayEvent, DayActivity, MonthCalendarData } from "@/lib/db/calendar";
 
 export default function CalendarPage() {
   const now = new Date();
@@ -96,12 +96,12 @@ export default function CalendarPage() {
   const weekDays = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-4 sm:space-y-6 pb-16">
       {/* Üst Başlık & Kontroller */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Ödeme & Nakit Takvimi</h1>
-          <p className="text-xs text-zinc-400">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Ödeme Takvimi</h1>
+          <p className="hidden sm:block text-xs text-zinc-400">
             Aylık taksit vadeleri, beklenen gelir günleri ve nakit akış dengesi
           </p>
         </div>
@@ -174,7 +174,7 @@ export default function CalendarPage() {
       )}
 
       {/* Takvim Izgarası */}
-      <div className="rounded-2xl border border-white/10 bg-zinc-950/60 p-4 glass-card space-y-2">
+      <div className="rounded-2xl border border-white/10 bg-zinc-950/60 p-2 sm:p-4 glass-card space-y-2">
         {/* Gün Başlıkları */}
         <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-zinc-400 pb-2 border-b border-white/10">
           {weekDays.map((d) => (
@@ -191,12 +191,12 @@ export default function CalendarPage() {
             <p className="text-xs text-zinc-500">Takvim yükleniyor...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-7 gap-1.5">
+          <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
             {/* Boş Başlangıç Hücreleri */}
             {Array.from({ length: calendarGrid.startPadding }).map((_, idx) => (
               <div
                 key={`pad-${idx}`}
-                className="min-h-[85px] sm:min-h-[105px] rounded-xl bg-zinc-900/20 border border-white/[0.02] opacity-40"
+                className="min-h-[46px] sm:min-h-[105px] rounded-lg sm:rounded-xl bg-zinc-900/20 border border-white/[0.02] opacity-40"
               />
             ))}
 
@@ -212,6 +212,10 @@ export default function CalendarPage() {
               const events = dayActivity?.events || [];
               const hasEvents = events.length > 0;
               const netFlow = dayActivity?.net || 0;
+              // Telefonda ad sığmıyor: o günün ödeme toplamı ve tür noktaları.
+              const dues = events.filter((e) => e.type !== "INCOME" && e.type !== "EXPENSE" && e.status !== "ODENDI");
+              const dueSum = dues.reduce((s, e) => s + e.amount, 0);
+              const tones = TONE_ORDER.filter((t) => events.some((e) => toneOf(e) === t));
 
               return (
                 <button
@@ -223,7 +227,7 @@ export default function CalendarPage() {
                       setSelectedDay(dayActivity);
                     }
                   }}
-                  className={`relative flex flex-col justify-between p-1.5 sm:p-2 min-h-[85px] sm:min-h-[105px] rounded-xl border text-left transition-all ${
+                  className={`relative flex flex-col justify-between p-1 sm:p-2 min-h-[46px] sm:min-h-[105px] rounded-lg sm:rounded-xl border text-left transition-all ${
                     isToday
                       ? "bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500/40"
                       : hasEvents
@@ -234,9 +238,9 @@ export default function CalendarPage() {
                   {/* Gün Numarası & Net Gösterge */}
                   <div className="flex items-center justify-between w-full">
                     <span
-                      className={`text-xs font-bold ${
+                      className={`text-[11px] sm:text-xs font-bold ${
                         isToday
-                          ? "flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-zinc-950 font-mono"
+                          ? "flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-emerald-500 text-zinc-950 font-mono"
                           : "text-zinc-300"
                       }`}
                     >
@@ -255,19 +259,29 @@ export default function CalendarPage() {
                     )}
                   </div>
 
-                  {/* Günlük Etkinlik Hapları / Rozetleri */}
-                  <div className="space-y-1 w-full mt-1">
+                  {/* Telefon: tür noktaları + ödeme toplamı */}
+                  {hasEvents && (
+                    <div className="sm:hidden w-full space-y-0.5">
+                      <div className="flex gap-0.5">
+                        {tones.map((t) => (
+                          <span key={t} className={`h-1.5 w-1.5 rounded-full ${TONE[t].dot}`} />
+                        ))}
+                      </div>
+                      {dueSum > 0 && (
+                        <span className="block text-[9px] font-bold font-mono leading-none text-rose-400 tabular-nums">
+                          {shortTL(dueSum)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Günlük Etkinlik Hapları / Rozetleri (geniş ekran) */}
+                  <div className="hidden sm:block space-y-1 w-full mt-1">
                     {events.slice(0, 2).map((ev) => (
                       <div
                         key={ev.id}
                         className={`px-1 py-0.5 rounded text-[9px] font-medium truncate flex items-center gap-1 ${
-                          ev.type === "INCOME"
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : ev.type === "DEBT_INSTALLMENT"
-                            ? "bg-rose-500/20 text-rose-300"
-                            : ev.type === "CREDIT_CARD_DUE"
-                            ? "bg-blue-500/20 text-blue-300"
-                            : "bg-zinc-800 text-zinc-300"
+                          TONE[toneOf(ev)].pill
                         }`}
                       >
                         <span className="font-bold truncate">{ev.title}</span>
@@ -280,14 +294,34 @@ export default function CalendarPage() {
                     )}
                   </div>
 
-                  {/* Boş gün tabanı */}
-                  {!hasEvents && <div className="h-2" />}
                 </button>
               );
             })}
           </div>
         )}
+
+        {/* Renk açıklaması */}
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 pt-1 text-[10px] text-zinc-400">
+          {TONE_ORDER.map((t) => (
+            <span key={t} className="inline-flex items-center gap-1">
+              <span className={`h-2 w-2 rounded-full ${TONE[t].dot}`} />
+              {TONE[t].label}
+            </span>
+          ))}
+        </div>
       </div>
+
+      {/* Ayın listesi: adlar ve tutarlar okunur hâlde */}
+      {!loading && calendarData && (
+        <MonthList
+          days={calendarData.days}
+          monthName={monthNames[currentMonth - 1]}
+          onPick={(d) => {
+            triggerHaptic("selection");
+            setSelectedDay(d);
+          }}
+        />
+      )}
 
       {/* Gün Detayı Modalı / Çekmecesi */}
       {selectedDay && (
@@ -446,6 +480,110 @@ export default function CalendarPage() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Renk anlamı: kırmızı bekleyen ödeme, yeşil ödendi, turuncu harcama, mavi gelir. */
+type Tone = "due" | "paid" | "expense" | "income";
+const TONE_ORDER: Tone[] = ["due", "paid", "expense", "income"];
+const TONE: Record<Tone, { dot: string; pill: string; text: string; label: string }> = {
+  due: { dot: "bg-rose-500", pill: "bg-rose-500/20 text-rose-300", text: "text-rose-400", label: "Bekleyen ödeme" },
+  paid: { dot: "bg-emerald-500", pill: "bg-emerald-500/20 text-emerald-300", text: "text-emerald-400", label: "Ödendi" },
+  expense: { dot: "bg-orange-500", pill: "bg-orange-500/20 text-orange-300", text: "text-orange-300", label: "Harcama" },
+  income: { dot: "bg-sky-500", pill: "bg-sky-500/20 text-sky-300", text: "text-sky-300", label: "Gelir" },
+};
+
+function toneOf(ev: CalendarDayEvent): Tone {
+  if (ev.type === "INCOME") return "income";
+  if (ev.type === "EXPENSE") return "expense";
+  return ev.status === "ODENDI" ? "paid" : "due";
+}
+
+/** Hücreye sığan kısa tutar: 13.258 -> "13,3b", 840 -> "840". */
+function shortTL(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toLocaleString("tr-TR", { maximumFractionDigits: n >= 100000 ? 0 : 1 })}b`;
+  return Math.round(n).toLocaleString("tr-TR");
+}
+
+const GUN = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+
+function MonthList({
+  days,
+  monthName,
+  onPick,
+}: {
+  days: Record<number, DayActivity>;
+  monthName: string;
+  onPick: (d: DayActivity) => void;
+}) {
+  const sorted = Object.values(days)
+    .filter((d) => d.events.length > 0)
+    .sort((a, b) => a.dayNumber - b.dayNumber);
+  const rows = (keep: (t: string) => boolean) =>
+    sorted.flatMap((d) => d.events.filter((e) => keep(e.type)).map((e) => ({ day: d, ev: e })));
+  const payments = rows((t) => t !== "EXPENSE");
+  const expenses = rows((t) => t === "EXPENSE");
+  const expenseTotal = expenses.reduce((s, r) => s + r.ev.amount, 0);
+
+  if (payments.length === 0 && expenses.length === 0) {
+    return (
+      <p className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 text-center text-xs text-zinc-500">
+        {monthName} ayında ödeme ya da hareket yok.
+      </p>
+    );
+  }
+
+  const row = ({ day, ev }: { day: DayActivity; ev: CalendarDayEvent }) => (
+    <button
+      key={ev.id}
+      type="button"
+      onClick={() => onPick(day)}
+      className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-white/5"
+    >
+      <span className="w-8 shrink-0 text-center leading-tight">
+        <span className="block font-mono text-sm font-bold text-white">{day.dayNumber}</span>
+        <span className="block text-[9px] text-zinc-500">{GUN[new Date(ev.date).getDay()]}</span>
+      </span>
+      <span className={`h-2 w-2 shrink-0 rounded-full ${TONE[toneOf(ev)].dot}`} />
+      <span className="min-w-0 flex-1">
+        <span className="block line-clamp-2 break-words text-xs font-medium leading-snug text-zinc-200">{ev.title}</span>
+        {ev.status && ev.type !== "EXPENSE" && (
+          <span className={`block text-[10px] ${ev.status === "ODENDI" ? "text-emerald-400" : "text-zinc-500"}`}>
+            {ev.status === "ODENDI" ? "Ödendi" : "Bekliyor"}
+          </span>
+        )}
+      </span>
+      <span
+        className={`shrink-0 font-mono text-xs font-semibold tabular-nums ${
+          TONE[toneOf(ev)].text
+        }`}
+      >
+        {ev.type === "INCOME" ? "+" : "-"}
+        {formatCurrency(ev.amount)}
+      </span>
+    </button>
+  );
+
+  return (
+    <div className="space-y-3">
+      {payments.length > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/60">
+          <p className="border-b border-white/10 px-3 py-2 text-xs font-semibold text-zinc-300">
+            {monthName} ödemeleri ve gelirleri
+          </p>
+          <div className="divide-y divide-white/5">{payments.map(row)}</div>
+        </div>
+      )}
+      {expenses.length > 0 && (
+        <details className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/60">
+          <summary className="flex cursor-pointer items-center justify-between px-3 py-2 text-xs font-semibold text-zinc-300">
+            <span>Harcamalar ({expenses.length})</span>
+            <span className="font-mono text-rose-400">-{formatCurrency(expenseTotal)}</span>
+          </summary>
+          <div className="divide-y divide-white/5 border-t border-white/10">{expenses.map(row)}</div>
+        </details>
       )}
     </div>
   );

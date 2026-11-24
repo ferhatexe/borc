@@ -8,8 +8,8 @@ describe("dueAfterCut", () => {
   it("son ödeme günü kesimden sonraysa aynı ay", () => {
     expect(day(dueAfterCut(noon(2026, 11, 4), 14))).toBe("2026-11-14");
   });
-  it("kesimle aynı gün ya da önceyse bir sonraki ay", () => {
-    expect(day(dueAfterCut(noon(2026, 11, 4), 4))).toBe("2026-12-04");
+  it("kesimle aynı günse ekstre o gün, önceyse bir sonraki ay", () => {
+    expect(day(dueAfterCut(noon(2026, 11, 4), 4))).toBe("2026-11-04");
     expect(day(dueAfterCut(noon(2026, 11, 25), 5))).toBe("2026-12-05");
   });
   it("kısa ayda son güne kayar", () => {
@@ -36,6 +36,18 @@ describe("splitCardBalance", () => {
     expect(day(s.statementDue)).toBe("2026-11-14");
     expect(s.nextTL).toBe(300);
     expect(day(s.nextDue)).toBe("2026-12-14");
+  });
+
+  it("kesim ve son ödeme aynı günse sonraki harcama bir sonraki ekstre tarihinde", () => {
+    const s = splitCardBalance({
+      statementDay: 4,
+      dueDay: 4,
+      now: noon(2026, 11, 24),
+      balance: 2492.68,
+      purchases: [{ date: noon(2026, 11, 23), amount: 1229.59 }, { date: noon(2026, 11, 22), amount: 1263.09 }],
+    });
+    expect(s.nextTL).toBe(2492.68);
+    expect(day(s.nextDue)).toBe("2026-12-04");
   });
 
   it("ekstre ödendiyse yalnız sonraki kısım kalır", () => {

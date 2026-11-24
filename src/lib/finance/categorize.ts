@@ -71,8 +71,11 @@ export function wordsMatch(typed: string, known: string): boolean {
   if (known.length >= 4 && typed.length > known.length && typed.startsWith(known) && typed.length - known.length <= 4) {
     return true; // "marketten", "yemekler", "kahveci"
   }
-  if (typed.length >= 4 && known.length >= 4) return withinDistance(typed, known, known.length >= 8 ? 2 : 1);
-  return false;
+  // Yazım hatası: ilk harf tutmalı ("marti" "karti" değildir); 4 harfte yalnız
+  // harf değişimi ("mama" "magma" değildir).
+  if (typed.length < 4 || known.length < 4 || typed[0] !== known[0]) return false;
+  if (Math.min(typed.length, known.length) < 5 && typed.length !== known.length) return false;
+  return withinDistance(typed, known, known.length >= 8 ? 2 : 1);
 }
 
 /**
@@ -81,43 +84,56 @@ export function wordsMatch(typed: string, known: string): boolean {
  * Boşluklu ifadeler metnin içinde aranır.
  */
 const KEYWORDS: Array<{ targets: string[]; words: string[] }> = [
-  { targets: ["market", "market gida"], words: ["market", "migros", "a101", "bim", "sok", "carrefour", "carrefoursa", "file", "macrocenter", "bakkal", "ekmek", "sut", "peynir", "yumurta", "kola", "cips", "gida", "deterjan", "sampuan", "getir", "tekel"] },
-  { targets: ["manav kasap", "market gida"], words: ["manav", "kasap", "meyve", "sebze", "tavuk", "et", "balik", "pazar"] },
-  { targets: ["disarida yemek", "market gida"], words: ["yemek", "restoran", "lokanta", "doner", "kebap", "kebab", "pide", "lahmacun", "burger", "pizza", "tost", "yemeksepeti", "kofte", "simit", "borek", "kahvalti", "durum", "tantuni", "makarna", "corba", "yeme icme", "disarda yemek", "cig kofte", "mcdonalds", "burger king", "kfc", "dominos"] },
-  { targets: ["kahve", "market gida"], words: ["kahve", "starbucks", "kahve dunyasi", "cafe", "kafe", "espresso", "latte", "nescafe"] },
-  { targets: ["yakit", "ulasim"], words: ["benzin", "mazot", "motorin", "akaryakit", "yakit", "shell", "opet", "petrol ofisi", "lpg", "aytemiz"] },
-  { targets: ["toplu tasima", "ulasim"], words: ["otobus", "metrobus", "marmaray", "akbil", "istanbulkart", "kentkart", "dolmus", "minibus", "vapur", "tramvay", "metro", "bilet ucak", "ucak"] },
-  { targets: ["taksi", "ulasim"], words: ["taksi", "uber", "bitaksi", "martı", "marti", "scooter"] },
-  { targets: ["otopark", "ulasim"], words: ["otopark", "ispark"] },
+  { targets: ["market", "market gida"], words: ["market", "migros", "a101", "bim", "sok", "carrefour", "carrefoursa", "file", "macrocenter", "bakkal", "ekmek", "sut", "peynir", "yumurta", "kola", "cips", "gida", "deterjan", "sampuan", "getir", "tekel", "su", "damacana", "icecek", "cikolata", "biskuvi", "atistirmalik", "temizlik", "pecete", "tuvalet kagidi", "yag", "seker", "un", "pirinc", "makarna", "salca", "zeytin", "bal", "recel", "su aldim", "kuruyemis", "dondurma", "gazoz", "soda", "ayran", "meyve suyu", "enerji icecegi", "redbull", "red bull", "hakmar", "onur market", "metro market", "happy center"] },
+  { targets: ["manav kasap", "market gida"], words: ["manav", "kasap", "meyve", "sebze", "tavuk", "et", "kiyma", "balik", "pazar", "pazardan", "sarkuteri", "firin"] },
+  { targets: ["disarida yemek", "market gida"], words: ["yemek", "restoran", "lokanta", "doner", "kebap", "kebab", "pide", "lahmacun", "burger", "pizza", "tost", "yemeksepeti", "trendyol yemek", "trendyolyemek", "getir yemek", "migros yemek", "kofte", "cigkofte", "simit", "borek", "kahvalti", "durum", "tantuni", "makarna yedik", "corba", "yeme icme", "disarda yemek", "cig kofte", "mcdonalds", "burger king", "kfc", "dominos", "popeyes", "little caesars", "sandvic", "kokorec", "midye", "iskender", "manti", "pilav", "nohut pilav", "balik ekmek", "aksam yemegi", "ogle yemegi", "yedik", "tatli", "baklava", "kunefe", "pastane", "waffle"] },
+  { targets: ["kahve", "market gida"], words: ["kahve", "starbucks", "kahve dunyasi", "cafe", "kafe", "espresso", "latte", "nescafe", "cay", "caycı", "caybahcesi", "cay bahcesi", "kafeterya", "gloria jeans", "caribou", "espressolab", "mado"] },
+  { targets: ["sigara", "tutun", "kisisel", "market"], words: ["sigara", "tutun", "nargile", "puro", "marlboro", "parliament", "camel", "winston", "elektronik sigara", "likit", "sarma"] },
+  { targets: ["yakit", "ulasim"], words: ["benzin", "mazot", "motorin", "akaryakit", "yakit", "shell", "opet", "petrol ofisi", "lpg", "aytemiz", "bp", "total", "po"] },
+  { targets: ["toplu tasima", "ulasim"], words: ["otobus", "metrobus", "marmaray", "akbil", "istanbulkart", "kentkart", "dolmus", "minibus", "vapur", "tramvay", "metro", "bilet ucak", "ucak", "ucak bileti", "otobus bileti", "tren", "yht", "thy", "pegasus", "ajet", "kart dolum", "kart yukleme"] },
+  { targets: ["taksi", "ulasim"], words: ["taksi", "uber", "bitaksi", "martı", "marti", "scooter", "binbin"] },
+  { targets: ["otopark", "ulasim"], words: ["otopark", "ispark", "park"] },
   { targets: ["kopru otoyol", "ulasim"], words: ["hgs", "ogs", "kopru", "otoyol"] },
-  { targets: ["arac bakim", "ulasim"], words: ["tamir", "lastik", "yag degisimi", "oto yikama", "sanayi", "akü", "aku"] },
+  { targets: ["sigorta kasko", "ulasim"], words: ["kasko", "trafik sigortasi", "sigorta"] },
+  { targets: ["mtv", "ulasim"], words: ["mtv", "motorlu tasitlar"] },
+  { targets: ["arac bakim", "ulasim"], words: ["tamir", "lastik", "yag degisimi", "oto yikama", "yikama", "sanayi", "akü", "aku", "servis", "muayene arac", "arac muayene", "tuvturk"] },
+  { targets: ["ulasim"], words: ["yol", "yol parasi", "araba", "arac", "yolculuk", "ulasim"] },
   { targets: ["elektrik", "konut"], words: ["elektrik", "enerjisa", "ck enerji", "bedas", "ayedas"] },
-  { targets: ["su", "konut"], words: ["iski", "su faturasi", "aski"] },
-  { targets: ["dogalgaz", "konut"], words: ["dogalgaz", "igdas", "kombi"] },
-  { targets: ["internet", "konut"], words: ["internet", "superonline", "ttnet", "turknet", "wifi", "modem", "fiber"] },
-  { targets: ["kira", "konut"], words: ["kira"] },
+  { targets: ["su", "konut"], words: ["iski", "su faturasi", "aski", "izsu", "buski", "su parasi"] },
+  { targets: ["dogalgaz", "konut"], words: ["dogalgaz", "igdas", "kombi", "dogal gaz", "gaz faturasi"] },
+  { targets: ["internet", "konut"], words: ["internet", "superonline", "ttnet", "turknet", "wifi", "modem", "fiber", "internet faturasi"] },
+  { targets: ["kira", "konut"], words: ["kira", "ev kirasi"] },
   { targets: ["aidat", "konut"], words: ["aidat", "site aidati"] },
-  { targets: ["tadilat", "konut"], words: ["tadilat", "boya", "usta", "tesisat", "koctas", "bauhaus"] },
-  { targets: ["gsm", "telefon abonelik"], words: ["turkcell", "vodafone", "turk telekom", "kontor", "fatura telefon", "hat", "telefon faturasi"] },
-  { targets: ["streaming", "telefon abonelik"], words: ["netflix", "spotify", "youtube", "disney", "exxen", "blutv", "amazon prime", "prime video", "tabii", "gain"] },
-  { targets: ["yazilim bulut", "telefon abonelik"], words: ["claude", "chatgpt", "openai", "icloud", "google one", "linkedin", "adobe", "microsoft", "abonelik", "uyelik"] },
-  { targets: ["ilac", "saglik"], words: ["eczane", "ilac", "vitamin", "recete"] },
-  { targets: ["doktor", "saglik"], words: ["doktor", "hastane", "muayene", "klinik", "tahlil"] },
+  { targets: ["tadilat", "konut"], words: ["tadilat", "boya", "usta", "tesisat", "koctas", "bauhaus", "tesisatci", "elektrikci", "cilingir", "hirdavat", "ikea", "mobilya", "beyaz esya"] },
+  { targets: ["gsm", "telefon abonelik"], words: ["turkcell", "vodafone", "turk telekom", "kontor", "fatura telefon", "hat", "telefon", "telefon faturasi", "tl yukleme", "paket", "bimcell", "pttcell"] },
+  { targets: ["streaming", "telefon abonelik"], words: ["netflix", "spotify", "youtube", "disney", "exxen", "blutv", "amazon prime", "prime video", "tabii", "gain", "tod", "bein", "dsmart", "digiturk", "apple music", "mubi"] },
+  { targets: ["yazilim bulut", "telefon abonelik"], words: ["claude", "chatgpt", "openai", "icloud", "google one", "linkedin", "adobe", "microsoft", "abonelik", "uyelik", "app store", "google play", "canva", "dropbox", "cursor", "github"] },
+  { targets: ["konut"], words: ["fatura", "faturalar", "ev gideri"] },
+  { targets: ["ilac", "saglik"], words: ["eczane", "ilac", "vitamin", "recete", "agri kesici"] },
+  { targets: ["doktor", "saglik"], words: ["doktor", "hastane", "muayene", "klinik", "tahlil", "acil", "rontgen", "psikolog", "terapi", "fizik tedavi"] },
   { targets: ["dis", "saglik"], words: ["dis", "disci", "dis hekimi"] },
   { targets: ["gozluk", "saglik"], words: ["gozluk", "lens", "optik"] },
-  { targets: ["ayakkabi", "giyim"], words: ["ayakkabi", "bot", "terlik", "flo", "sneaker"] },
-  { targets: ["giyim"], words: ["giyim", "kiyafet", "tisort", "pantolon", "mont", "ceket", "gomlek", "kazak", "lcw", "lc waikiki", "defacto", "koton", "zara", "mavi", "boyner"] },
-  { targets: ["kuafor", "kisisel"], words: ["kuafor", "berber", "tiras", "sac"] },
-  { targets: ["spor", "kisisel"], words: ["spor", "gym", "fitness", "spor salonu"] },
-  { targets: ["eglence", "hobi", "kisisel"], words: ["sinema", "oyun", "playstation", "steam", "konser", "hali saha", "halisaha", "bowling", "tiyatro", "eglence", "tiktok", "instagram"] },
-  { targets: ["hediye", "aile sosyal"], words: ["hediye", "cicek"] },
-  { targets: ["bagis", "aile sosyal"], words: ["bagis", "sadaka", "zekat"] },
-  { targets: ["cocuk", "aile sosyal"], words: ["cocuk", "bebek", "oyuncak", "bez", "mama"] },
+  { targets: ["ayakkabi", "giyim"], words: ["ayakkabi", "bot", "terlik", "flo", "sneaker", "nike", "adidas", "skechers", "in street", "instreet", "ayakkabi dunyasi"] },
+  { targets: ["giyim"], words: ["giyim", "kiyafet", "tisort", "pantolon", "mont", "ceket", "gomlek", "kazak", "lcw", "lc waikiki", "defacto", "koton", "zara", "mavi", "boyner", "trendyol", "shein", "hm", "h m", "bershka", "pull bear", "mango", "colins", "ltb", "corap", "esofman", "elbise", "etek", "canta"] },
+  { targets: ["kuafor", "kisisel"], words: ["kuafor", "berber", "tiras", "sac", "sac kesimi", "manikur", "agda"] },
+  { targets: ["kisisel"], words: ["kozmetik", "parfum", "gratis", "watsons", "rossmann", "deodorant", "krem", "makyaj", "jilet", "kisisel bakim"] },
+  { targets: ["spor", "kisisel"], words: ["spor", "gym", "fitness", "spor salonu", "macfit", "protein", "pilates", "yoga", "havuz"] },
+  { targets: ["eglence", "hobi", "kisisel"], words: ["sinema", "oyun", "playstation", "ps plus", "steam", "xbox", "nintendo", "switch", "pubg", "valorant", "konser", "hali saha", "halisaha", "bowling", "tiyatro", "eglence", "tiktok", "instagram", "biletix", "passo", "mac bileti", "bilet", "lunapark", "bilardo", "playstation cafe", "ps cafe", "internet kafe", "bar", "pub", "alkol", "bira", "raki", "sarap", "otel", "tatil", "gezi", "airbnb", "booking"] },
+  { targets: ["hobi", "kisisel"], words: ["hobi", "olta", "kamp", "muzik aleti", "gitar"] },
+  { targets: ["cocuk", "aile sosyal"], words: ["harclik", "cocuk", "bebek", "oyuncak", "bez", "bebek bezi", "mama", "biberon", "kres"] },
+  { targets: ["hediye", "aile sosyal"], words: ["hediye", "cicek", "dogum gunu", "pasta"] },
+  { targets: ["bagis", "aile sosyal"], words: ["bagis", "sadaka", "zekat", "fitre", "kurban"] },
   { targets: ["dugun nisan", "aile sosyal"], words: ["dugun", "nisan", "kina", "takı", "taki"] },
-  { targets: ["kitap", "egitim"], words: ["kitap", "kirtasiye", "defter"] },
-  { targets: ["kurs", "egitim"], words: ["kurs", "ders", "udemy"] },
-  { targets: ["okul harc", "egitim"], words: ["okul", "harc", "universite"] },
-  { targets: ["kargo", "isletme giderleri"], words: ["kargo", "ptt", "yurtici", "aras", "mng"] },
+  { targets: ["kitap", "egitim"], words: ["kitap", "kirtasiye", "defter", "kalem", "fotokopi"] },
+  { targets: ["kurs", "egitim"], words: ["kurs", "ders", "udemy", "dershane", "etut", "ozel ders"] },
+  { targets: ["okul harc", "egitim"], words: ["okul", "harc", "universite", "servis ucreti", "okul servisi"] },
+  { targets: ["kargo", "isletme giderleri"], words: ["kargo", "ptt", "yurtici", "aras", "mng", "surat kargo", "hepsijet", "trendyol express"] },
+  { targets: ["vergi sgk", "isletme giderleri"], words: ["vergi", "sgk", "bagkur", "gelir vergisi", "kdv", "stopaj"] },
+  { targets: ["muhasebe", "isletme giderleri"], words: ["muhasebe", "mali musavir", "muhasebeci"] },
+  { targets: ["reklam", "isletme giderleri"], words: ["reklam", "meta ads", "google ads", "sponsorlu"] },
+  { targets: ["beklenmedik", "diger giderler"], words: ["ceza", "trafik cezasi", "noter", "avukat", "icra", "mahkeme", "harc mahkeme", "tamirat acil", "kayip"] },
+  { targets: ["alisveris", "online alisveris", "elektronik", "diger giderler"], words: ["hepsiburada", "amazon", "temu", "n11", "aliexpress", "ciceksepeti", "teknosa", "mediamarkt", "media markt", "vatan", "vatan bilgisayar", "apple", "samsung", "xiaomi", "kulaklik", "sarj", "kablo", "elektronik", "alisveris"] },
+  { targets: ["kredi karti", "borc odemesi"], words: ["kart borcu", "kredi karti borcu", "kart odemesi", "ekstre"] },
   { targets: ["kredi taksiti", "borc odemesi"], words: ["taksit", "kredi taksiti", "kredi odemesi"] },
 ];
 
@@ -130,9 +146,18 @@ function indexCategories(categories: CategoryLite[]) {
   return byName;
 }
 
-function textHas(normalized: string, tokens: string[], word: string): boolean {
-  if (word.includes(" ")) return normalized.includes(word);
-  return tokens.some((t) => wordsMatch(t, word));
+/**
+ * "exact": ifade sözcük sınırıyla geçiyor ya da sözcük birebir aynı.
+ * "loose": ek almış ya da yazım hatalı hâli de sayılır. Önce tüm kurallar
+ * exact denenir ki "tren" "trendyol"u, "taksi" "taksit"i kapmasın.
+ */
+function textHas(normalized: string, tokens: string[], word: string, mode: "exact" | "loose"): boolean {
+  if (word.includes(" ")) {
+    if (` ${normalized} `.includes(` ${word} `)) return true;
+    // Bitişik yazılmış ifade: "halisaha", "trendyolyemek".
+    return mode === "loose" && tokens.some((t) => wordsMatch(t, word.replace(/ /g, "")));
+  }
+  return tokens.some((t) => (mode === "exact" ? t === word : wordsMatch(t, word)));
 }
 
 export function suggestCategory(
@@ -181,19 +206,38 @@ export function suggestCategory(
     normalizeText(c.name) === "borc odemesi" || (c.parentId !== null && parentName.get(c.parentId) === "borc odemesi");
   const children = categories.filter((c) => c.parentId !== null && !isDebt(c));
   const parents = categories.filter((c) => c.parentId === null && !isDebt(c));
-  for (const c of [...children, ...parents]) {
-    const name = normalizeText(c.name);
-    if (name.length >= 3 && textHas(normalized, tokens, name)) return { categoryId: byName.get(name)!.id, source: "kelime" };
-  }
-
-  // 4. Sözlük.
-  for (const entry of KEYWORDS) {
-    if (!entry.words.some((w) => textHas(normalized, tokens, normalizeText(w)))) continue;
-    for (const target of entry.targets) {
-      const hit = byName.get(target);
-      if (hit) return { categoryId: hit.id, source: "kelime" };
+  const byCategoryName = (mode: "exact" | "loose"): CategorySuggestion | null => {
+    for (const c of [...children, ...parents]) {
+      const name = normalizeText(c.name);
+      if (name.length >= 3 && textHas(normalized, tokens, name, mode)) {
+        return { categoryId: byName.get(name)!.id, source: "kelime" };
+      }
     }
-  }
+    return null;
+  };
 
-  return null;
+  // 4. Sözlük: önce çok sözcüklü ifadeler ("su faturası" Su'ya, "su" Market'e).
+  const byDictionary = (mode: "phrase" | "exact" | "loose"): CategorySuggestion | null => {
+    for (const entry of KEYWORDS) {
+      const hit = entry.words.some((w) => {
+        const word = normalizeText(w);
+        if (mode === "phrase") return word.includes(" ") && textHas(normalized, tokens, word, "exact");
+        return textHas(normalized, tokens, word, mode);
+      });
+      if (!hit) continue;
+      for (const target of entry.targets) {
+        const cat = byName.get(target);
+        if (cat) return { categoryId: cat.id, source: "kelime" };
+      }
+    }
+    return null;
+  };
+
+  return (
+    byDictionary("phrase") ??
+    byCategoryName("exact") ??
+    byDictionary("exact") ??
+    byCategoryName("loose") ??
+    byDictionary("loose")
+  );
 }

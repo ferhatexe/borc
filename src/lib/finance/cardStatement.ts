@@ -57,11 +57,15 @@ function ymdKey(d: Date): string {
   return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-/** Kesimden SONRA gelen ilk son ödeme günü. */
+/**
+ * Kesimden sonra gelen ilk son ödeme günü. Kesim ve son ödeme aynı günse
+ * (kullanıcı ekstre tarihini ödeme günü olarak girmiş) ekstre o gün istenir:
+ * 04.11-04.12 arası harcamalar 04.12'de ödenir, 04.01'e kaymaz.
+ */
 export function dueAfterCut(cut: Date, dueDay: number): Date {
   const [y, m] = istanbulYmd(cut);
   const sameMonth = dayOfMonth(y, m, dueDay);
-  return ymdKey(sameMonth) > ymdKey(cut) ? sameMonth : dayOfMonth(y, m + 1, dueDay);
+  return ymdKey(sameMonth) >= ymdKey(cut) ? sameMonth : dayOfMonth(y, m + 1, dueDay);
 }
 
 export function splitCardBalance(params: {

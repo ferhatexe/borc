@@ -84,6 +84,27 @@ describe("suggestCategory", () => {
     expect(id("kredi kartı ile market")).toBe("mg-m");
   });
 
+  it("günlük sözcükler ve online mağazalar", () => {
+    expect(id("su aldım")).toBe("mg-m");
+    expect(id("çay")).toBe("mg-k");
+    expect(id("çiğköfte")).toBe("mg-y");
+    expect(id("trendyol yemek")).toBe("mg-y");
+    expect(id("trendyol")).toBe("gy-g");
+    expect(id("yol parası")).toBe("ul");
+  });
+
+  it("tam eşleşme ek/yazım hatasından önce gelir", () => {
+    expect(id("taksit")).toBe("bo"); // Taksi değil
+    expect(id("kredi kartı")).toBeNull(); // "martı" (taksi) değil
+    expect(id("trendyol")).not.toBe("ul"); // "tren" değil
+  });
+
+  it("yazım hatasında ilk harf tutmalı, 4 harfte uzunluk değişmez", () => {
+    expect(wordsMatch("karti", "marti")).toBe(false);
+    expect(wordsMatch("mama", "magma")).toBe(false);
+    expect(wordsMatch("yemej", "yemek")).toBe(true);
+  });
+
   it("bilinmeyen tanımda öneri yok", () => {
     expect(id("xyzq")).toBeNull();
     expect(id("")).toBeNull();

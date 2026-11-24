@@ -111,7 +111,6 @@ export function OverdueList({ payments, compact = false, limit, onPaid }: Overdu
                 color={p.institutionColor}
                 type={p.institutionType ?? (p.institutionName ? "BANKA" : "KISI")}
                 size={38}
-                motifOnly
               />
 
               <div className="min-w-0 flex-1">

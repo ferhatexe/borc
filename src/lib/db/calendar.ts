@@ -113,6 +113,9 @@ export async function getMonthCalendarEvents(
 
   const portfolio = buildPortfolioSummary(debts, gold, settings, monthStart);
   const valuationById = new Map(portfolio.valuations.map((v) => [v.id, v]));
+  const liveById = new Map(
+    buildPortfolioSummary(debts, gold, settings, new Date()).valuations.map((v) => [v.id, v])
+  );
 
   const days: Record<number, DayActivity> = {};
   for (let d = 1; d <= totalDaysInMonth; d++) {
@@ -218,18 +221,28 @@ export async function getMonthCalendarEvents(
     }
 
     if (debt.type === "KREDI_KARTI" && debt.dueDay) {
-      const amount = valuation?.dueThisMonthTL ?? 0;
-      if (amount > 0) {
-        const day = Math.min(debt.dueDay, totalDaysInMonth);
+      // Kart bugünkü bakiyesiyle değerlenir (ayın 1'iyle değil): ekstre ve
+      // kesimden sonraki kısım kendi son ödeme günlerinde, gecikmişse bugün.
+      const live = liveById.get(debt.id);
+      const parts: Array<[number, string | null]> = [];
+      if (live?.isOverdue) parts.push([live.outstandingTL, new Date().toISOString()]);
+      else if (live?.cardDetail) {
+        parts.push([live.cardDetail.statementTL, live.cardDetail.statementDueDate]);
+        parts.push([live.cardDetail.nextStatementTL, live.cardDetail.nextStatementDueDate]);
+      }
+      for (const [amount, iso] of parts) {
+        if (!iso || amount <= 0) continue;
+        const due = new Date(iso);
+        if (due < monthStart || due > monthEnd) continue;
         totalDebtObligation = totalDebtObligation.plus(amount);
         addEvent(
-          day,
+          due.getDate(),
           {
-            id: `card-due-${debt.id}-${year}-${month}`,
+            id: `card-due-${debt.id}-${iso.slice(0, 10)}`,
             type: "CREDIT_CARD_DUE",
             title: `${debt.title} son ödeme`,
             amount,
-            date: new Date(year, month - 1, day).toISOString(),
+            date: due.toISOString(),
             institutionName: debt.institution?.name,
             color: "#3b82f6",
             debtId: debt.id,

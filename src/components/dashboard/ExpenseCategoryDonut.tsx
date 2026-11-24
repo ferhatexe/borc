@@ -1,9 +1,12 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useState } from "react";
 import { ChartPieSlice, TrendUp, TrendDown, Sparkle } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/formatters";
-import { useChartTheme } from "@/lib/hooks/useChartTheme";
+
+const R = 62;
+const CIRC = 2 * Math.PI * R;
+const pct = (n: number) => n.toLocaleString("tr-TR", { maximumFractionDigits: 1 });
 
 interface CategoryBreakdownItem {
   categoryId: string;
@@ -81,7 +84,7 @@ export function ExpenseCategoryDonut({
   previousTotalTL,
   totalChangePercent,
 }: ExpenseCategoryDonutProps) {
-  const chart = useChartTheme();
+  const [active, setActive] = useState<number | null>(null);
   const ayAdı = AY_ADLARI[new Date().getMonth()];
 
   if (!categories || categories.length === 0 || totalExpenseTL === 0) {
@@ -126,84 +129,107 @@ export function ExpenseCategoryDonut({
   // grafiğin tek başına söyleyemediğini söyler.
   const tekKategori = chartData.length === 1;
 
+  // Dilimler: çevre üzerinde başlangıç ve uzunluk; aralarında 2 birim boşluk.
+  const gap = tekKategori ? 0 : 2;
+  let cursor = 0;
+  const arcs = chartData.map((cat) => {
+    const full = (cat.amountTL / totalExpenseTL) * CIRC;
+    const arc = { cat, start: cursor + gap / 2, len: Math.max(0.5, full - gap) };
+    cursor += full;
+    return arc;
+  });
+  const shown = active !== null ? chartData[active] : null;
+
   return (
     <div className="glass-card space-y-4 border-white/10 p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400">
-            <ChartPieSlice size={20} weight="duotone" />
+      <div className="space-y-2 border-b border-white/10 pb-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400">
+            <ChartPieSlice size={18} weight="duotone" />
           </div>
-          <div className="min-w-0">
-            <h3 className="text-base font-bold text-white">Harcama Dağılımı</h3>
-            <p className="text-xs text-zinc-400">
-              {ayAdı} ayı · {categories.length} kategori
-            </p>
-          </div>
+          <h3 className="truncate text-base font-bold text-white">Harcama Dağılımı</h3>
         </div>
-
-        <div className="shrink-0 text-right">
-          <p className="font-mono text-sm font-bold text-rose-400">
-            {formatCurrency(totalExpenseTL)}
+        <div className="flex items-end justify-between gap-2">
+          <p className="min-w-0 text-[11px] leading-snug text-zinc-400">
+            {ayAdı} · {categories.length} kategori
+            {previousTotalTL !== undefined && previousTotalTL > 0 && (
+              <span className="block text-zinc-500">geçen ay {formatCurrency(previousTotalTL)}</span>
+            )}
           </p>
-          {previousTotalTL !== undefined && previousTotalTL > 0 && (
-            <div className="mt-0.5 flex justify-end">
-              <ChangeBadge
-                changePercent={totalChangePercent}
-                previousAmountTL={previousTotalTL}
-              />
-            </div>
-          )}
+          <div className="shrink-0 text-right">
+            <p className="text-sm font-bold tabular-nums text-rose-400">{formatCurrency(totalExpenseTL)}</p>
+            {previousTotalTL !== undefined && previousTotalTL > 0 && (
+              <div className="mt-0.5 flex justify-end">
+                <ChangeBadge changePercent={totalChangePercent} previousAmountTL={previousTotalTL} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Halka: dar sütunda da bozulmasın diye liste her zaman altında durur. */}
-      <div className="relative mx-auto flex h-44 w-full max-w-[15rem] items-center justify-center">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Tooltip
-              contentStyle={chart.tooltipStyle}
-                labelStyle={chart.tooltipLabelStyle}
-              formatter={(val: number | string) => [formatCurrency(Number(val)), "Tutar"]}
+      {/*
+        Halka elle çizilir (SVG): kütüphanenin üstüne gelince çıkan kutucuğu
+        telefonda yazıyı bozuyordu. Dilime ya da listedeki satıra dokununca
+        ortada o kategori yazar; boşta toplam.
+      */}
+      <div className="relative mx-auto h-40 w-40">
+        <svg viewBox="0 0 160 160" className="h-full w-full -rotate-90" role="img" aria-label="Harcama dağılımı">
+          <circle cx="80" cy="80" r={R} fill="none" strokeWidth={20} className="stroke-zinc-800" />
+          {arcs.map((a, i) => (
+            <circle
+              key={a.cat.categoryId}
+              cx="80"
+              cy="80"
+              r={R}
+              fill="none"
+              stroke={a.cat.color}
+              strokeWidth={active === i ? 26 : 20}
+              strokeDasharray={`${a.len} ${CIRC - a.len}`}
+              strokeDashoffset={-a.start}
+              opacity={active === null || active === i ? 1 : 0.3}
+              className="cursor-pointer transition-all duration-200"
+              onMouseEnter={() => setActive(i)}
+              onMouseLeave={() => setActive(null)}
+              onClick={() => setActive(active === i ? null : i)}
             />
-            <Pie
-              data={chartData}
-              dataKey="amountTL"
-              nameKey="categoryName"
-              cx="50%"
-              cy="50%"
-              innerRadius={52}
-              outerRadius={76}
-              paddingAngle={tekKategori ? 0 : 3}
-            >
-              {chartData.map((entry) => (
-                <Cell
-                  key={entry.categoryId}
-                  fill={entry.color}
-                  stroke={chart.sliceStroke}
-                  strokeWidth={2}
-                />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-
-        <div className="pointer-events-none absolute flex flex-col items-center justify-center text-center">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Toplam</span>
-          <span className="font-mono text-sm font-bold text-white">
-            {formatCurrency(totalExpenseTL)}
-          </span>
-          {previousTotalTL !== undefined && previousTotalTL > 0 && (
-            <span className="mt-0.5 font-mono text-[9px] text-zinc-500">
-              geçen ay {formatCurrency(previousTotalTL)}
-            </span>
+          ))}
+        </svg>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
+          {shown ? (
+            <>
+              <span className="w-full truncate text-[10px] font-medium leading-tight text-zinc-400">
+                {shown.categoryName}
+              </span>
+              <span className="text-lg font-bold leading-tight tabular-nums" style={{ color: shown.color }}>
+                %{pct(shown.percentage)}
+              </span>
+              <span className="text-[11px] font-semibold leading-tight tabular-nums text-white">
+                {formatCurrency(shown.amountTL)}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Toplam</span>
+              <span className="text-sm font-bold leading-tight tabular-nums text-white">
+                {formatCurrency(totalExpenseTL)}
+              </span>
+            </>
           )}
         </div>
       </div>
 
       {/* Kategori listesi: ad kendi satırında, rakamlar altında - kısaltma yok. */}
       <ul className="space-y-2.5">
-        {chartData.map((cat) => (
-          <li key={cat.categoryId} className="space-y-1">
+        {chartData.map((cat, i) => (
+          <li
+            key={cat.categoryId}
+            className={`cursor-pointer space-y-1 rounded-lg transition-opacity ${
+              active === null || active === i ? "" : "opacity-50"
+            }`}
+            onMouseEnter={() => setActive(i)}
+            onMouseLeave={() => setActive(null)}
+            onClick={() => setActive(active === i ? null : i)}
+          >
             <div className="flex items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2">
                 <span
@@ -230,7 +256,7 @@ export function ExpenseCategoryDonut({
                 />
               </div>
               <span className="w-11 shrink-0 text-right font-mono text-[10px] tabular-nums text-zinc-500">
-                %{cat.percentage}
+                %{pct(cat.percentage)}
               </span>
               <ChangeBadge
                 changePercent={cat.changePercent}
@@ -252,7 +278,7 @@ export function ExpenseCategoryDonut({
           <>
             En büyük kalem{" "}
             <span className="font-semibold text-zinc-200">{enBüyük.categoryName}</span>:
-            harcamanızın %{enBüyük.percentage}&apos;i ({formatCurrency(enBüyük.amountTL)}).
+            harcamanızın %{pct(enBüyük.percentage)}&apos;i ({formatCurrency(enBüyük.amountTL)}).
           </>
         )}
       </p>

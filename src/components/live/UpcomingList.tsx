@@ -35,9 +35,8 @@ export function UpcomingList({
             <InstitutionLogo
               name={p.institutionName ?? p.title}
               color={p.institutionColor}
-              type={p.institutionType ?? (p.institutionName ? "BANKA" : "KISI")}
+              type={p.institutionType ?? (p.institutionName ? "BANKA" : p.debtType === "ALTIN_BORCU" ? "ALTIN" : "KISI")}
               size={34}
-              motifOnly
             />
             <div className="min-w-0 flex-1">
               <span className="block truncate text-xs font-medium text-zinc-100">{p.title}</span>
